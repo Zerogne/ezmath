@@ -14,4 +14,4 @@ export type CreateBylCheckout = {
 };
 
 export type BylCheckout = { id: number; url: string };
-export type BylWebhookEvent = { id: number; project_id: number; type: string; object: string; data: { object: Record<string, unknown> }; created_at: string };
+export type BylWebhookEvent = { id: number; project_id: number; type: string; object: string; data: { object: Record<string, unknown> }; created_at: string; updated_at?: string };

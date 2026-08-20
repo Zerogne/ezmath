@@ -19,6 +19,7 @@ Official references: [quickstart](https://byl.mn/docs/quickstart.html), [checkou
 ## Prepared components
 
 - Server-only BYL client and webhook signature verifier in `lib/byl/`
+- Webhook endpoint at `POST /api/payments/byl/webhook`
 - `payment_orders` table for the EzMath source of truth
 - `payment_webhook_events` table with provider-event uniqueness for idempotency
 - `student_subscriptions` table for BYL subscription state and student entitlements
@@ -37,6 +38,8 @@ The migration is local only until the live integration begins. Do not deploy it 
 5. BYL product price lookup keys
 6. BYL recurring price lookup keys for `standard_monthly` and `mentor_monthly`
 7. Business verification and settlement bank account before Live mode
+
+The webhook also requires `BYL_STANDARD_PRICE_ID` and `BYL_MENTOR_PRICE_ID`, using the numeric recurring-price IDs returned by BYL. This keeps subscription plan mapping server-controlled even though BYL webhook subscription objects currently include the price ID rather than its lookup key.
 
 ## Approved access model
 

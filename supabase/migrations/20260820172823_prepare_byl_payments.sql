@@ -40,6 +40,7 @@ create table public.student_subscriptions (
   current_period_start timestamptz,
   current_period_end timestamptz,
   canceled_at timestamptz,
+  provider_updated_at timestamptz not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (provider, provider_subscription_id),
