@@ -53,8 +53,14 @@ Open [http://localhost:3000](http://localhost:3000). Without Supabase configurat
 | `SUPABASE_PROJECT_ID` | Server/tooling | Project reference used by CLI tooling |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Trusted scoring and administrative database access |
 | `ADMIN_DEMO_MODE` | Local only | Enables the local admin preview identity |
+| `NEXT_PUBLIC_APP_URL` | Public | Canonical app origin used for payment redirects |
+| `BYL_PROJECT_ID` | Server only | BYL merchant project identifier |
+| `BYL_API_TOKEN` | Server only | BYL Bearer token used to create hosted checkouts |
+| `BYL_WEBHOOK_SECRET` | Server only | BYL raw-body webhook signing secret |
 
 Never expose `SUPABASE_SERVICE_ROLE_KEY` through a `NEXT_PUBLIC_` variable or client component. Never enable `ADMIN_DEMO_MODE` in a deployed environment.
+
+BYL payment preparation and the activation checklist are documented in [docs/BYL_INTEGRATION.md](./docs/BYL_INTEGRATION.md). Payment code remains inactive until the merchant credentials, product mapping, and database migration are approved.
 
 ## Supabase setup
 

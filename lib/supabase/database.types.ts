@@ -8,6 +8,8 @@ type ChoiceRow = { id: string; question_id: string; label: string; text: string;
 type AttemptRow = { id: string; user_id: string; test_id: string; started_at: string; completed_at: string | null; score: number | null; duration_seconds: number | null; status: "not_started" | "in_progress" | "submitted"; session_snapshot: Json | null; session_version: number; last_saved_at: string | null; created_at: string };
 type AttemptAnswerRow = { id: string; attempt_id: string; question_id: string; selected_choice_id: string | null; is_correct: boolean | null; time_spent_seconds: number | null; marked_for_review: boolean };
 type SupportQuestionRow = { id: string; user_id: string; subject: string; message: string; status: "open" | "answered" | "closed"; answer: string | null; answered_at: string | null; created_at: string };
+type PaymentOrderRow = { id: string; user_id: string; provider: "byl"; plan_code: string; amount_mnt: number; status: "pending" | "checkout_created" | "paid" | "expired" | "canceled" | "failed" | "refunded"; provider_checkout_id: number | null; checkout_url: string | null; payment_method: string | null; expires_at: string | null; paid_at: string | null; metadata: Json; created_at: string; updated_at: string };
+type PaymentWebhookEventRow = { id: string; provider: "byl"; provider_event_id: number; event_type: string; processing_status: "received" | "processed" | "ignored" | "failed"; payload: Json; error_message: string | null; received_at: string; processed_at: string | null };
 
 export type Database = {
   public: {
@@ -19,6 +21,8 @@ export type Database = {
       test_attempts: Table<AttemptRow, Partial<AttemptRow> & Pick<AttemptRow, "user_id" | "test_id">>;
       attempt_answers: Table<AttemptAnswerRow, Omit<AttemptAnswerRow, "id"> & { id?: string }>;
       student_support_questions: Table<SupportQuestionRow, Pick<SupportQuestionRow, "user_id" | "subject" | "message"> & Partial<SupportQuestionRow>>;
+      payment_orders: Table<PaymentOrderRow, Pick<PaymentOrderRow, "user_id" | "plan_code" | "amount_mnt"> & Partial<PaymentOrderRow>>;
+      payment_webhook_events: Table<PaymentWebhookEventRow, Pick<PaymentWebhookEventRow, "provider_event_id" | "event_type" | "payload"> & Partial<PaymentWebhookEventRow>>;
     };
     Views: {
       student_questions: { Row: Pick<QuestionRow, "id" | "test_id" | "question_number" | "question_text" | "topic" | "image_url">; Relationships: [] };
