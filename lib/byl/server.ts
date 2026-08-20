@@ -5,6 +5,13 @@ import type { BylCheckout, BylCustomer, CreateBylCheckout, CreateBylCustomer } f
 
 const BYL_API_URL = "https://byl.mn/api/v1";
 
+export class BylApiError extends Error {
+  constructor(message: string, readonly status: number, readonly code?: string) {
+    super(message);
+    this.name = "BylApiError";
+  }
+}
+
 function bylConfig() {
   const projectId = process.env.BYL_PROJECT_ID;
   const apiToken = process.env.BYL_API_TOKEN;
@@ -25,8 +32,8 @@ export async function createBylCheckout(input: CreateBylCheckout): Promise<BylCh
     cache: "no-store",
     signal: AbortSignal.timeout(8_000),
   });
-  const body = await response.json().catch(() => null) as { data?: BylCheckout; message?: string } | null;
-  if (!response.ok || !body?.data?.id || !body.data.url) throw new Error(body?.message || `BYL checkout үүсгэж чадсангүй (${response.status}).`);
+  const body = await response.json().catch(() => null) as { data?: BylCheckout; message?: string; error?: string } | null;
+  if (!response.ok || !body?.data?.id || !body.data.url) throw new BylApiError(body?.message || "BYL checkout үүсгэж чадсангүй.", response.status, body?.error);
   return body.data;
 }
 
@@ -39,8 +46,8 @@ export async function upsertBylCustomer(input: CreateBylCustomer): Promise<BylCu
     cache: "no-store",
     signal: AbortSignal.timeout(8_000),
   });
-  const body = await response.json().catch(() => null) as { data?: BylCustomer; message?: string } | null;
-  if (!response.ok || !body?.data?.id) throw new Error(body?.message || `BYL customer үүсгэж чадсангүй (${response.status}).`);
+  const body = await response.json().catch(() => null) as { data?: BylCustomer; message?: string; error?: string } | null;
+  if (!response.ok || !body?.data?.id) throw new BylApiError(body?.message || "BYL customer үүсгэж чадсангүй.", response.status, body?.error);
   return body.data;
 }
 

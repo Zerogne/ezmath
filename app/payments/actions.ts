@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createBylCheckout, upsertBylCustomer } from "@/lib/byl/server";
+import { BylApiError, createBylCheckout, upsertBylCustomer } from "@/lib/byl/server";
 import { bylChargeAmount } from "@/lib/byl/config";
 import { paidPlans, type PlanCode } from "@/lib/payments/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -60,7 +60,7 @@ export async function startBylCheckout(formData: FormData) {
   } catch (error) {
     if (isRedirectError(error)) throw error;
     await admin.from("payment_orders").update({ status: "failed" }).eq("id", order.id).eq("user_id", user.id);
-    console.error("BYL checkout creation failed", { orderId: order.id, planCode, error: error instanceof Error ? error.message : "Unknown error" });
+    console.error("BYL checkout creation failed", { orderId: order.id, planCode, stage: error instanceof BylApiError ? "byl_api" : "internal", httpStatus: error instanceof BylApiError ? error.status : undefined, providerCode: error instanceof BylApiError ? error.code : undefined, error: error instanceof Error ? error.message : "Unknown error" });
     redirect("/?payment=checkout-failed#pricing");
   }
 }

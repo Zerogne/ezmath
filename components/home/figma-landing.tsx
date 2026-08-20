@@ -18,7 +18,14 @@ const tracks = [
   { symbol: "∀", tag: "Суурь ойлголт", title: "Онолын Математик Цөм", description: "Математикийг үндсээс нь ойлгоход туслах онолын цогц хөтөлбөр.", topics: ["Логик ба баталгаа", "Тооны онол", "Комбинаторик", "Хязгаар ба уламжлал"], href: "/tests?type=practice", color: "violet" },
 ] as const;
 
-export function FigmaLanding() {
+const paymentMessages: Record<string, string> = {
+  "checkout-failed": "BYL төлбөрийн хуудас үүсгэж чадсангүй. Түр хүлээгээд дахин оролдоно уу.",
+  "order-failed": "Төлбөрийн захиалга үүсгэж чадсангүй. Дахин оролдоно уу.",
+  "invalid-plan": "Сонгосон багц хүчингүй байна.",
+  canceled: "Төлбөр цуцлагдлаа. Та хүссэн үедээ дахин оролдож болно.",
+};
+
+export function FigmaLanding({ paymentStatus }: { paymentStatus?: string }) {
   return <main>
     <section className="bg-white">
       <div className="container-page grid items-center gap-12 py-14 lg:grid-cols-[1.15fr_1fr] lg:gap-16 lg:py-[72px]">
@@ -31,7 +38,7 @@ export function FigmaLanding() {
     <section id="programs" className="py-20 lg:py-24"><SectionHead eyebrow="ХӨТӨЛБӨР" title="Сургалтын цогц систем" description="Өдөр бүр чанартай нэг цагийг өөртөө зориул"/><div className="container-page mt-10 grid gap-5 lg:grid-cols-3">{tracks.map((track) => <TrackCard key={track.title} {...track}/>)}</div></section>
     <AdaptiveSection/>
     <section className="bg-white py-20 lg:py-24"><SectionHead eyebrow="СУРАГЧДЫН ТҮҮХ" title="Сурагчид юу гэж хэлдэг вэ"/><div className="container-page mt-10 grid gap-5 lg:grid-cols-3">{[["650 → 740", "3 сарын дотор оноо маань мэдэгдэхүйц өссөн. Алдааны анализ яг юун дээр ажиллахаа ойлгуулсан.", "Б. Ариунзаяа"], ["ЭЕШ 792", "Өмнөх оны бүх бодлогыг нэг газраас шалгалтын горимоор давтсан нь хамгийн их тус болсон.", "Г. Тэмүүлэн"], ["SAT 760", "Desmos болон цагийн стратегийн хичээлүүд шалгалтын өдөр өөртөө итгэлтэй байхад тусалсан.", "Н. Энхжин"]].map(([score,quote,name]) => <blockquote key={name} className="rounded-2xl bg-[#f6f7fb] p-6"><p className="text-xs font-semibold text-amber-500">★★★★★</p><p className="mt-4 text-sm leading-6">“{quote}”</p><footer className="mt-6 flex items-center gap-3"><span className="h-9 w-9 rounded-full bg-primary/10"/><span><strong className="block text-sm">{name}</strong><small className="text-muted-foreground">{score}</small></span></footer></blockquote>)}</div></section>
-    <section id="pricing" className="py-20 lg:py-24"><SectionHead eyebrow="ҮНИЙН СОНГОЛТ" title="Өөрт тохирох багцаа сонго" description="Төлбөртэй багцууд сар бүр шинэчлэгдэнэ. Хүссэн үедээ цуцлах боломжтой."/><div className="container-page mt-10 grid items-stretch gap-5 lg:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.code} {...plan}/>)}</div></section>
+    <section id="pricing" className="py-20 lg:py-24"><SectionHead eyebrow="ҮНИЙН СОНГОЛТ" title="Өөрт тохирох багцаа сонго" description="Төлбөртэй багцууд сар бүр шинэчлэгдэнэ. Хүссэн үедээ цуцлах боломжтой."/>{paymentStatus && paymentMessages[paymentStatus] && <p role="alert" className="container-page mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">{paymentMessages[paymentStatus]}</p>}<div className="container-page mt-10 grid items-stretch gap-5 lg:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.code} {...plan}/>)}</div></section>
     <section className="bg-primary px-4 py-16 text-center text-white lg:py-20"><h2 className="text-3xl font-bold sm:text-5xl">Маргаашаас биш — өнөөдрөөс эхэл</h2><p className="mx-auto mt-5 max-w-2xl text-white/80">Түвшин тогтоох сорил 25 минут. Дараа нь хөтөлбөр чинь өөрөө бүрдэнэ.</p><Link href="/tests" className="mt-7 inline-flex rounded-xl bg-white px-8 py-4 text-sm font-semibold text-primary">Үнэгүй сорил өгөх</Link></section>
     <Footer/>
   </main>;
