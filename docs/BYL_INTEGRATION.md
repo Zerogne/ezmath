@@ -20,6 +20,7 @@ Official references: [quickstart](https://byl.mn/docs/quickstart.html), [checkou
 
 - Server-only BYL client and webhook signature verifier in `lib/byl/`
 - Webhook endpoint at `POST /api/payments/byl/webhook`
+- Authenticated server checkout action that upserts a BYL customer and creates a recurring hosted checkout
 - `payment_orders` table for the EzMath source of truth
 - `payment_webhook_events` table with provider-event uniqueness for idempotency
 - `student_subscriptions` table for BYL subscription state and student entitlements

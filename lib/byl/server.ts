@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
-import type { BylCheckout, CreateBylCheckout } from "@/lib/byl/types";
+import type { BylCheckout, BylCustomer, CreateBylCheckout, CreateBylCustomer } from "@/lib/byl/types";
 
 const BYL_API_URL = "https://byl.mn/api/v1";
 
@@ -27,6 +27,20 @@ export async function createBylCheckout(input: CreateBylCheckout): Promise<BylCh
   });
   const body = await response.json().catch(() => null) as { data?: BylCheckout; message?: string } | null;
   if (!response.ok || !body?.data?.id || !body.data.url) throw new Error(body?.message || `BYL checkout үүсгэж чадсангүй (${response.status}).`);
+  return body.data;
+}
+
+export async function upsertBylCustomer(input: CreateBylCustomer): Promise<BylCustomer> {
+  const { projectId, apiToken } = bylConfig();
+  const response = await fetch(`${BYL_API_URL}/projects/${encodeURIComponent(projectId)}/customers`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiToken}`, Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+    cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
+  });
+  const body = await response.json().catch(() => null) as { data?: BylCustomer; message?: string } | null;
+  if (!response.ok || !body?.data?.id) throw new Error(body?.message || `BYL customer үүсгэж чадсангүй (${response.status}).`);
   return body.data;
 }
 

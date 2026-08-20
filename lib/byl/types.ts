@@ -5,6 +5,7 @@ export type BylCheckoutItem =
 
 export type CreateBylCheckout = {
   items: BylCheckoutItem[];
+  customer_id?: number;
   success_url?: string;
   cancel_url?: string;
   customer_email?: string;
@@ -14,4 +15,6 @@ export type CreateBylCheckout = {
 };
 
 export type BylCheckout = { id: number; url: string };
+export type BylCustomer = { id: number; name: string | null; email: string; phone: string | null; client_reference_id: string | null };
+export type CreateBylCustomer = { email: string; name?: string; client_reference_id: string };
 export type BylWebhookEvent = { id: number; project_id: number; type: string; object: string; data: { object: Record<string, unknown> }; created_at: string; updated_at?: string };
