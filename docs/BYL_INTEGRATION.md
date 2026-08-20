@@ -21,6 +21,7 @@ Official references: [quickstart](https://byl.mn/docs/quickstart.html), [checkou
 - Server-only BYL client and webhook signature verifier in `lib/byl/`
 - `payment_orders` table for the EzMath source of truth
 - `payment_webhook_events` table with provider-event uniqueness for idempotency
+- `student_subscriptions` table for BYL subscription state and student entitlements
 - Student ownership RLS for reading payment orders
 - No student insert/update grants; prices and statuses remain server-controlled
 - Environment-variable placeholders with no credentials committed
@@ -34,9 +35,18 @@ The migration is local only until the live integration begins. Do not deploy it 
 3. `BYL_PROJECT_ID`
 4. Webhook signing secret
 5. BYL product price lookup keys
-6. Final EzMath plan codes, prices, and entitlement rules
-7. Whether plans are one-time purchases or recurring subscriptions
-8. Business verification and settlement bank account before Live mode
+6. BYL recurring price lookup keys for `standard_monthly` and `mentor_monthly`
+7. Business verification and settlement bank account before Live mode
+
+## Approved access model
+
+| Plan | Price | Access |
+| --- | ---: | --- |
+| Free | ₮0 | One lifetime full mock or ЭЕШ attempt, 10 daily topic exercises, limited course previews, no detailed exam report |
+| Standard | ₮49,000/month | All courses, exams and exercises, detailed reports, AI-personalized analysis and study schedule |
+| Mentor+ | ₮149,000/month | Everything in Standard plus weekly 1:1 mentoring, mentor-reviewed plan adjustments, priority solution review, monthly parent report and priority chat |
+
+Paid access is recognized while BYL reports `trialing`, `active`, or `past_due`. It is revoked when the verified webhook reports `subscription.canceled`. BYL subscriptions use request-to-pay renewal rather than automatic card charging.
 
 ## Planned flow
 

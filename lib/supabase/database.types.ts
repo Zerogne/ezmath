@@ -10,6 +10,7 @@ type AttemptAnswerRow = { id: string; attempt_id: string; question_id: string; s
 type SupportQuestionRow = { id: string; user_id: string; subject: string; message: string; status: "open" | "answered" | "closed"; answer: string | null; answered_at: string | null; created_at: string };
 type PaymentOrderRow = { id: string; user_id: string; provider: "byl"; plan_code: string; amount_mnt: number; status: "pending" | "checkout_created" | "paid" | "expired" | "canceled" | "failed" | "refunded"; provider_checkout_id: number | null; checkout_url: string | null; payment_method: string | null; expires_at: string | null; paid_at: string | null; metadata: Json; created_at: string; updated_at: string };
 type PaymentWebhookEventRow = { id: string; provider: "byl"; provider_event_id: number; event_type: string; processing_status: "received" | "processed" | "ignored" | "failed"; payload: Json; error_message: string | null; received_at: string; processed_at: string | null };
+type StudentSubscriptionRow = { id: string; user_id: string; provider: "byl"; plan_code: "standard_monthly" | "mentor_monthly"; status: "trialing" | "active" | "past_due" | "canceled"; provider_customer_id: number | null; provider_subscription_id: number; current_period_start: string | null; current_period_end: string | null; canceled_at: string | null; created_at: string; updated_at: string };
 
 export type Database = {
   public: {
@@ -23,6 +24,7 @@ export type Database = {
       student_support_questions: Table<SupportQuestionRow, Pick<SupportQuestionRow, "user_id" | "subject" | "message"> & Partial<SupportQuestionRow>>;
       payment_orders: Table<PaymentOrderRow, Pick<PaymentOrderRow, "user_id" | "plan_code" | "amount_mnt"> & Partial<PaymentOrderRow>>;
       payment_webhook_events: Table<PaymentWebhookEventRow, Pick<PaymentWebhookEventRow, "provider_event_id" | "event_type" | "payload"> & Partial<PaymentWebhookEventRow>>;
+      student_subscriptions: Table<StudentSubscriptionRow, Pick<StudentSubscriptionRow, "user_id" | "plan_code" | "status" | "provider_subscription_id"> & Partial<StudentSubscriptionRow>>;
     };
     Views: {
       student_questions: { Row: Pick<QuestionRow, "id" | "test_id" | "question_number" | "question_text" | "topic" | "image_url">; Relationships: [] };

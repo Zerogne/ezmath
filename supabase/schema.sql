@@ -125,6 +125,23 @@ create table public.payment_webhook_events (
   unique (provider, provider_event_id)
 );
 
+create table public.student_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete restrict,
+  provider text not null default 'byl' check (provider = 'byl'),
+  plan_code text not null check (plan_code in ('standard_monthly', 'mentor_monthly')),
+  status text not null check (status in ('trialing', 'active', 'past_due', 'canceled')),
+  provider_customer_id bigint,
+  provider_subscription_id bigint not null,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  canceled_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider, provider_subscription_id),
+  check (current_period_end is null or current_period_start is null or current_period_end > current_period_start)
+);
+
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public
 as $$ begin
@@ -144,6 +161,7 @@ returns trigger language plpgsql as $$ begin new.updated_at = now(); return new;
 create trigger tests_set_updated_at before update on public.tests for each row execute procedure public.set_updated_at();
 create trigger questions_set_updated_at before update on public.questions for each row execute procedure public.set_updated_at();
 create trigger payment_orders_set_updated_at before update on public.payment_orders for each row execute procedure public.set_updated_at();
+create trigger student_subscriptions_set_updated_at before update on public.student_subscriptions for each row execute procedure public.set_updated_at();
 
 revoke execute on function public.set_updated_at() from public;
 
@@ -156,6 +174,8 @@ create index idx_student_support_questions_user_created on public.student_suppor
 create index idx_payment_orders_user_created on public.payment_orders(user_id, created_at desc);
 create index idx_payment_orders_status_created on public.payment_orders(status, created_at desc);
 create index idx_payment_webhook_events_status_received on public.payment_webhook_events(processing_status, received_at);
+create index idx_student_subscriptions_user_status on public.student_subscriptions(user_id, status);
+create index idx_student_subscriptions_customer on public.student_subscriptions(provider, provider_customer_id) where provider_customer_id is not null;
 
 alter table public.profiles enable row level security;
 alter table public.test_attempts enable row level security;
@@ -166,6 +186,7 @@ alter table public.answer_choices enable row level security;
 alter table public.student_support_questions enable row level security;
 alter table public.payment_orders enable row level security;
 alter table public.payment_webhook_events enable row level security;
+alter table public.student_subscriptions enable row level security;
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public
@@ -195,6 +216,9 @@ grant select, insert on public.student_support_questions to authenticated;
 create policy "Students read own payment orders" on public.payment_orders for select to authenticated using ((select auth.uid()) = user_id);
 create policy "Admins read payment orders" on public.payment_orders for select to authenticated using (public.is_admin());
 grant select on public.payment_orders to authenticated;
+create policy "Students read own subscriptions" on public.student_subscriptions for select to authenticated using ((select auth.uid()) = user_id);
+create policy "Admins read subscriptions" on public.student_subscriptions for select to authenticated using (public.is_admin());
+grant select on public.student_subscriptions to authenticated;
 
 create policy "Published tests are readable" on public.tests for select to anon, authenticated using (status = 'published');
 create policy "Published questions are readable" on public.questions for select to anon, authenticated using (
