@@ -1,0 +1,2 @@
+import type { LucideIcon } from "lucide-react";
+export function AdminStatCard({ label, value, icon: Icon, note }: { label: string; value: string; icon: LucideIcon; note?: string }) { return <div className="rounded-xl border bg-white p-5"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">{label}</p><Icon size={17} className="text-primary"/></div><p className="mt-4 text-2xl font-bold">{value}</p>{note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}</div>; }

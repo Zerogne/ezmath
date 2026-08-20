@@ -1,0 +1,7 @@
+import { notFound } from "next/navigation";
+import { ArrowLeft, BookOpenCheck, Clock3 } from "lucide-react";
+import Link from "next/link";
+import { AdminPageHeader } from "@/components/admin/page-header";
+import { AdminStatCard } from "@/components/admin/stat-card";
+import { getAdminStudent } from "@/lib/admin/data";
+export default async function StudentDetailPage({ params }: { params: Promise<{ studentId: string }> }) { const { studentId } = await params; const student = await getAdminStudent(studentId); if (!student) notFound(); return <><Link href="/admin/students" className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft size={16}/>Сурагчид</Link><AdminPageHeader title={student.name} description={student.email}/><div className="mt-7 grid gap-4 sm:grid-cols-3"><AdminStatCard label="SAT оролдлого" value={`${student.satAttempts}`} icon={BookOpenCheck}/><AdminStatCard label="ЭЕШ оролдлого" value={`${student.eyeshAttempts}`} icon={BookOpenCheck}/><AdminStatCard label="Сүүлд идэвхтэй" value={student.lastActive} icon={Clock3}/></div><section className="mt-7 rounded-xl border bg-white p-6"><h2 className="font-bold">Бүртгэлийн мэдээлэл</h2><dl className="mt-5 grid gap-5 text-sm sm:grid-cols-2"><div><dt className="text-muted-foreground">Бүртгүүлсэн</dt><dd className="mt-1 font-medium">{student.joined}</dd></div><div><dt className="text-muted-foreground">Төлөв</dt><dd className="mt-1 font-medium">{student.status === "active" ? "Идэвхтэй" : "Идэвхгүй"}</dd></div></dl></section></>; }

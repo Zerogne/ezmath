@@ -1,0 +1,17 @@
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { getSupabaseConfig } from "./config";
+
+export async function createClient() {
+  const cookieStore = await cookies();
+  const { url, anonKey } = getSupabaseConfig();
+  return createServerClient(url, anonKey, {
+    cookies: {
+      getAll: () => cookieStore.getAll(),
+      setAll: (values: { name: string; value: string; options: CookieOptions }[]) => {
+        try { values.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); }
+        catch { /* Server Components cannot write cookies; middleware can refresh them later. */ }
+      },
+    },
+  });
+}

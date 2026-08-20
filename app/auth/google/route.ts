@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+export async function GET(request: Request) { const url = new URL(request.url); const origin = url.origin; const requestedNext = url.searchParams.get("next"); const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/dashboard"; if (!isSupabaseConfigured()) return NextResponse.redirect(`${origin}/login?error=not-configured`); const supabase = await createClient(); const { data, error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` } }); if (error || !data.url) return NextResponse.redirect(`${origin}/login?error=oauth`); return NextResponse.redirect(data.url); }
