@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { BylApiError, createBylCheckout, upsertBylCustomer } from "@/lib/byl/server";
+import { BylApiError, createBylCheckout, findBylCustomerByReference, upsertBylCustomer } from "@/lib/byl/server";
 import { bylChargeAmount } from "@/lib/byl/config";
 import { paidPlans, type PlanCode } from "@/lib/payments/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,10 +19,11 @@ export async function startBylCheckout(formData: FormData) {
   if (!user?.email) redirect(`/login?next=${encodeURIComponent(`/?plan=${planCode}#pricing`)}`);
 
   const admin = createAdminClient();
-  const [{ data: profile }, { data: existingSubscription }] = await Promise.all([
-    admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
-    admin.from("student_subscriptions").select("plan_code,status").eq("user_id", user.id).in("status", ["trialing", "active", "past_due"]).maybeSingle(),
-  ]);
+  const { data: existingSubscription } = await admin.from("student_subscriptions")
+    .select("plan_code,status")
+    .eq("user_id", user.id)
+    .in("status", ["trialing", "active", "past_due"])
+    .maybeSingle();
   if (existingSubscription?.plan_code === planCode) redirect("/dashboard?payment=already-subscribed");
 
   const priceId = priceIdForPlan(planCode);
@@ -35,13 +36,13 @@ export async function startBylCheckout(formData: FormData) {
   }).select("id").single();
   if (orderError || !order) redirect("/?payment=order-failed#pricing");
 
-  let stage: "customer" | "checkout" | "order_update" = "customer";
+  let stage: "customer_lookup" | "customer_create" | "checkout" | "order_update" = "customer_lookup";
   try {
-    const customer = await upsertBylCustomer({
-      email: user.email,
-      name: profile?.full_name?.trim() || undefined,
-      client_reference_id: user.id,
-    });
+    let customer = await findBylCustomerByReference(user.id);
+    if (!customer) {
+      stage = "customer_create";
+      customer = await upsertBylCustomer({ email: user.email, client_reference_id: user.id });
+    }
     stage = "checkout";
     const checkout = await createBylCheckout({
       customer_id: customer.id,

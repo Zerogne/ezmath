@@ -55,6 +55,19 @@ export async function upsertBylCustomer(input: CreateBylCustomer): Promise<BylCu
   throw new BylApiError("BYL customer үүсгэж чадсангүй.", 500);
 }
 
+export async function findBylCustomerByReference(clientReferenceId: string): Promise<BylCustomer | null> {
+  const { projectId, apiToken } = bylConfig();
+  const response = await fetch(`${BYL_API_URL}/projects/${encodeURIComponent(projectId)}/customers/by-client-reference-id/${encodeURIComponent(clientReferenceId)}`, {
+    headers: { Authorization: `Bearer ${apiToken}`, Accept: "application/json" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (response.status === 404) return null;
+  const body = await response.json().catch(() => null) as { data?: BylCustomer; message?: string; error?: string } | null;
+  if (!response.ok || !body?.data?.id) throw new BylApiError(body?.message || "BYL customer хайж чадсангүй.", response.status, body?.error);
+  return body.data;
+}
+
 export function verifyBylWebhook(rawBody: string, signature: string | null) {
   const secret = process.env.BYL_WEBHOOK_SECRET;
   if (!secret || !signature || !/^[a-f0-9]{64}$/i.test(signature)) return false;
