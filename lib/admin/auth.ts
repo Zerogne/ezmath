@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export type AdminIdentity = { id: string; name: string; email: string };
 
 export const getAdminIdentity = cache(async (): Promise<AdminIdentity | null> => {
-  if (process.env.ADMIN_DEMO_MODE === "true") return { id: "demo-admin", name: "Demo Admin", email: "admin@alphamath.mn" };
+  if (process.env.ADMIN_DEMO_MODE === "true") return { id: "demo-admin", name: "Demo Admin", email: "admin@ezmath.mn" };
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
