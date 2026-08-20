@@ -35,12 +35,14 @@ export async function startBylCheckout(formData: FormData) {
   }).select("id").single();
   if (orderError || !order) redirect("/?payment=order-failed#pricing");
 
+  let stage: "customer" | "checkout" | "order_update" = "customer";
   try {
     const customer = await upsertBylCustomer({
       email: user.email,
       name: profile?.full_name?.trim() || undefined,
       client_reference_id: user.id,
     });
+    stage = "checkout";
     const checkout = await createBylCheckout({
       customer_id: customer.id,
       client_reference_id: order.id,
@@ -50,6 +52,7 @@ export async function startBylCheckout(formData: FormData) {
       email_collection: false,
       allow_promotion_codes: false,
     });
+    stage = "order_update";
     const { error: updateError } = await admin.from("payment_orders").update({
       status: "checkout_created",
       provider_checkout_id: checkout.id,
@@ -60,7 +63,7 @@ export async function startBylCheckout(formData: FormData) {
   } catch (error) {
     if (isRedirectError(error)) throw error;
     await admin.from("payment_orders").update({ status: "failed" }).eq("id", order.id).eq("user_id", user.id);
-    console.error("BYL checkout creation failed", { orderId: order.id, planCode, stage: error instanceof BylApiError ? "byl_api" : "internal", httpStatus: error instanceof BylApiError ? error.status : undefined, providerCode: error instanceof BylApiError ? error.code : undefined, error: error instanceof Error ? error.message : "Unknown error" });
+    console.error("BYL checkout creation failed", { orderId: order.id, planCode, stage, source: error instanceof BylApiError ? "byl_api" : "internal", httpStatus: error instanceof BylApiError ? error.status : undefined, providerCode: error instanceof BylApiError ? error.code : undefined, error: error instanceof Error ? error.message : "Unknown error" });
     redirect("/?payment=checkout-failed#pricing");
   }
 }

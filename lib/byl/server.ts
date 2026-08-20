@@ -39,16 +39,20 @@ export async function createBylCheckout(input: CreateBylCheckout): Promise<BylCh
 
 export async function upsertBylCustomer(input: CreateBylCustomer): Promise<BylCustomer> {
   const { projectId, apiToken } = bylConfig();
-  const response = await fetch(`${BYL_API_URL}/projects/${encodeURIComponent(projectId)}/customers`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiToken}`, Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-    cache: "no-store",
-    signal: AbortSignal.timeout(8_000),
-  });
-  const body = await response.json().catch(() => null) as { data?: BylCustomer; message?: string; error?: string } | null;
-  if (!response.ok || !body?.data?.id) throw new BylApiError(body?.message || "BYL customer үүсгэж чадсангүй.", response.status, body?.error);
-  return body.data;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await fetch(`${BYL_API_URL}/projects/${encodeURIComponent(projectId)}/customers`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiToken}`, Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      cache: "no-store",
+      signal: AbortSignal.timeout(8_000),
+    });
+    const body = await response.json().catch(() => null) as { data?: BylCustomer; message?: string; error?: string } | null;
+    if (response.ok && body?.data?.id) return body.data;
+    if (response.status >= 500 && attempt === 0) continue;
+    throw new BylApiError(body?.message || "BYL customer үүсгэж чадсангүй.", response.status, body?.error);
+  }
+  throw new BylApiError("BYL customer үүсгэж чадсангүй.", 500);
 }
 
 export function verifyBylWebhook(rawBody: string, signature: string | null) {
