@@ -1,7 +1,8 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { planByCode, type PlanCode } from "@/lib/payments/plans";
+import type { PlanCode } from "@/lib/payments/plans";
+import { bylChargeAmount } from "@/lib/byl/config";
 import type { BylWebhookEvent } from "@/lib/byl/types";
 import type { Database, Json } from "@/lib/supabase/database.types";
 
@@ -76,7 +77,7 @@ async function processCheckoutCompleted(admin: AdminClient, object: Record<strin
   if (order.status === "paid") return "processed" as const;
   if (order.provider_checkout_id !== checkoutId || order.amount_mnt !== amountTotal) throw new Error("BYL checkout захиалгын дүн эсвэл ID зөрж байна.");
   if (order.plan_code !== "standard_monthly" && order.plan_code !== "mentor_monthly") throw new Error("BYL checkout багц танигдсангүй.");
-  if (planByCode[order.plan_code].priceMnt !== amountTotal) throw new Error("BYL checkout серверийн үнэтэй зөрж байна.");
+  if (bylChargeAmount(order.plan_code) !== amountTotal) throw new Error("BYL checkout серверийн үнэтэй зөрж байна.");
 
   const { error } = await admin.from("payment_orders").update({
     status: "paid",

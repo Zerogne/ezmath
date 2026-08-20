@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createBylCheckout, upsertBylCustomer } from "@/lib/byl/server";
+import { bylChargeAmount } from "@/lib/byl/config";
 import { paidPlans, type PlanCode } from "@/lib/payments/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -24,13 +25,12 @@ export async function startBylCheckout(formData: FormData) {
   ]);
   if (existingSubscription?.plan_code === planCode) redirect("/dashboard?payment=already-subscribed");
 
-  const plan = paidPlans.find((candidate) => candidate.code === planCode)!;
   const priceId = priceIdForPlan(planCode);
   const appUrl = productionAppUrl();
   const { data: order, error: orderError } = await admin.from("payment_orders").insert({
     user_id: user.id,
     plan_code: planCode,
-    amount_mnt: plan.priceMnt,
+    amount_mnt: bylChargeAmount(planCode),
     status: "pending",
   }).select("id").single();
   if (orderError || !order) redirect("/?payment=order-failed#pricing");

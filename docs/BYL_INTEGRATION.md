@@ -42,6 +42,8 @@ The migration is local only until the live integration begins. Do not deploy it 
 
 The webhook also requires `BYL_STANDARD_PRICE_ID` and `BYL_MENTOR_PRICE_ID`, using the numeric recurring-price IDs returned by BYL. This keeps subscription plan mapping server-controlled even though BYL webhook subscription objects currently include the price ID rather than its lookup key.
 
+Set `BYL_TEST_MODE=true` only for a BYL Test project. Checkout orders and webhook amount validation then use BYL's documented fixed ₮50 test transaction amount while the landing page continues to show the intended Live prices. Set it to `false` before switching the BYL project to Live mode.
+
 ## Approved access model
 
 | Plan | Price | Access |
