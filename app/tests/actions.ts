@@ -48,10 +48,22 @@ async function submitDatabaseAttempt(payload: SubmissionPayload): Promise<Submis
   if (!user) throw new Error("Шалгалтаа илгээхийн тулд нэвтэрнэ үү.");
   const admin = createAdminClient();
   const [{ data: test }, { data: questions }] = await Promise.all([
-    admin.from("tests").select("id, exam_type, duration_minutes").eq("id", payload.testId).eq("status", "published").single(),
+    admin.from("tests").select("id, exam_type, duration_minutes, test_type").eq("id", payload.testId).eq("status", "published").single(),
     admin.from("questions").select("id, topic").eq("test_id", payload.testId).order("question_number"),
   ]);
   if (!test || !questions?.length) throw new Error("Шалгалт олдсонгүй.");
+  if (test.test_type !== "practice") {
+    const { data: subscription } = await admin.from("student_subscriptions").select("current_period_end").eq("user_id", user.id).in("status", ["trialing", "active"]).order("provider_updated_at", { ascending: false }).limit(1).maybeSingle();
+    const paid = subscription && (!subscription.current_period_end || new Date(subscription.current_period_end) > new Date());
+    if (!paid) {
+      const { data: completed } = await admin.from("test_attempts").select("test_id").eq("user_id", user.id).eq("status", "submitted");
+      const completedIds = [...new Set((completed ?? []).map((attempt) => attempt.test_id))];
+      if (completedIds.length) {
+        const { count } = await admin.from("tests").select("id", { count: "exact", head: true }).in("id", completedIds).neq("test_type", "practice");
+        if ((count ?? 0) >= 1) throw new Error("Үнэгүй эрхийн 1 бүтэн шалгалтын лимит дууссан. Багцаа ахиулна уу.");
+      }
+    }
+  }
   const { data: choices } = await admin.from("answer_choices").select("id, question_id, is_correct").in("question_id", questions.map((question) => question.id));
   const selected = new Map(payload.answers.map((answer) => [answer.questionId, answer.selectedChoiceId]));
   const choiceMap = new Map((choices ?? []).map((choice) => [choice.id, choice]));
