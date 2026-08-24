@@ -9,11 +9,9 @@ export const metadata: Metadata = {
   keywords: ["EzMath", "SAT", "ЭЕШ", "математик", "mock шалгалт", "Монгол"],
   authors: [{ name: "EzMath" }],
   creator: "EzMath",
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "mn_MN",
-    url: "/",
     siteName: "EzMath",
     title: "EzMath — SAT ба ЭЕШ бэлтгэл",
     description: "SAT болон ЭЕШ-ийн математикийн mock сорил, дасгал, ахицын тайлан.",
