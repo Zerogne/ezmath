@@ -136,6 +136,62 @@ export async function getAdminDashboardData() {
   };
 }
 
+type PaymentOrderRow = {
+  id: string;
+  user_id: string;
+  plan_code: string;
+  amount_mnt: number;
+  status: "pending" | "checkout_created" | "paid" | "expired" | "canceled" | "failed" | "refunded";
+  provider_checkout_id: number | null;
+  payment_method: string | null;
+  paid_at: string | null;
+  created_at: string;
+};
+
+export type AdminPayment = {
+  id: string;
+  studentName: string;
+  email: string;
+  plan: string;
+  amountMnt: number;
+  status: PaymentOrderRow["status"];
+  checkoutId: number | null;
+  paymentMethod: string | null;
+  createdAt: string;
+  paidAt: string | null;
+};
+
+export async function getAdminPaymentsData() {
+  await requireAdmin();
+  const [orders, profiles, authResult, subscriptions] = await Promise.all([
+    request<PaymentOrderRow[]>("/rest/v1/payment_orders?select=id,user_id,plan_code,amount_mnt,status,provider_checkout_id,payment_method,paid_at,created_at&order=created_at.desc&limit=200"),
+    request<ProfileRow[]>("/rest/v1/profiles?select=id,full_name,role,created_at"),
+    request<{ users: AuthUser[] }>("/auth/v1/admin/users?page=1&per_page=1000"),
+    request<{ id: string }[]>("/rest/v1/student_subscriptions?select=id&status=in.(trialing,active)"),
+  ]);
+  const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
+  const authById = new Map((authResult.users ?? []).map((user) => [user.id, user]));
+  const payments: AdminPayment[] = orders.map((order) => ({
+    id: order.id,
+    studentName: profilesById.get(order.user_id)?.full_name ?? "Нэргүй сурагч",
+    email: authById.get(order.user_id)?.email ?? "—",
+    plan: order.plan_code === "mentor_monthly" ? "Ментор+" : order.plan_code === "standard_monthly" ? "Стандарт" : order.plan_code,
+    amountMnt: order.amount_mnt,
+    status: order.status,
+    checkoutId: order.provider_checkout_id,
+    paymentMethod: order.payment_method,
+    createdAt: order.created_at,
+    paidAt: order.paid_at,
+  }));
+  return {
+    payments,
+    paidRevenueMnt: payments.filter((payment) => payment.status === "paid").reduce((sum, payment) => sum + payment.amountMnt, 0),
+    paidCount: payments.filter((payment) => payment.status === "paid").length,
+    pendingCount: payments.filter((payment) => payment.status === "pending" || payment.status === "checkout_created").length,
+    activeSubscriptions: subscriptions.length,
+  };
+}
+
 type MaterialRow = {
   id: string;
   exam_type: ExamType;
