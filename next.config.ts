@@ -13,8 +13,6 @@ const contentSecurityPolicy = [
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
-  "trusted-types nextjs default",
-  "require-trusted-types-for 'script'",
   "upgrade-insecure-requests",
 ].join("; ");
 
