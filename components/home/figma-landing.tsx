@@ -2,14 +2,15 @@ import Link from "next/link";
 import { ArrowRight, Check, Play } from "lucide-react";
 import { plans } from "@/lib/payments/plans";
 import { startBylCheckout } from "@/app/payments/actions";
+import { AnalysisFeatureIcon, ClockFeatureIcon, CommunityFeatureIcon, DeviceFeatureIcon, KnowledgeFeatureIcon, TargetFeatureIcon } from "@/components/home/feature-icons";
 
 const features = [
-  ["🎯", "Алдаагаа ойлгож, алдаан дээрээ ажиллах", "Онлайн тест өгснөөр өөрийн алдааг түргэн шуурхай мэдэх боломж."],
-  ["📊", "Зөвхөн чамд зориулсан анализ", "Тест бүрийн дараа өөрийн гүйцэтгэлийг сэдэв бүрээр нь хар."],
-  ["🧠", "Онолын мэдлэг", "Сэдэв бүрд туслах шилдэг багш нарын видео хичээлийн сан."],
-  ["⏱", "Шалгалтын горим", "Цаг, оноо, хэмжээст онооны бодит тооцоолол."],
-  ["👥", "Аварга сан", "Сүүлийн 20 жилийн онлайн тестийн материал."],
-  ["📱", "Хялбар", "Гар утас, таблет, компьютерээс хаанаас ч суралц."],
+  [TargetFeatureIcon, "Алдаагаа ойлгож, алдаан дээрээ ажиллах", "Онлайн тест өгснөөр өөрийн алдааг түргэн шуурхай мэдэх боломж."],
+  [AnalysisFeatureIcon, "Зөвхөн чамд зориулсан анализ", "Тест бүрийн дараа өөрийн гүйцэтгэлийг сэдэв бүрээр нь хар."],
+  [KnowledgeFeatureIcon, "Онолын мэдлэг", "Сэдэв бүрд туслах шилдэг багш нарын видео хичээлийн сан."],
+  [ClockFeatureIcon, "Шалгалтын горим", "Цаг, оноо, хэмжээст онооны бодит тооцоолол."],
+  [CommunityFeatureIcon, "Аварга сан", "Сүүлийн 20 жилийн онлайн тестийн материал."],
+  [DeviceFeatureIcon, "Хялбар", "Гар утас, таблет, компьютерээс хаанаас ч суралц."],
 ] as const;
 
 const tracks = [
@@ -34,7 +35,7 @@ export function FigmaLanding({ paymentStatus }: { paymentStatus?: string }) {
       </div>
     </section>
     <section className="bg-[#0b1030] text-white" aria-label="Платформын боломжууд"><div className="container-page grid grid-cols-2 gap-6 py-8 text-sm font-medium sm:grid-cols-4">{["SAT ба ЭЕШ", "Mock шалгалт", "Сэдэвчилсэн дасгал", "Ахицын тайлан"].map((label) => <div key={label} className="flex items-center gap-2"><Check size={16} className="shrink-0 text-emerald-400"/><span>{label}</span></div>)}</div></section>
-    <section className="bg-white py-20 lg:py-24"><SectionHead eyebrow="EZMATH" title="800 оноо EZ"/><div className="container-page mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{features.map(([icon,title,description]) => <article key={title} className="rounded-2xl bg-[#f6f7fb] p-6"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg">{icon}</span><h3 className="mt-4 text-lg font-semibold leading-6">{title}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{description}</p></article>)}</div></section>
+    <section className="bg-white py-20 lg:py-24"><SectionHead eyebrow="EZMATH" title="800 оноо EZ"/><div className="container-page mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{features.map(([Icon,title,description]) => <article key={title} className="rounded-2xl bg-[#f6f7fb] p-6"><Icon className="h-10 w-10 shrink-0"/><h3 className="mt-4 text-lg font-semibold leading-6">{title}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{description}</p></article>)}</div></section>
     <section id="programs" className="py-20 lg:py-24"><SectionHead eyebrow="ХӨТӨЛБӨР" title="Сургалтын цогц систем" description="Өдөр бүр чанартай нэг цагийг өөртөө зориул"/><div className="container-page mt-10 grid gap-5 lg:grid-cols-3">{tracks.map((track) => <TrackCard key={track.title} {...track}/>)}</div></section>
     <AdaptiveSection/>
     <section id="pricing" className="py-20 lg:py-24"><SectionHead eyebrow="ҮНИЙН СОНГОЛТ" title="Өөрт тохирох багцаа сонго" description="Төлбөртэй багцууд сар бүр шинэчлэгдэнэ. Хүссэн үедээ цуцлах боломжтой."/>{paymentStatus && paymentMessages[paymentStatus] && <p role="alert" className="container-page mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">{paymentMessages[paymentStatus]}</p>}<div className="container-page mt-10 grid items-stretch gap-5 lg:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.code} {...plan}/>)}</div></section>
