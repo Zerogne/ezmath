@@ -12,7 +12,7 @@ export async function updateLessonProgress(lessonId: string, completed: boolean)
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(`/lesson/${lessonId}`)}`);
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/lesson/theory-core/${lessonId}`)}`);
 
   const now = new Date().toISOString();
   const { error } = await supabase.from("student_lesson_progress").upsert(
@@ -27,5 +27,6 @@ export async function updateLessonProgress(lessonId: string, completed: boolean)
   );
   if (error) throw new Error(`Явцыг хадгалж чадсангүй: ${error.message}`);
   revalidatePath("/lesson");
-  revalidatePath(`/lesson/${lessonId}`);
+  revalidatePath("/lesson/theory-core");
+  revalidatePath(`/lesson/theory-core/${lessonId}`);
 }
