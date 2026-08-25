@@ -116,11 +116,15 @@ export async function getAdminStudent(studentId: string) {
 }
 
 export async function getAdminDashboardData() {
-  const [{ profiles, attempts, authUsers }, tests] = await Promise.all([
+  const [{ profiles, attempts, authUsers }, tests, payments] = await Promise.all([
     loadAdminData(),
     (async () => {
       await requireAdmin();
       return request<{ exam_type: "SAT" | "EYESH" }[]>("/rest/v1/tests?select=exam_type");
+    })(),
+    (async () => {
+      await requireAdmin();
+      return request<{ amount_mnt: number; status: string }[]>("/rest/v1/payment_orders?select=amount_mnt,status");
     })(),
   ]);
   const students = toStudents(profiles, authUsers, attempts);
@@ -132,6 +136,8 @@ export async function getAdminDashboardData() {
     newThisMonth: profiles.filter((profile) => profile.role === "student" && new Date(profile.created_at) >= monthStart).length,
     satMaterials: tests.filter((test) => test.exam_type === "SAT").length,
     eyeshMaterials: tests.filter((test) => test.exam_type === "EYESH").length,
+    paidRevenueMnt: payments.filter((payment) => payment.status === "paid").reduce((sum, payment) => sum + payment.amount_mnt, 0),
+    paidCount: payments.filter((payment) => payment.status === "paid").length,
     recentStudents: students.slice(0, 5),
   };
 }
