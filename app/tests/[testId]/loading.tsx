@@ -1,1 +1,7 @@
-export default function Loading() { return <div className="container-page animate-pulse py-16"><div className="h-8 w-40 rounded bg-muted"/><div className="mt-8 h-96 rounded-2xl border bg-white"/></div>; }
+import { Navbar } from "@/components/layout/navbar";
+
+export default function Loading() {
+  return <><Navbar/><main className="container-page max-w-4xl py-10 sm:py-16" aria-busy="true"><span className="sr-only">Шалгалтын мэдээллийг ачаалж байна…</span><Skeleton className="h-11 w-52"/><section className="mt-8 rounded-2xl border bg-white p-6 sm:p-10"><Skeleton className="h-6 w-14 rounded-full"/><Skeleton className="mt-5 h-10 w-4/5"/><Skeleton className="mt-3 h-6 w-full max-w-xl"/><div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="bg-white p-4"><Skeleton className="h-[18px] w-[18px]"/><Skeleton className="mt-3 h-4 w-14"/><Skeleton className="mt-2 h-5 w-20"/></div>)}</div><div className="mt-9"><Skeleton className="h-6 w-20"/><div className="mt-4 space-y-3">{Array.from({ length: 4 }, (_, index) => <div key={index} className="flex items-center gap-3"><Skeleton className="h-1.5 w-1.5 rounded-full"/><Skeleton className={`h-5 ${index % 2 ? "w-3/4" : "w-2/3"}`}/></div>)}</div></div><div className="mt-10 flex flex-col gap-3 border-t pt-6 sm:flex-row"><Skeleton className="h-12 w-full rounded-xl sm:w-40"/><Skeleton className="h-12 w-full rounded-xl sm:w-28"/></div><Skeleton className="mt-4 h-4 w-72 max-w-full"/></section></main></>;
+}
+
+function Skeleton({ className }: { className: string }) { return <div aria-hidden="true" className={`animate-pulse rounded-md bg-slate-200 ${className}`}/>; }
