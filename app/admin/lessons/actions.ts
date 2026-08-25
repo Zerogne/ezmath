@@ -29,7 +29,7 @@ export async function createLesson(_: LessonFormState, formData: FormData): Prom
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return { error: "Slug нь зөвхөн жижиг латин үсэг, тоо, зураастай байна." };
   if (allLessons.some((item) => item.id === slug)) return { error: "Энэ slug суурь хичээлд ашиглагдсан байна." };
   if (title.length < 3 || summary.length < 10 || !Number.isInteger(durationMinutes) || durationMinutes < 1) return { error: "Гарчиг, тайлбар болон хугацааг зөв бөглөнө үү." };
-  if (!coreMathCourse.modules.some((item) => item.id === moduleId)) return { error: "Модуль буруу байна." };
+  if (!coreMathCourse.modules.some((item) => item.id === moduleId)) return { error: "Хичээл буруу байна." };
   if (!objectives.length || !sections.length) return { error: "Дор хаяж нэг зорилго, нэг агуулгын хэсэг нэмнэ үү." };
 
   const supabase = await createClient();
@@ -51,5 +51,5 @@ export async function createLesson(_: LessonFormState, formData: FormData): Prom
   revalidatePath("/admin/lessons");
   revalidatePath("/lesson");
   revalidatePath(`/lesson/${coreMathCourse.slug}`);
-  return { success: status === "published" ? "Хичээл нийтлэгдлээ." : "Draft хичээл хадгалагдлаа." };
+  return { success: status === "published" ? "Сэдэв нийтлэгдлээ." : "Draft сэдэв хадгалагдлаа." };
 }
