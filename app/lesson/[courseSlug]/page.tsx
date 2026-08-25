@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { CourseOverview } from "@/components/lesson/course-overview";
 import { getLessonProgress } from "@/lib/data/lesson-progress";
 import { coreMathCourse } from "@/lib/learning/course-catalog";
+import { getCourseCatalog } from "@/lib/data/course-catalog";
 
 type CoursePageProps = { params: Promise<{ courseSlug: string }> };
 
@@ -17,6 +18,6 @@ export async function generateMetadata({ params }: CoursePageProps): Promise<Met
 export default async function CoursePage({ params }: CoursePageProps) {
   const { courseSlug } = await params;
   if (courseSlug !== coreMathCourse.slug) notFound();
-  const { progress } = await getLessonProgress(`/lesson/${courseSlug}`);
-  return <><Navbar/><CourseOverview progress={progress}/></>;
+  const [{ progress }, course] = await Promise.all([getLessonProgress(`/lesson/${courseSlug}`), getCourseCatalog()]);
+  return <><Navbar/><CourseOverview progress={progress} course={course}/></>;
 }

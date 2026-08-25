@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen, CheckCircle2, Clock3, Layers3, Sparkles } from "lucide-react";
 import type { LessonProgress } from "@/lib/data/lesson-progress";
-import { coreMathCourse } from "@/lib/learning/course-catalog";
+import type { Course } from "@/lib/learning/course-catalog";
 
-export function ProgramCatalog({ progress }: { progress: LessonProgress[] }) {
+export function ProgramCatalog({ progress, course }: { progress: LessonProgress[]; course: Course }) {
   const completed = new Set(progress.filter((item) => item.completed_at).map((item) => item.lesson_id));
-  const lessonCount = coreMathCourse.modules.reduce((sum, item) => sum + item.lessons.length, 0);
+  const lessonCount = course.modules.reduce((sum, item) => sum + item.lessons.length, 0);
   const percent = Math.round((completed.size / lessonCount) * 100);
 
   return <main className="min-h-[calc(100vh-79px)] bg-[#f5f6fa] text-[#111735]">
@@ -24,17 +24,17 @@ export function ProgramCatalog({ progress }: { progress: LessonProgress[] }) {
           <div className="relative bg-[#0b102e] p-7 text-white sm:p-9">
             <div className="absolute right-7 top-7 grid h-14 w-14 place-items-center rounded-2xl bg-white/10 text-violet-300"><BookOpen size={25}/></div>
             <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold ring-1 ring-white/10">ЦӨМ ХӨТӨЛБӨР</span>
-            <h3 className="mt-7 max-w-md text-3xl font-semibold leading-tight">{coreMathCourse.title}</h3>
-            <p className="mt-4 max-w-lg text-sm leading-6 text-slate-400">{coreMathCourse.description}</p>
+            <h3 className="mt-7 max-w-md text-3xl font-semibold leading-tight">{course.title}</h3>
+            <p className="mt-4 max-w-lg text-sm leading-6 text-slate-400">{course.description}</p>
           </div>
           <div className="p-6 sm:p-7">
             <div className="grid grid-cols-3 gap-3 text-sm">
-              <Metric icon={<Layers3 size={16}/>} value={coreMathCourse.modules.length} label="Модуль"/>
+              <Metric icon={<Layers3 size={16}/>} value={course.modules.length} label="Модуль"/>
               <Metric icon={<BookOpen size={16}/>} value={lessonCount} label="Хичээл"/>
-              <Metric icon={<Clock3 size={16}/>} value={coreMathCourse.estimate} label="Хугацаа"/>
+              <Metric icon={<Clock3 size={16}/>} value={course.estimate} label="Хугацаа"/>
             </div>
             {completed.size > 0 && <div className="mt-6"><div className="flex justify-between text-xs"><span className="inline-flex items-center gap-1.5 font-medium text-slate-600"><CheckCircle2 size={14} className="text-emerald-600"/>Таны явц</span><strong>{percent}%</strong></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#8057eb]" style={{width:`${percent}%`}}/></div></div>}
-            <Link href={`/lesson/${coreMathCourse.slug}`} className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#3151e8] px-5 text-sm font-semibold text-white hover:bg-[#2945cc]">{completed.size ? "Хөтөлбөр үргэлжлүүлэх" : "Хөтөлбөр сонгох"}<ArrowRight size={17}/></Link>
+            <Link href={`/lesson/${course.slug}`} className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#3151e8] px-5 text-sm font-semibold text-white hover:bg-[#2945cc]">{completed.size ? "Хөтөлбөр үргэлжлүүлэх" : "Хөтөлбөр сонгох"}<ArrowRight size={17}/></Link>
           </div>
         </article>
 

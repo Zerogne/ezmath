@@ -14,6 +14,8 @@ export type CourseModule = {
   lessons: Lesson[];
 };
 
+export type Course = Omit<typeof coreMathCourse, "modules"> & { modules: CourseModule[] };
+
 const lesson = (
   id: string,
   title: string,

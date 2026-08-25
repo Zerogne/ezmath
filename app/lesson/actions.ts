@@ -7,12 +7,15 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export async function updateLessonProgress(lessonId: string, completed: boolean) {
-  if (!allLessons.some((item) => item.id === lessonId)) throw new Error("Хичээл олдсонгүй.");
   if (!isSupabaseConfigured()) return;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(`/lesson/theory-core/${lessonId}`)}`);
+  if (!allLessons.some((item) => item.id === lessonId)) {
+    const { data } = await supabase.from("course_lessons").select("slug").eq("slug", lessonId).eq("status", "published").maybeSingle();
+    if (!data) throw new Error("Хичээл олдсонгүй.");
+  }
 
   const now = new Date().toISOString();
   const { error } = await supabase.from("student_lesson_progress").upsert(
