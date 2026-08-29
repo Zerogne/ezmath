@@ -29,6 +29,7 @@ function credentials(formData: FormData) {
     password: String(formData.get("password") ?? ""),
     fullName: String(formData.get("fullName") ?? "").trim(),
     next: safeNext(String(formData.get("next") ?? "")),
+    role: String(formData.get("role") ?? "student") === "teacher" ? "teacher" as const : "student" as const,
   };
 }
 
@@ -44,19 +45,19 @@ export async function signIn(_state: AuthState, formData: FormData): Promise<Aut
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: "Имэйл эсвэл нууц үг буруу байна." };
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
-  redirect(next ?? (profile?.role === "admin" ? "/admin" : "/dashboard"));
+  redirect(next ?? (profile?.role === "admin" ? "/admin" : profile?.role === "teacher" ? "/teacher" : "/dashboard"));
 }
 
 export async function signUp(_state: AuthState, formData: FormData): Promise<AuthState> {
   if (!isSupabaseConfigured()) return { error: "Supabase тохируулагдаагүй байна. Environment variables-аа нэмнэ үү." };
-  const { email, password, fullName, next } = credentials(formData);
+  const { email, password, fullName, next, role } = credentials(formData);
   if (!email || !fullName || password.length < 8) return { error: "Нэр, зөв имэйл болон 8-аас дээш тэмдэгттэй нууц үг оруулна уу." };
   const admin = createAdminClient();
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName },
+    user_metadata: { full_name: fullName, role },
   });
   if (error || !data.user) return { error: signUpErrorMessage(error?.code) };
   const supabase = await createClient();
@@ -65,7 +66,7 @@ export async function signUp(_state: AuthState, formData: FormData): Promise<Aut
     await admin.auth.admin.deleteUser(data.user.id);
     return { error: "Бүртгэл үүссэн ч нэвтрүүлж чадсангүй. Дахин оролдоно уу." };
   }
-  redirect(next ?? "/dashboard");
+  redirect(next ?? (role === "teacher" ? "/teacher" : "/dashboard"));
 }
 
 export async function signOut() {

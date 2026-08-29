@@ -1,7 +1,9 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = { Row: Row; Insert: Insert; Update: Update; Relationships: [] };
 
-type Profile = { id: string; full_name: string | null; avatar_url: string | null; role: "student" | "admin"; created_at: string };
+type Profile = { id: string; full_name: string | null; avatar_url: string | null; role: "student" | "teacher" | "admin"; created_at: string };
+type ClassroomRow = { id: string; teacher_id: string; name: string; code: string; created_at: string; updated_at: string };
+type ClassroomStudentRow = { classroom_id: string; student_id: string; joined_at: string };
 type TestRow = { id: string; exam_type: "SAT" | "EYESH"; title: string; subject: string; year: number | null; duration_minutes: number; difficulty: "Easy" | "Medium" | "Hard" | null; test_type: "full" | "practice" | "previous-year"; status: "draft" | "published" | "archived"; instructions: string | null; created_by: string | null; created_at: string; updated_at: string };
 type QuestionRow = { id: string; test_id: string; question_number: number; question_text: string; question_type: string; topic: string | null; difficulty: "Easy" | "Medium" | "Hard" | null; explanation: string | null; image_url: string | null; created_at: string; updated_at: string };
 type ChoiceRow = { id: string; question_id: string; label: string; text: string; is_correct: boolean; sort_order: number };
@@ -17,7 +19,9 @@ type CourseLessonRow = { id: string; slug: string; course_slug: string; module_i
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "admin" }>;
+      profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "teacher" | "admin" }>;
+      classrooms: Table<ClassroomRow, Pick<ClassroomRow, "teacher_id" | "name" | "code"> & Partial<ClassroomRow>>;
+      classroom_students: Table<ClassroomStudentRow, ClassroomStudentRow>;
       tests: Table<TestRow, Omit<TestRow, "id" | "created_at" | "updated_at"> & { id?: string }>;
       questions: Table<QuestionRow, Omit<QuestionRow, "id" | "created_at" | "updated_at"> & { id?: string }>;
       answer_choices: Table<ChoiceRow, Omit<ChoiceRow, "id"> & { id?: string }>;
@@ -55,7 +59,7 @@ export type Database = {
       exam_type: "SAT" | "EYESH";
       test_type: "full" | "practice" | "previous-year";
       difficulty: "Easy" | "Medium" | "Hard";
-      profile_role: "student" | "admin";
+      profile_role: "student" | "teacher" | "admin";
       content_status: "draft" | "published" | "archived";
       attempt_status: "not_started" | "in_progress" | "submitted";
     };

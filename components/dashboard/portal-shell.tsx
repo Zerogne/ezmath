@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { BarChart3, BookOpen, CircleHelp, ClipboardCheck, Home, Menu, Settings, Target } from "lucide-react";
+import { BarChart3, BookOpen, CircleHelp, ClipboardCheck, Home, Menu, Settings, Target, Users } from "lucide-react";
 
 const items = [
   ["Хяналтын самбар", "/dashboard", Home], ["Миний хичээлүүд", "/dashboard/courses", BookOpen],
   ["Дасгал", "/dashboard/exercises", Target], ["Сорил & шалгалт", "/dashboard/exams", ClipboardCheck],
   ["Явцын тайлан", "/dashboard/progress", BarChart3], ["Багшаас асуух", "/dashboard/ask", CircleHelp],
   ["Тохиргоо", "/dashboard/settings", Settings],
+  ["Миний анги", "/dashboard/classes", Users],
 ] as const;
 
 export function PortalShell({ active, children }: { active: string; children: React.ReactNode }) {
