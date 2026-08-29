@@ -5,8 +5,8 @@ const items = [
   ["Хяналтын самбар", "/dashboard", Home], ["Миний хичээлүүд", "/dashboard/courses", BookOpen],
   ["Дасгал", "/dashboard/exercises", Target], ["Сорил & шалгалт", "/dashboard/exams", ClipboardCheck],
   ["Явцын тайлан", "/dashboard/progress", BarChart3], ["Багшаас асуух", "/dashboard/ask", CircleHelp],
-  ["Тохиргоо", "/dashboard/settings", Settings],
   ["Миний анги", "/dashboard/classes", Users],
+  ["Тохиргоо", "/dashboard/settings", Settings],
 ] as const;
 
 export function PortalShell({ active, children }: { active: string; children: React.ReactNode }) {
