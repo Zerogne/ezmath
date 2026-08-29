@@ -16,7 +16,7 @@ export async function GET(request: Request) {
         await admin.from("profiles").update({ role: "student", school_id: null }).eq("id", data.user.id);
         effectiveRole = "student";
       }
-      const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : effectiveRole === "admin" ? "/admin" : effectiveRole === "teacher" ? "/teacher" : "/dashboard";
+      const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : effectiveRole === "admin" ? "/admin" : effectiveRole === "school_admin" ? "/school" : effectiveRole === "teacher" ? "/teacher" : "/dashboard";
       return NextResponse.redirect(new URL(next, url.origin));
     }
   }

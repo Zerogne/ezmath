@@ -1,7 +1,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = { Row: Row; Insert: Insert; Update: Update; Relationships: [] };
 
-type Profile = { id: string; full_name: string | null; avatar_url: string | null; role: "student" | "teacher" | "admin"; school_id: string | null; created_at: string };
+type Profile = { id: string; full_name: string | null; avatar_url: string | null; role: "student" | "teacher" | "school_admin" | "admin"; school_id: string | null; created_at: string };
 type SchoolRow = { id: string; name: string; slug: string; is_active: boolean; registration_code_hash: string; created_at: string };
 type ClassroomRow = { id: string; teacher_id: string; school_id: string; name: string; code: string; created_at: string; updated_at: string };
 type ClassroomStudentRow = { classroom_id: string; student_id: string; joined_at: string };
@@ -20,7 +20,7 @@ type CourseLessonRow = { id: string; slug: string; course_slug: string; module_i
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "teacher" | "admin"; school_id?: string | null }>;
+      profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "teacher" | "school_admin" | "admin"; school_id?: string | null }>;
       schools: Table<SchoolRow, Pick<SchoolRow, "name" | "slug"> & Partial<SchoolRow>>;
       classrooms: Table<ClassroomRow, Pick<ClassroomRow, "teacher_id" | "school_id" | "name" | "code"> & Partial<ClassroomRow>>;
       classroom_students: Table<ClassroomStudentRow, ClassroomStudentRow>;
@@ -61,7 +61,7 @@ export type Database = {
       exam_type: "SAT" | "EYESH";
       test_type: "full" | "practice" | "previous-year";
       difficulty: "Easy" | "Medium" | "Hard";
-      profile_role: "student" | "teacher" | "admin";
+      profile_role: "student" | "teacher" | "school_admin" | "admin";
       content_status: "draft" | "published" | "archived";
       attempt_status: "not_started" | "in_progress" | "submitted";
     };

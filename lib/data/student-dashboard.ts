@@ -38,6 +38,7 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
     listPublishedTests(),
   ]);
   if (profile?.role === "admin") redirect("/admin");
+  if (profile?.role === "school_admin") redirect("/school");
   if (profile?.role === "teacher") redirect("/teacher");
   const subscriptionIsCurrent = subscription && (!subscription.current_period_end || new Date(subscription.current_period_end) > new Date());
 

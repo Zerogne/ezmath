@@ -20,6 +20,7 @@ export async function getPortalData() {
     supabase.from("student_support_questions").select("id, subject, message, status, answer, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
   ]);
   if (profileResult.data?.role === "admin") redirect("/admin");
+  if (profileResult.data?.role === "school_admin") redirect("/school");
   if (profileResult.data?.role === "teacher") redirect("/teacher");
   const subscription = subscriptionResult.data;
   const current = subscription && (!subscription.current_period_end || new Date(subscription.current_period_end) > new Date());

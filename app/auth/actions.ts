@@ -48,7 +48,7 @@ export async function signIn(_state: AuthState, formData: FormData): Promise<Aut
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: "Имэйл эсвэл нууц үг буруу байна." };
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
-  redirect(next ?? (profile?.role === "admin" ? "/admin" : profile?.role === "teacher" ? "/teacher" : "/dashboard"));
+  redirect(next ?? (profile?.role === "admin" ? "/admin" : profile?.role === "school_admin" ? "/school" : profile?.role === "teacher" ? "/teacher" : "/dashboard"));
 }
 
 export async function signUp(_state: AuthState, formData: FormData): Promise<AuthState> {
