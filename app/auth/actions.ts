@@ -30,6 +30,7 @@ function credentials(formData: FormData) {
     fullName: String(formData.get("fullName") ?? "").trim(),
     next: safeNext(String(formData.get("next") ?? "")),
     role: String(formData.get("role") ?? "student") === "teacher" ? "teacher" as const : "student" as const,
+    schoolSlug: String(formData.get("school") ?? ""),
   };
 }
 
@@ -50,14 +51,15 @@ export async function signIn(_state: AuthState, formData: FormData): Promise<Aut
 
 export async function signUp(_state: AuthState, formData: FormData): Promise<AuthState> {
   if (!isSupabaseConfigured()) return { error: "Supabase тохируулагдаагүй байна. Environment variables-аа нэмнэ үү." };
-  const { email, password, fullName, next, role } = credentials(formData);
+  const { email, password, fullName, next, role, schoolSlug } = credentials(formData);
   if (!email || !fullName || password.length < 8) return { error: "Нэр, зөв имэйл болон 8-аас дээш тэмдэгттэй нууц үг оруулна уу." };
+  if (role === "teacher" && schoolSlug !== "amjilt-cyber") return { error: "Сургуулиа сонгоно уу." };
   const admin = createAdminClient();
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName, role },
+    user_metadata: { full_name: fullName, role, school_slug: role === "teacher" ? schoolSlug : null },
   });
   if (error || !data.user) return { error: signUpErrorMessage(error?.code) };
   const supabase = await createClient();

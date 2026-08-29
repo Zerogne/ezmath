@@ -1,7 +1,10 @@
-import Link from "next/link";
-import { GraduationCap, LayoutDashboard } from "lucide-react";
+import { GraduationCap, LayoutDashboard, LogOut, School } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
+import { AppPortalShell } from "@/components/dashboard/app-portal-shell";
 
-export function TeacherShell({ children, name }: { children: React.ReactNode; name: string }) {
-  return <div className="min-h-screen bg-[#f6f7fb]"><header className="border-b bg-white"><div className="mx-auto flex h-16 max-w-[1240px] items-center gap-4 px-4 sm:px-6"><Link href="/teacher" className="flex items-center gap-2.5 text-lg font-semibold"><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-white">∑</span>EzMath</Link><nav className="ml-6 hidden sm:block"><Link href="/teacher" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><LayoutDashboard size={16}/>Багшийн самбар</Link></nav><div className="ml-auto flex items-center gap-3"><span className="hidden items-center gap-2 text-sm sm:flex"><GraduationCap size={17} className="text-primary"/>{name}</span><form action={signOut}><button className="rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-muted">Гарах</button></form></div></div></header><main className="mx-auto max-w-[1240px] px-4 py-7 sm:px-6 sm:py-9">{children}</main></div>;
+const items = [["Хяналтын самбар", "/teacher", LayoutDashboard]] as const;
+
+export function TeacherShell({ children, name, schoolName = "Amjilt Cyber" }: { children: React.ReactNode; name: string; schoolName?: string }) {
+  const footer = <div className="rounded-[14px] bg-[#0b1030] p-4 text-white"><div className="flex items-center gap-2"><GraduationCap size={17} className="text-emerald-400"/><p className="truncate text-sm font-semibold">{name}</p></div><p className="mt-2 flex items-center gap-1.5 text-xs text-slate-400"><School size={13}/>{schoolName}</p><form action={signOut}><button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 py-2 text-xs font-semibold hover:bg-white/10"><LogOut size={14}/>Гарах</button></form></div>;
+  return <AppPortalShell active="/teacher" items={items} navigationLabel="Багшийн цэс" footer={footer}>{children}</AppPortalShell>;
 }

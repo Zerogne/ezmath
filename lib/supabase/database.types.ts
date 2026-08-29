@@ -1,7 +1,8 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = { Row: Row; Insert: Insert; Update: Update; Relationships: [] };
 
-type Profile = { id: string; full_name: string | null; avatar_url: string | null; role: "student" | "teacher" | "admin"; created_at: string };
+type Profile = { id: string; full_name: string | null; avatar_url: string | null; role: "student" | "teacher" | "admin"; school_id: string | null; created_at: string };
+type SchoolRow = { id: string; name: string; slug: string; is_active: boolean; created_at: string };
 type ClassroomRow = { id: string; teacher_id: string; name: string; code: string; created_at: string; updated_at: string };
 type ClassroomStudentRow = { classroom_id: string; student_id: string; joined_at: string };
 type TestRow = { id: string; exam_type: "SAT" | "EYESH"; title: string; subject: string; year: number | null; duration_minutes: number; difficulty: "Easy" | "Medium" | "Hard" | null; test_type: "full" | "practice" | "previous-year"; status: "draft" | "published" | "archived"; instructions: string | null; created_by: string | null; created_at: string; updated_at: string };
@@ -19,7 +20,8 @@ type CourseLessonRow = { id: string; slug: string; course_slug: string; module_i
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "teacher" | "admin" }>;
+      profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "teacher" | "admin"; school_id?: string | null }>;
+      schools: Table<SchoolRow, Pick<SchoolRow, "name" | "slug"> & Partial<SchoolRow>>;
       classrooms: Table<ClassroomRow, Pick<ClassroomRow, "teacher_id" | "name" | "code"> & Partial<ClassroomRow>>;
       classroom_students: Table<ClassroomStudentRow, ClassroomStudentRow>;
       tests: Table<TestRow, Omit<TestRow, "id" | "created_at" | "updated_at"> & { id?: string }>;

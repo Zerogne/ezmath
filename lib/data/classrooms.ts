@@ -8,7 +8,7 @@ async function currentUser(expectedRole: "student" | "teacher", nextPath: string
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(nextPath)}`);
-  const { data: profile } = await supabase.from("profiles").select("full_name, role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("full_name, role, school_id").eq("id", user.id).single();
   if (profile?.role === "admin") redirect("/admin");
   if (profile?.role !== expectedRole) redirect(expectedRole === "teacher" ? "/dashboard" : "/teacher");
   return { user, profile };
@@ -35,10 +35,11 @@ export async function getStudentClasses() {
 export async function getTeacherOverview(classroomId?: string) {
   const { user, profile } = await requireTeacher(classroomId ? `/teacher/classes/${classroomId}` : "/teacher");
   const admin = createAdminClient();
+  const { data: school } = profile?.school_id ? await admin.from("schools").select("name").eq("id", profile.school_id).maybeSingle() : { data: null };
   const { data: classes, error } = await admin.from("classrooms").select("id, name, code, created_at").eq("teacher_id", user.id).order("created_at", { ascending: false });
   if (error) throw new Error("Ангиудыг ачаалж чадсангүй.");
   const selected = classroomId ? classes?.find((item) => item.id === classroomId) : undefined;
-  if (classroomId && !selected) return { teacherName: profile?.full_name || "Багш", classes: classes ?? [], selected: null, students: [] };
+  if (classroomId && !selected) return { teacherName: profile?.full_name || "Багш", schoolName: school?.name || "Amjilt Cyber", classes: classes ?? [], selected: null, students: [] };
   const classIds = selected ? [selected.id] : (classes ?? []).map((item) => item.id);
   const { data: memberships } = classIds.length ? await admin.from("classroom_students").select("classroom_id, student_id, joined_at").in("classroom_id", classIds) : { data: [] };
   const studentIds = [...new Set((memberships ?? []).map((item) => item.student_id))];
@@ -65,5 +66,5 @@ export async function getTeacherOverview(classroomId?: string) {
     const latestTimes = [...studentAttempts.map((item) => item.completed_at), ...studentLessons.map((item) => item.last_opened_at)].filter(Boolean).map(String).sort();
     return { id, name: profilesById.get(id)?.full_name || "Нэргүй сурагч", avatarUrl: profilesById.get(id)?.avatar_url ?? null, classIds: (memberships ?? []).filter((item) => item.student_id === id).map((item) => item.classroom_id), joinedAt: (memberships ?? []).find((item) => item.student_id === id)?.joined_at ?? "", completedLessons: studentLessons.filter((item) => item.completed_at).length, openedLessons: studentLessons.length, attempts: studentAttempts.length, accuracy: total ? Math.round(correct / total * 100) : 0, latestActivity: latestTimes.at(-1) ?? null, history: studentAttempts.map((item) => ({ ...item, test: testsById.get(item.test_id), answers: answerTotals.get(item.id) ?? { correct: 0, total: 0 } })) };
   });
-  return { teacherName: profile?.full_name || "Багш", classes: classes ?? [], selected: selected ?? null, students };
+  return { teacherName: profile?.full_name || "Багш", schoolName: school?.name || "Amjilt Cyber", classes: classes ?? [], selected: selected ?? null, students };
 }
