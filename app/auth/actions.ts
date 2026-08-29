@@ -55,7 +55,7 @@ export async function signUp(_state: AuthState, formData: FormData): Promise<Aut
   if (!isSupabaseConfigured()) return { error: "Supabase тохируулагдаагүй байна. Environment variables-аа нэмнэ үү." };
   const { email, password, fullName, next, role, schoolSlug, schoolCode } = credentials(formData);
   if (!email || !fullName || password.length < 8) return { error: "Нэр, зөв имэйл болон 8-аас дээш тэмдэгттэй нууц үг оруулна уу." };
-  if (role === "teacher" && schoolSlug !== "amjilt-cyber") return { error: "Сургуулиа сонгоно уу." };
+  if (role === "teacher" && !schoolSlug) return { error: "Сургуулиа сонгоно уу." };
   const admin = createAdminClient();
   let schoolId: string | null = null;
   if (role === "teacher") {
