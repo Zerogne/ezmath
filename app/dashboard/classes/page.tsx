@@ -6,7 +6,7 @@ import { joinClass, leaveClass } from "./actions";
 
 export const metadata: Metadata = { title: "Миний анги" };
 
-const errors: Record<string, string> = { "invalid-code": "Ангийн кодоо зөв оруулна уу.", "not-found": "Ийм кодтой анги олдсонгүй.", "join-failed": "Ангид нэгдэж чадсангүй. Дахин оролдоно уу." };
+const errors: Record<string, string> = { "invalid-code": "Ангийн кодоо зөв оруулна уу.", "not-found": "Ийм кодтой анги олдсонгүй.", "wrong-school": "Энэ анги өөр сургуульд харьяалагдаж байна.", "join-failed": "Ангид нэгдэж чадсангүй. Дахин оролдоно уу." };
 
 export default async function ClassesPage({ searchParams }: { searchParams: Promise<{ error?: string; joined?: string }> }) {
   const [classes, query] = await Promise.all([getStudentClasses(), searchParams]);
