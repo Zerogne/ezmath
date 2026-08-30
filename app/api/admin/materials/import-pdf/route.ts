@@ -260,7 +260,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const provider = stringValue(form.get("provider")) as Provider;
     const submittedApiKey = stringValue(form.get("apiKey"));
-    const model = stringValue(form.get("model"), defaults[provider]);
+    const model = stringValue(form.get("model")) || defaults[provider];
     const examType = stringValue(form.get("examType")) as ExamType;
     const file = form.get("file");
     if (!Object.hasOwn(defaults, provider)) return NextResponse.json({ error: "AI provider буруу байна." }, { status: 400 });
