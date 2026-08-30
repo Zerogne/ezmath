@@ -6,6 +6,21 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { SubmissionPayload, SubmissionResult } from "@/lib/exam/test-types";
 
+export async function startTestAttempt(testId: string, startedAt: string) {
+  if (!isSupabaseConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  const authClient = await createClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) throw new Error("Шалгалтаа эхлүүлэхийн тулд нэвтэрнэ үү.");
+  const admin = createAdminClient();
+  const { data: test } = await admin.from("tests").select("id").eq("id", testId).eq("status", "published").maybeSingle();
+  if (!test) return null;
+  const { data: existing } = await admin.from("test_attempts").select("id").eq("user_id", user.id).eq("test_id", testId).eq("status", "in_progress").order("started_at", { ascending: false }).limit(1).maybeSingle();
+  if (existing) return existing.id;
+  const { data, error } = await admin.from("test_attempts").insert({ user_id: user.id, test_id: testId, started_at: startedAt, status: "in_progress" }).select("id").single();
+  if (error || !data) throw new Error("Оролдлого үүсгэж чадсангүй.");
+  return data.id;
+}
+
 export async function submitTestAttempt(payload: SubmissionPayload): Promise<SubmissionResult> {
   const test = getTest(payload.testId);
   const questions = getQuestions(payload.testId);

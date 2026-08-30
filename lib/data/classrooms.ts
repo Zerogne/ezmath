@@ -50,21 +50,26 @@ export async function getTeacherOverview(classroomId?: string) {
   ]);
   const testIds = [...new Set((attempts ?? []).map((item) => item.test_id))];
   const attemptIds = (attempts ?? []).map((item) => item.id);
-  const [{ data: tests }, { data: answers }] = await Promise.all([
+  const [{ data: tests }, { data: answers }, { data: integrityEvents }] = await Promise.all([
     testIds.length ? admin.from("tests").select("id, title, exam_type, subject").in("id", testIds) : Promise.resolve({ data: [] }),
     attemptIds.length ? admin.from("attempt_answers").select("attempt_id, is_correct").in("attempt_id", attemptIds) : Promise.resolve({ data: [] }),
+    attemptIds.length ? admin.from("test_integrity_events").select("attempt_id, event_type, occurred_at").in("attempt_id", attemptIds).order("occurred_at") : Promise.resolve({ data: [] }),
   ]);
   const testsById = new Map((tests ?? []).map((item) => [item.id, item]));
   const answerTotals = new Map<string, { correct: number; total: number }>();
   for (const answer of answers ?? []) { const total = answerTotals.get(answer.attempt_id) ?? { correct: 0, total: 0 }; total.total++; if (answer.is_correct) total.correct++; answerTotals.set(answer.attempt_id, total); }
+  const integrityByAttempt = new Map<string, { eventType: string; occurredAt: string }[]>();
+  for (const event of integrityEvents ?? []) integrityByAttempt.set(event.attempt_id, [...(integrityByAttempt.get(event.attempt_id) ?? []), { eventType: event.event_type, occurredAt: event.occurred_at }]);
   const profilesById = new Map((profiles ?? []).map((item) => [item.id, item]));
   const students = studentIds.map((id) => {
-    const studentAttempts = (attempts ?? []).filter((item) => item.user_id === id && item.status === "submitted");
+    const allStudentAttempts = (attempts ?? []).filter((item) => item.user_id === id);
+    const studentAttempts = allStudentAttempts.filter((item) => item.status === "submitted");
     const studentLessons = (lessons ?? []).filter((item) => item.user_id === id);
     const correct = studentAttempts.reduce((sum, item) => sum + (answerTotals.get(item.id)?.correct ?? 0), 0);
     const total = studentAttempts.reduce((sum, item) => sum + (answerTotals.get(item.id)?.total ?? 0), 0);
     const latestTimes = [...studentAttempts.map((item) => item.completed_at), ...studentLessons.map((item) => item.last_opened_at)].filter(Boolean).map(String).sort();
-    return { id, name: profilesById.get(id)?.full_name || "Нэргүй сурагч", avatarUrl: profilesById.get(id)?.avatar_url ?? null, classIds: (memberships ?? []).filter((item) => item.student_id === id).map((item) => item.classroom_id), joinedAt: (memberships ?? []).find((item) => item.student_id === id)?.joined_at ?? "", completedLessons: studentLessons.filter((item) => item.completed_at).length, openedLessons: studentLessons.length, attempts: studentAttempts.length, accuracy: total ? Math.round(correct / total * 100) : 0, latestActivity: latestTimes.at(-1) ?? null, history: studentAttempts.map((item) => ({ ...item, test: testsById.get(item.test_id), answers: answerTotals.get(item.id) ?? { correct: 0, total: 0 } })) };
+    const studentIntegrityEvents = allStudentAttempts.reduce((sum, item) => sum + (integrityByAttempt.get(item.id)?.length ?? 0), 0);
+    return { id, name: profilesById.get(id)?.full_name || "Нэргүй сурагч", avatarUrl: profilesById.get(id)?.avatar_url ?? null, classIds: (memberships ?? []).filter((item) => item.student_id === id).map((item) => item.classroom_id), joinedAt: (memberships ?? []).find((item) => item.student_id === id)?.joined_at ?? "", completedLessons: studentLessons.filter((item) => item.completed_at).length, openedLessons: studentLessons.length, attempts: studentAttempts.length, accuracy: total ? Math.round(correct / total * 100) : 0, latestActivity: latestTimes.at(-1) ?? null, integrityEvents: studentIntegrityEvents, flaggedAttempts: allStudentAttempts.filter((item) => (integrityByAttempt.get(item.id)?.length ?? 0) > 0).length, integrityAlerts: allStudentAttempts.filter((item) => (integrityByAttempt.get(item.id)?.length ?? 0) > 0).map((item) => ({ attemptId: item.id, status: item.status, test: testsById.get(item.test_id), events: integrityByAttempt.get(item.id) ?? [] })), history: studentAttempts.map((item) => ({ ...item, test: testsById.get(item.test_id), answers: answerTotals.get(item.id) ?? { correct: 0, total: 0 }, integrityEvents: integrityByAttempt.get(item.id) ?? [] })) };
   });
   return { teacherName: profile?.full_name || "Багш", schoolName: school?.name || "Amjilt Cyber", classes: classes ?? [], selected: selected ?? null, students };
 }
