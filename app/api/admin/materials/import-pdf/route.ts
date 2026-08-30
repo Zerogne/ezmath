@@ -12,7 +12,7 @@ type Provider = "openai" | "anthropic" | "gemini" | "nvidia";
 
 const defaults: Record<Provider, string> = {
   openai: "gpt-4o-mini",
-  anthropic: "claude-sonnet-4-6",
+  anthropic: "claude-haiku-4-5-20251001",
   gemini: "gemini-2.5-flash",
   nvidia: "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 };
@@ -53,7 +53,7 @@ async function requestJson(provider: Provider, apiKey: string, model: string, pr
     response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
-      body: JSON.stringify({ model, max_tokens: 32000, messages: [{ role: "user", content: [{ type: "document", source: { type: "base64", media_type: "application/pdf", data: pdfBase64 } }, { type: "text", text: prompt }] }] }),
+      body: JSON.stringify({ model, max_tokens: 32000, temperature: 0.1, messages: [{ role: "user", content: [{ type: "text", text: prompt }] }] }),
     });
   } else if (provider === "gemini") {
     response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
@@ -223,12 +223,19 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const provider = stringValue(form.get("provider")) as Provider;
-    const apiKey = stringValue(form.get("apiKey"));
+    const submittedApiKey = stringValue(form.get("apiKey"));
     const model = stringValue(form.get("model"), defaults[provider]);
     const examType = stringValue(form.get("examType")) as ExamType;
     const file = form.get("file");
     if (!Object.hasOwn(defaults, provider)) return NextResponse.json({ error: "AI provider буруу байна." }, { status: 400 });
-    if (!apiKey) return NextResponse.json({ error: "API key оруулна уу." }, { status: 400 });
+    const serverApiKeys: Partial<Record<Provider, string | undefined>> = {
+      anthropic: process.env.ANTHROPIC_API_KEY,
+      openai: process.env.OPENAI_API_KEY,
+      gemini: process.env.GEMINI_API_KEY,
+      nvidia: process.env.NVIDIA_API_KEY,
+    };
+    const apiKey = submittedApiKey || serverApiKeys[provider];
+    if (!apiKey) return NextResponse.json({ error: `${provider} API key серверт тохируулаагүй байна.` }, { status: 400 });
     if (examType !== "SAT" && examType !== "EYESH") return NextResponse.json({ error: "Шалгалтын төрөл буруу байна." }, { status: 400 });
     if (!(file instanceof File) || file.type !== "application/pdf") return NextResponse.json({ error: "PDF файл сонгоно уу." }, { status: 400 });
     if (file.size <= 0 || file.size > 4 * 1024 * 1024) return NextResponse.json({ error: "PDF файл 4 MB-аас бага байх ёстой." }, { status: 400 });

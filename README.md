@@ -21,7 +21,7 @@ EzMath is a Mongolian SAT and ЭЕШ mathematics preparation platform. It combin
 - Student and payment views
 - SAT and ЭЕШ material management
 - Question and answer-choice editor
-- PDF import through OpenAI, Anthropic, Gemini, or NVIDIA APIs
+- PDF import through PyMuPDF4LLM and Claude Haiku 4.5, with optional provider fallbacks
 - Draft, published, and archived content states
 
 ## Technology
@@ -57,6 +57,7 @@ Open [http://localhost:3000](http://localhost:3000). Without Supabase configurat
 | `BYL_PROJECT_ID` | Server only | BYL merchant project identifier |
 | `BYL_API_TOKEN` | Server only | BYL Bearer token used to create hosted checkouts |
 | `BYL_WEBHOOK_SECRET` | Server only | BYL raw-body webhook signing secret |
+| `ANTHROPIC_API_KEY` | Server only | Claude Haiku key for converting PyMuPDF4LLM layout JSON into exam JSON |
 
 Never expose `SUPABASE_SERVICE_ROLE_KEY` through a `NEXT_PUBLIC_` variable or client component. Never enable `ADMIN_DEMO_MODE` in a deployed environment.
 
