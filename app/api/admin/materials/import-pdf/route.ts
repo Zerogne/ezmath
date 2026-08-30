@@ -17,7 +17,7 @@ const defaults: Record<Provider, string> = {
   nvidia: "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 };
 
-function extractionPrompt(examType: ExamType, layoutJson: string) {
+function extractionPrompt(examType: ExamType, layoutJson: string, chunk?: { index: number; total: number }) {
   return `Convert this ${examType} exam PDF into editable JSON. You are a transcription and layout parser only. Never solve a question, infer a correct answer, or copy an answer key. Preserve Mongolian Cyrillic, passages, math, and LaTeX. Remove printed question numbers. Normalize Cyrillic option labels А/Б/В/Г/Д to Latin A/B/C/D/E.
 
 Coordinates are normalized PDF page coordinates [x0,y0,x1,y1], each from 0 to 1. Return a tight imageBox for every diagram, graph, table, formula-as-image, or other visual required by a question. If an answer option is an image, leave its text empty and return its own tight imageBox. Do not use a full-page box.
@@ -29,6 +29,8 @@ Return ONLY valid JSON:
 Allowed type: full, practice, previous-year. Allowed difficulty: Easy, Medium, Hard. A multiple-choice question needs at least two choices whose text or imageBox is present. A multi-blank question needs at least one responseFields item shaped {"label":"af"}.
 
 PyMuPDF4LLM extracted the following native structured layout JSON. Treat it as the primary source for reading order, text, tables, formulas, picture regions, page numbers, and bounding boxes. Use the attached PDF only to resolve ambiguity. Convert absolute PyMuPDF4LLM bounding boxes to normalized page coordinates for imageBox.
+
+${chunk ? `This is layout chunk ${chunk.index + 1} of ${chunk.total}. Return only questions whose first content appears in this chunk. Keep the original PDF pageNumber values. Use an empty title/description when they are not present in this chunk.` : ""}
 
 PYMUPDF4LLM_LAYOUT_JSON:
 ${layoutJson}`;
@@ -213,9 +215,42 @@ async function extractLayout(request: Request, file: File) {
   const response = await fetch(new URL("/api/pdf_extract", request.url), { method: "POST", headers: { "x-extractor-secret": secret }, body: form });
   const body = await response.json().catch(() => ({})) as { layout?: unknown; detail?: string };
   if (!response.ok || !body.layout) throw new Error(body.detail ?? "PyMuPDF4LLM PDF бүтцийг уншиж чадсангүй.");
-  const serialized = JSON.stringify(body.layout);
-  if (serialized.length > 600_000) throw new Error("PDF-ийн бүтэц Claude Haiku-ийн нэг хүсэлтэд хэт том байна. PDF-ийг жижиг хэсгүүдэд хувааж импортлоно уу.");
-  return serialized;
+  return body.layout;
+}
+
+function splitLayout(layout: unknown, maxChars = 350_000): string[] {
+  const serialized = JSON.stringify(layout);
+  if (serialized.length <= maxChars) return [serialized];
+  const record = layout && typeof layout === "object" && !Array.isArray(layout) ? layout as Record<string, unknown> : null;
+  const pageKey = record ? Object.keys(record).find((key) => Array.isArray(record[key]) && /page/i.test(key)) : undefined;
+  const pages = Array.isArray(layout) ? layout : pageKey && Array.isArray(record?.[pageKey]) ? record[pageKey] : null;
+  if (!pages?.length) throw new Error("PyMuPDF4LLM layout хэт том бөгөөд хуудсаар хуваах бүтэц олдсонгүй.");
+  const chunks: string[] = [];
+  let current: unknown[] = [];
+  for (const page of pages) {
+    const candidate = [...current, page];
+    const wrapped = Array.isArray(layout) ? candidate : { ...record, [pageKey as string]: candidate };
+    if (current.length && JSON.stringify(wrapped).length > maxChars) {
+      chunks.push(JSON.stringify(Array.isArray(layout) ? current : { ...record, [pageKey as string]: current }));
+      current = [page];
+    } else {
+      current = candidate;
+    }
+  }
+  if (current.length) chunks.push(JSON.stringify(Array.isArray(layout) ? current : { ...record, [pageKey as string]: current }));
+  if (chunks.some((item) => item.length > maxChars * 1.5)) throw new Error("PDF-ийн нэг хуудасны бүтэц хэт том байна.");
+  return chunks;
+}
+
+function mergeImports(imports: Record<string, unknown>[]) {
+  const first = imports[0] ?? {};
+  return {
+    ...first,
+    title: imports.map((item) => stringValue(item.title)).find(Boolean) ?? "",
+    subject: imports.map((item) => stringValue(item.subject)).find(Boolean) ?? "",
+    description: imports.map((item) => stringValue(item.description)).find(Boolean) ?? "",
+    questions: imports.flatMap((item) => Array.isArray(item.questions) ? item.questions : []),
+  };
 }
 
 export async function POST(request: Request) {
@@ -247,11 +282,17 @@ export async function POST(request: Request) {
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") return NextResponse.json({ error: "Файл PDF форматтай биш байна." }, { status: 400 });
     stage = "pymupdf4llm";
-    const layoutJson = await extractLayout(request, file);
+    const layout = await extractLayout(request, file);
+    const layoutChunks = splitLayout(layout);
     stage = "claude_mapping";
-    const output = await requestJson(provider, apiKey, model, extractionPrompt(examType, layoutJson), Buffer.from(bytes).toString("base64"), layoutJson, file.name);
-    stage = "json_parse";
-    const raw = parseJson(output);
+    const imports: Record<string, unknown>[] = [];
+    for (const [index, layoutJson] of layoutChunks.entries()) {
+      stage = `claude_mapping_${index + 1}_of_${layoutChunks.length}`;
+      const output = await requestJson(provider, apiKey, model, extractionPrompt(examType, layoutJson, layoutChunks.length > 1 ? { index, total: layoutChunks.length } : undefined), Buffer.from(bytes).toString("base64"), layoutJson, file.name);
+      stage = `json_parse_${index + 1}_of_${layoutChunks.length}`;
+      imports.push(parseJson(output));
+    }
+    const raw = mergeImports(imports);
     stage = "image_extraction";
     const assets = await extractAndUploadImages(request, file, raw);
     stage = "normalization";
