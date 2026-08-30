@@ -214,12 +214,13 @@ async function extractLayout(request: Request, file: File) {
   const body = await response.json().catch(() => ({})) as { layout?: unknown; detail?: string };
   if (!response.ok || !body.layout) throw new Error(body.detail ?? "PyMuPDF4LLM PDF бүтцийг уншиж чадсангүй.");
   const serialized = JSON.stringify(body.layout);
-  if (serialized.length > 1_000_000) throw new Error("PDF-ийн бүтэц хэт том байна. Жижиг хэсгүүдэд хувааж импортлоно уу.");
+  if (serialized.length > 600_000) throw new Error("PDF-ийн бүтэц Claude Haiku-ийн нэг хүсэлтэд хэт том байна. PDF-ийг жижиг хэсгүүдэд хувааж импортлоно уу.");
   return serialized;
 }
 
 export async function POST(request: Request) {
   if (!await getAdminIdentity()) return NextResponse.json({ error: "Админ эрх шаардлагатай." }, { status: 403 });
+  let stage = "request";
   try {
     const form = await request.formData();
     const provider = stringValue(form.get("provider")) as Provider;
@@ -245,13 +246,19 @@ export async function POST(request: Request) {
     if (examType === "EYESH" && !["A", "B", "C", "D"].includes(selectedVariant)) return NextResponse.json({ error: "ЭЕШ-ийн хувилбар A–D байна." }, { status: 400 });
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") return NextResponse.json({ error: "Файл PDF форматтай биш байна." }, { status: 400 });
+    stage = "pymupdf4llm";
     const layoutJson = await extractLayout(request, file);
+    stage = "claude_mapping";
     const output = await requestJson(provider, apiKey, model, extractionPrompt(examType, layoutJson), Buffer.from(bytes).toString("base64"), layoutJson, file.name);
+    stage = "json_parse";
     const raw = parseJson(output);
+    stage = "image_extraction";
     const assets = await extractAndUploadImages(request, file, raw);
+    stage = "normalization";
     return NextResponse.json({ material: normalize(raw, examType, file.name, assets, selectedYear, selectedVariant) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "PDF импорт амжилтгүй боллоо.";
-    return NextResponse.json({ error: message }, { status: 422 });
+    console.error("PDF material import failed", { stage, error: message });
+    return NextResponse.json({ error: message, stage }, { status: 422 });
   }
 }
