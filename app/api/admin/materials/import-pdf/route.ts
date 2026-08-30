@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { PDFParse } from "pdf-parse";
 import { getAdminIdentity } from "@/lib/admin/auth";
 import type { MaterialEditorData, MaterialQuestion } from "@/lib/admin/material-types";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ExamType, TestType } from "@/types/exam";
 
 export const runtime = "nodejs";
@@ -11,16 +11,27 @@ export const maxDuration = 300;
 type Provider = "openai" | "anthropic" | "gemini" | "nvidia";
 
 const defaults: Record<Provider, string> = {
-  openai: "gpt-5-mini",
+  openai: "gpt-4o-mini",
   anthropic: "claude-sonnet-4-6",
   gemini: "gemini-2.5-flash",
   nvidia: "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 };
 
-function extractionPrompt(examType: ExamType) {
-  return `You convert an exam PDF into editable test data. Extract every ${examType} question and its answer choices from the PDF text below. Use the answer key when present. Preserve mathematical notation in readable plain text or LaTeX. Never invent missing answers. Return ONLY valid JSON with this exact shape:
-{"title":"string","subject":"string","year":2026,"durationMinutes":35,"type":"practice","description":"string","questions":[{"text":"string","choices":[{"label":"A","text":"string"}],"correctAnswer":"A","explanation":"string","topic":"string","difficulty":"Medium"}]}
-Allowed type values: full, practice, previous-year. Allowed difficulty values: Easy, Medium, Hard. Each question needs at least two non-empty choices. If the answer key is absent, use the first choice as correctAnswer and mention that review is required in explanation.`;
+function extractionPrompt(examType: ExamType, layoutJson: string) {
+  return `Convert this ${examType} exam PDF into editable JSON. You are a transcription and layout parser only. Never solve a question, infer a correct answer, or copy an answer key. Preserve Mongolian Cyrillic, passages, math, and LaTeX. Remove printed question numbers. Normalize Cyrillic option labels А/Б/В/Г/Д to Latin A/B/C/D/E.
+
+Coordinates are normalized PDF page coordinates [x0,y0,x1,y1], each from 0 to 1. Return a tight imageBox for every diagram, graph, table, formula-as-image, or other visual required by a question. If an answer option is an image, leave its text empty and return its own tight imageBox. Do not use a full-page box.
+
+For ordinary choices use questionType "multiple-choice". For EYESH part 2 written/fill questions use "multi-blank" and return every printed answer field label exactly (examples: af, bg, abc) in responseFields. These labels remain editable. Do not provide accepted answers.
+
+Return ONLY valid JSON:
+{"title":"string","subject":"string","year":2026,"durationMinutes":35,"type":"practice","description":"string","questions":[{"questionType":"multiple-choice","text":"string","pageNumber":1,"imageBox":null,"choices":[{"label":"A","text":"string","imageBox":null}],"responseFields":[],"explanation":"","topic":"string","difficulty":"Medium"}]}
+Allowed type: full, practice, previous-year. Allowed difficulty: Easy, Medium, Hard. A multiple-choice question needs at least two choices whose text or imageBox is present. A multi-blank question needs at least one responseFields item shaped {"label":"af"}.
+
+PyMuPDF4LLM extracted the following native structured layout JSON. Treat it as the primary source for reading order, text, tables, formulas, picture regions, page numbers, and bounding boxes. Use the attached PDF only to resolve ambiguity. Convert absolute PyMuPDF4LLM bounding boxes to normalized page coordinates for imageBox.
+
+PYMUPDF4LLM_LAYOUT_JSON:
+${layoutJson}`;
 }
 
 function apiError(provider: Provider, status: number, body: unknown) {
@@ -36,7 +47,7 @@ async function requestJson(provider: Provider, apiKey: string, model: string, pr
     response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model, input: [{ role: "user", content: [{ type: "input_file", filename, file_data: `data:application/pdf;base64,${pdfBase64}` }, { type: "input_text", text: prompt }] }] }),
+      body: JSON.stringify({ model, input: [{ role: "user", content: [{ type: "input_file", filename, file_data: `data:application/pdf;base64,${pdfBase64}` }, { type: "input_text", text: prompt }] }], temperature: 0.1 }),
     });
   } else if (provider === "anthropic") {
     response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -99,9 +110,9 @@ function parseJson(text: string) {
 
 function stringValue(value: unknown, fallback = "") { return typeof value === "string" ? value.trim() : fallback; }
 
-function normalize(raw: Record<string, unknown>, examType: ExamType, filename: string): MaterialEditorData {
+function normalize(raw: Record<string, unknown>, examType: ExamType, filename: string, assets: Record<string, string>, selectedYear?: number, selectedVariant?: "A" | "B" | "C" | "D"): MaterialEditorData {
   const rawQuestions = Array.isArray(raw.questions) ? raw.questions.slice(0, 200) : [];
-  const questions: MaterialQuestion[] = rawQuestions.flatMap((item) => {
+  const questions: MaterialQuestion[] = rawQuestions.flatMap((item, questionIndex) => {
     if (!item || typeof item !== "object") return [];
     const question = item as Record<string, unknown>;
     const rawChoices = Array.isArray(question.choices) ? question.choices : [];
@@ -109,15 +120,19 @@ function normalize(raw: Record<string, unknown>, examType: ExamType, filename: s
       if (!choice || typeof choice !== "object") return [];
       const record = choice as Record<string, unknown>;
       const text = stringValue(record.text);
-      if (!text) return [];
-      return [{ id: randomUUID(), label: stringValue(record.label, String.fromCharCode(65 + index)).slice(0, 5), text }];
+      const imageUrl = assets[`q-${questionIndex}-c-${index}`] ?? "";
+      if (!text && !imageUrl) return [];
+      return [{ id: randomUUID(), label: stringValue(record.label, String.fromCharCode(65 + index)).slice(0, 5), text, imageUrl }];
     });
     const text = stringValue(question.text);
-    if (!text || choices.length < 2) return [];
-    const requestedAnswer = stringValue(question.correctAnswer);
-    const correctAnswer = choices.some((choice) => choice.label === requestedAnswer) ? requestedAnswer : choices[0].label;
+    const questionType = question.questionType === "multi-blank" ? "multi-blank" : "multiple-choice";
+    const responseFields = (Array.isArray(question.responseFields) ? question.responseFields : []).flatMap((field) => {
+      const label = field && typeof field === "object" ? stringValue((field as Record<string, unknown>).label) : "";
+      return label ? [{ id: randomUUID(), label, acceptedAnswers: [] }] : [];
+    });
+    if (!text || (questionType === "multiple-choice" ? choices.length < 2 : responseFields.length < 1)) return [];
     const difficulty = ["Easy", "Medium", "Hard"].includes(stringValue(question.difficulty)) ? stringValue(question.difficulty) as MaterialQuestion["difficulty"] : "Medium";
-    return [{ id: randomUUID(), text, choices, correctAnswer, explanation: stringValue(question.explanation), topic: stringValue(question.topic), difficulty }];
+    return [{ id: randomUUID(), text, imageUrl: assets[`q-${questionIndex}`] ?? "", questionType, responseFields, choices: questionType === "multiple-choice" ? choices : [], correctAnswer: "", explanation: stringValue(question.explanation), topic: stringValue(question.topic), difficulty }];
   });
   if (!questions.length) throw new Error("PDF-ээс хүчинтэй асуулт олдсонгүй.");
   const type = ["full", "practice", "previous-year"].includes(stringValue(raw.type)) ? stringValue(raw.type) as TestType : examType === "SAT" ? "practice" : "previous-year";
@@ -127,13 +142,80 @@ function normalize(raw: Record<string, unknown>, examType: ExamType, filename: s
     examType,
     title: stringValue(raw.title, filename.replace(/\.pdf$/i, "")),
     subject: stringValue(raw.subject, examType === "SAT" ? "Math" : "Математик"),
-    year: examType === "EYESH" && year >= 2000 && year <= 2100 ? year : undefined,
+    year: examType === "EYESH" ? selectedYear ?? (year >= 2006 && year <= 2026 ? year : 2026) : undefined,
+    variant: examType === "EYESH" ? selectedVariant ?? "A" : undefined,
     durationMinutes: Number.isInteger(duration) && duration > 0 && duration <= 600 ? duration : 35,
     type,
     status: "draft",
     description: stringValue(raw.description),
     questions,
   };
+}
+
+function imageRegions(raw: Record<string, unknown>) {
+  const questions = Array.isArray(raw.questions) ? raw.questions : [];
+  return questions.flatMap((item, questionIndex) => {
+    if (!item || typeof item !== "object") return [];
+    const question = item as Record<string, unknown>;
+    const page = Number(question.pageNumber);
+    if (!Number.isInteger(page) || page < 1) return [];
+    const regions: { id: string; pageNumber: number; box: number[] }[] = [];
+    if (validBox(question.imageBox)) regions.push({ id: `q-${questionIndex}`, pageNumber: page, box: question.imageBox as number[] });
+    for (const [choiceIndex, choice] of (Array.isArray(question.choices) ? question.choices : []).entries()) {
+      if (choice && typeof choice === "object" && validBox((choice as Record<string, unknown>).imageBox)) regions.push({ id: `q-${questionIndex}-c-${choiceIndex}`, pageNumber: page, box: (choice as Record<string, unknown>).imageBox as number[] });
+    }
+    return regions;
+  });
+}
+
+function validBox(value: unknown): value is number[] {
+  return Array.isArray(value) && value.length === 4 && value.every((item) => typeof item === "number" && item >= 0 && item <= 1) && value[0] < value[2] && value[1] < value[3];
+}
+
+async function ensureImageBucket() {
+  const admin = createAdminClient();
+  const { data } = await admin.storage.getBucket("exam-question-images");
+  if (data) {
+    await admin.storage.updateBucket("exam-question-images", { public: true, allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"], fileSizeLimit: 10 * 1024 * 1024 });
+    return admin;
+  }
+  const { error } = await admin.storage.createBucket("exam-question-images", {
+    public: true,
+    allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"],
+    fileSizeLimit: 10 * 1024 * 1024,
+  });
+  if (error && !error.message.toLowerCase().includes("already")) throw new Error("Асуултын зургийн санг үүсгэж чадсангүй.");
+  return admin;
+}
+
+async function extractAndUploadImages(request: Request, file: File, raw: Record<string, unknown>) {
+  const regions = imageRegions(raw);
+  if (!regions.length) return {};
+  await ensureImageBucket();
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) throw new Error("Image extractor тохиргоо дутуу байна.");
+  const form = new FormData();
+  form.set("file", file);
+  form.set("regions", JSON.stringify(regions));
+  form.set("upload_prefix", randomUUID());
+  const response = await fetch(new URL("/api/pdf_extract", request.url), { method: "POST", headers: { "x-extractor-secret": secret }, body: form });
+  const body = await response.json().catch(() => ({})) as { assets?: Record<string, string>; detail?: string };
+  if (!response.ok) throw new Error(body.detail ?? "PDF зургийг Python extractor-аар задлаж чадсангүй.");
+  return body.assets ?? {};
+}
+
+async function extractLayout(request: Request, file: File) {
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) throw new Error("PyMuPDF4LLM extractor тохиргоо дутуу байна.");
+  const form = new FormData();
+  form.set("file", file);
+  form.set("action", "layout");
+  const response = await fetch(new URL("/api/pdf_extract", request.url), { method: "POST", headers: { "x-extractor-secret": secret }, body: form });
+  const body = await response.json().catch(() => ({})) as { layout?: unknown; detail?: string };
+  if (!response.ok || !body.layout) throw new Error(body.detail ?? "PyMuPDF4LLM PDF бүтцийг уншиж чадсангүй.");
+  const serialized = JSON.stringify(body.layout);
+  if (serialized.length > 1_000_000) throw new Error("PDF-ийн бүтэц хэт том байна. Жижиг хэсгүүдэд хувааж импортлоно уу.");
+  return serialized;
 }
 
 export async function POST(request: Request) {
@@ -149,15 +231,18 @@ export async function POST(request: Request) {
     if (!apiKey) return NextResponse.json({ error: "API key оруулна уу." }, { status: 400 });
     if (examType !== "SAT" && examType !== "EYESH") return NextResponse.json({ error: "Шалгалтын төрөл буруу байна." }, { status: 400 });
     if (!(file instanceof File) || file.type !== "application/pdf") return NextResponse.json({ error: "PDF файл сонгоно уу." }, { status: 400 });
-    if (file.size <= 0 || file.size > 15 * 1024 * 1024) return NextResponse.json({ error: "PDF файл 15 MB-аас бага байх ёстой." }, { status: 400 });
+    if (file.size <= 0 || file.size > 4 * 1024 * 1024) return NextResponse.json({ error: "PDF файл 4 MB-аас бага байх ёстой." }, { status: 400 });
+    const selectedYear = Number(form.get("year"));
+    const selectedVariant = stringValue(form.get("variant")) as "A" | "B" | "C" | "D";
+    if (examType === "EYESH" && (!Number.isInteger(selectedYear) || selectedYear < 2006 || selectedYear > 2026)) return NextResponse.json({ error: "ЭЕШ-ийн он 2006–2026 хооронд байна." }, { status: 400 });
+    if (examType === "EYESH" && !["A", "B", "C", "D"].includes(selectedVariant)) return NextResponse.json({ error: "ЭЕШ-ийн хувилбар A–D байна." }, { status: 400 });
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") return NextResponse.json({ error: "Файл PDF форматтай биш байна." }, { status: 400 });
-    const parser = new PDFParse({ data: bytes });
-    let pdfText = "";
-    try { pdfText = (await parser.getText()).text.trim(); } finally { await parser.destroy(); }
-    if (!pdfText && provider === "nvidia") return NextResponse.json({ error: "NVIDIA NIM импортод PDF дотор уншигдах текст хэрэгтэй. Scan PDF бол OCR-той хувилбар ашиглана уу." }, { status: 422 });
-    const output = await requestJson(provider, apiKey, model, extractionPrompt(examType), Buffer.from(bytes).toString("base64"), pdfText.slice(0, 350_000), file.name);
-    return NextResponse.json({ material: normalize(parseJson(output), examType, file.name) });
+    const layoutJson = await extractLayout(request, file);
+    const output = await requestJson(provider, apiKey, model, extractionPrompt(examType, layoutJson), Buffer.from(bytes).toString("base64"), layoutJson, file.name);
+    const raw = parseJson(output);
+    const assets = await extractAndUploadImages(request, file, raw);
+    return NextResponse.json({ material: normalize(raw, examType, file.name, assets, selectedYear, selectedVariant) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "PDF импорт амжилтгүй боллоо.";
     return NextResponse.json({ error: message }, { status: 422 });

@@ -241,20 +241,26 @@ export async function listAdminMaterials(examType: ExamType): Promise<AdminMater
 export async function getAdminMaterial(testId: string): Promise<MaterialEditorData | undefined> {
   await requireAdmin();
   const [tests, questions] = await Promise.all([
-    request<MaterialRow[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,duration_minutes,difficulty,test_type,status,instructions,updated_at&id=eq.${encodeURIComponent(testId)}&limit=1`),
-    request<{ id: string; test_id: string; question_number: number; question_text: string; topic: string | null; difficulty: "Easy" | "Medium" | "Hard" | null; explanation: string | null }[]>(`/rest/v1/questions?select=id,test_id,question_number,question_text,topic,difficulty,explanation&test_id=eq.${encodeURIComponent(testId)}&order=question_number`),
+    request<(MaterialRow & { variant: "A" | "B" | "C" | "D" | null })[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,variant,duration_minutes,difficulty,test_type,status,instructions,updated_at&id=eq.${encodeURIComponent(testId)}&limit=1`),
+    request<{ id: string; test_id: string; question_number: number; question_text: string; question_type: string; response_fields: { id: string; label: string; acceptedAnswers: string[] }[]; image_url: string | null; topic: string | null; difficulty: "Easy" | "Medium" | "Hard" | null; explanation: string | null }[]>(`/rest/v1/questions?select=id,test_id,question_number,question_text,question_type,response_fields,image_url,topic,difficulty,explanation&test_id=eq.${encodeURIComponent(testId)}&order=question_number`),
   ]);
   const test = tests[0];
   if (!test) return undefined;
   const questionIds = questions.map((question) => question.id);
-  const choices = questionIds.length ? await request<{ id: string; question_id: string; label: string; text: string; is_correct: boolean; sort_order: number }[]>(`/rest/v1/answer_choices?select=id,question_id,label,text,is_correct,sort_order&question_id=in.(${questionIds.join(",")})&order=sort_order`) : [];
+  const [choices, responseAnswers] = questionIds.length ? await Promise.all([
+    request<{ id: string; question_id: string; label: string; text: string; image_url: string | null; is_correct: boolean; sort_order: number }[]>(`/rest/v1/answer_choices?select=id,question_id,label,text,image_url,is_correct,sort_order&question_id=in.(${questionIds.join(",")})&order=sort_order`),
+    request<{ question_id: string; field_id: string; accepted_answers: string[] }[]>(`/rest/v1/question_response_answers?select=question_id,field_id,accepted_answers&question_id=in.(${questionIds.join(",")})`),
+  ]) : [[], []];
   const editorQuestions: MaterialQuestion[] = questions.map((question) => {
     const questionChoices = choices.filter((choice) => choice.question_id === question.id);
     return {
       id: question.id,
       text: question.question_text,
-      choices: questionChoices.map((choice) => ({ id: choice.id, label: choice.label, text: choice.text })),
-      correctAnswer: questionChoices.find((choice) => choice.is_correct)?.label ?? "A",
+      imageUrl: question.image_url ?? "",
+      questionType: question.question_type === "multi-blank" ? "multi-blank" : "multiple-choice",
+      responseFields: Array.isArray(question.response_fields) ? question.response_fields.map((field) => ({ id: field.id, label: field.label, acceptedAnswers: responseAnswers.find((answer) => answer.question_id === question.id && answer.field_id === field.id)?.accepted_answers ?? [] })) : [],
+      choices: questionChoices.map((choice) => ({ id: choice.id, label: choice.label, text: choice.text, imageUrl: choice.image_url ?? "" })),
+      correctAnswer: questionChoices.find((choice) => choice.is_correct)?.label ?? "",
       explanation: question.explanation ?? "",
       topic: question.topic ?? "",
       difficulty: question.difficulty ?? "Medium",
@@ -266,6 +272,7 @@ export async function getAdminMaterial(testId: string): Promise<MaterialEditorDa
     title: test.title,
     subject: test.subject,
     year: test.year ?? undefined,
+    variant: test.variant ?? undefined,
     durationMinutes: test.duration_minutes,
     type: test.test_type,
     status: test.status,

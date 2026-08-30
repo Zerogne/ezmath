@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getAdminIdentity } from "@/lib/admin/auth";
 import type { MaterialEditorData } from "@/lib/admin/material-types";
 
@@ -11,9 +12,15 @@ function validate(payload: MaterialEditorData) {
   if (!payload.title.trim() || !payload.subject.trim() || payload.durationMinutes <= 0) return "Гарчиг, хичээл болон хугацааг зөв бөглөнө үү.";
   if (!payload.questions.length) return "Дор хаяж нэг асуулт нэмнэ үү.";
   for (const [index, question] of payload.questions.entries()) {
-    const completedChoices = question.choices.filter((choice) => choice.text.trim());
-    if (!question.text.trim() || completedChoices.length < 2) return `${index + 1}-р асуултын текст болон сонголтуудыг бүрэн бөглөнө үү.`;
-    if (!completedChoices.some((choice) => choice.label === question.correctAnswer)) return `${index + 1}-р асуултын зөв хариултыг сонгоно уу.`;
+    if (!question.text.trim()) return `${index + 1}-р асуултын текстийг оруулна уу.`;
+    if (question.questionType === "multiple-choice") {
+      const completedChoices = question.choices.filter((choice) => choice.text.trim() || choice.imageUrl);
+      if (completedChoices.length < 2) return `${index + 1}-р асуултын сонголтуудыг бүрэн бөглөнө үү.`;
+      if (payload.status === "published" && !completedChoices.some((choice) => choice.label === question.correctAnswer)) return `${index + 1}-р асуултын зөв хариултыг сонгоно уу.`;
+    } else {
+      if (!question.responseFields.length) return `${index + 1}-р асуултын хариултын талбарыг нэмнэ үү.`;
+      if (payload.status === "published" && question.responseFields.some((field) => !field.label.trim() || !field.acceptedAnswers.some((answer) => answer.trim()))) return `${index + 1}-р асуултын хариултын нэр болон зөв хариуг бөглөнө үү.`;
+    }
   }
 }
 
@@ -36,6 +43,14 @@ export async function saveMaterial(payload: MaterialEditorData): Promise<SaveMat
     p_questions: payload.questions,
   });
   if (error) return { error: error.message || "Материал хадгалж чадсангүй." };
+  const adminClient = createAdminClient();
+  const { error: testMetadataError } = await adminClient.from("tests").update({ variant: payload.examType === "EYESH" ? payload.variant ?? null : null }).eq("id", data);
+  const questionUpdates = await Promise.all(payload.questions.map((question) => adminClient.from("questions").update({ image_url: question.imageUrl || null, question_type: question.questionType, response_fields: question.responseFields.map(({ id, label }) => ({ id, label })) }).eq("id", question.id).eq("test_id", data)));
+  const choiceUpdates = await Promise.all(payload.questions.flatMap((question) => question.choices.map((choice) => adminClient.from("answer_choices").update({ image_url: choice.imageUrl || null }).eq("id", choice.id).eq("question_id", question.id))));
+  const { error: clearResponseAnswersError } = await adminClient.from("question_response_answers").delete().in("question_id", payload.questions.map((question) => question.id));
+  const responseAnswers = payload.questions.flatMap((question) => question.responseFields.map((field) => ({ question_id: question.id, field_id: field.id, accepted_answers: field.acceptedAnswers.filter((answer) => answer.trim()) })));
+  const responseAnswersError = responseAnswers.length ? (await adminClient.from("question_response_answers").insert(responseAnswers)).error : null;
+  if (testMetadataError || questionUpdates.some((result) => result.error) || choiceUpdates.some((result) => result.error) || clearResponseAnswersError || responseAnswersError) return { error: "Материалын нэмэлт мэдээллийг хадгалж чадсангүй." };
   revalidatePath("/");
   revalidatePath("/tests");
   revalidatePath("/admin");

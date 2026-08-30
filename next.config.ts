@@ -16,8 +16,14 @@ const contentSecurityPolicy = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const questionImagePattern = supabaseUrl
+  ? new URL("/storage/v1/object/public/exam-question-images/**", supabaseUrl)
+  : null;
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  images: { remotePatterns: questionImagePattern ? [questionImagePattern] : [] },
   async headers() {
     return [{
       source: "/:path*",
