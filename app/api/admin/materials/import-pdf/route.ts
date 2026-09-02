@@ -57,7 +57,18 @@ async function requestJson(provider: Provider, apiKey: string, model: string, pr
     response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
-      body: JSON.stringify({ model, max_tokens: 32000, temperature: 0.1, messages: [{ role: "user", content: [{ type: "text", text: prompt }] }] }),
+      body: JSON.stringify({
+        model,
+        max_tokens: 32000,
+        temperature: 0.1,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "document", source: { type: "base64", media_type: "application/pdf", data: pdfBase64 }, cache_control: { type: "ephemeral" } },
+            { type: "text", text: prompt },
+          ],
+        }],
+      }),
     });
   } else if (provider === "gemini") {
     response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
