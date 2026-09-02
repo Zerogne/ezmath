@@ -15,10 +15,10 @@ function validate(payload: MaterialEditorData) {
     if (!question.text.trim()) return `${index + 1}-р асуултын текстийг оруулна уу.`;
     if (question.questionType === "multiple-choice") {
       const completedChoices = question.choices.filter((choice) => choice.text.trim() || choice.imageUrl);
-      if (completedChoices.length < 2) return `${index + 1}-р асуултын сонголтуудыг бүрэн бөглөнө үү.`;
+      if (payload.status === "published" && completedChoices.length < 2) return `${index + 1}-р асуултын сонголтуудыг бүрэн бөглөнө үү.`;
       if (payload.status === "published" && !completedChoices.some((choice) => choice.label === question.correctAnswer)) return `${index + 1}-р асуултын зөв хариултыг сонгоно уу.`;
     } else {
-      if (!question.responseFields.length) return `${index + 1}-р асуултын хариултын талбарыг нэмнэ үү.`;
+      if (payload.status === "published" && !question.responseFields.length) return `${index + 1}-р асуултын хариултын талбарыг нэмнэ үү.`;
       if (payload.status === "published" && question.responseFields.some((field) => !field.label.trim() || !field.acceptedAnswers.some((answer) => answer.trim()))) return `${index + 1}-р асуултын хариултын нэр болон зөв хариуг бөглөнө үү.`;
     }
   }

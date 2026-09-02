@@ -52,7 +52,7 @@ export function MaterialForm({ examType, initial }: { examType: ExamType; initia
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  const validStructure = useMemo(() => Boolean(title.trim() && subject && duration > 0 && questions.every((question) => question.text.trim() && (question.questionType === "multiple-choice" ? question.choices.filter((choice) => choice.text.trim() || choice.imageUrl).length >= 2 : question.responseFields.length > 0))), [duration, questions, subject, title]);
+  const validStructure = useMemo(() => Boolean(title.trim() && subject && duration > 0 && questions.every((question) => question.text.trim())), [duration, questions, subject, title]);
   const unansweredCount = useMemo(() => questions.filter((question) => question.questionType === "multiple-choice" ? !question.choices.some((choice) => choice.label === question.correctAnswer && (choice.text.trim() || choice.imageUrl)) : question.responseFields.some((field) => !field.acceptedAnswers.some((answer) => answer.trim()))).length, [questions]);
   const change = <T,>(setter: (value: T) => void, value: T) => { setter(value); setDirty(true); setMessage(null); };
 

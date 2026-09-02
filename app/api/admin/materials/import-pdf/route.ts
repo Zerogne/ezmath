@@ -25,8 +25,10 @@ Coordinates are normalized PDF page coordinates [x0,y0,x1,y1], each from 0 to 1.
 For ordinary choices use questionType "multiple-choice". For EYESH part 2 written/fill questions use "multi-blank" and return every printed answer field label exactly (examples: af, bg, abc) in responseFields. These labels remain editable. Do not provide accepted answers.
 
 Return ONLY valid JSON:
-{"title":"string","subject":"string","year":2026,"durationMinutes":35,"type":"practice","description":"string","questions":[{"questionType":"multiple-choice","text":"string","pageNumber":1,"imageBox":null,"choices":[{"label":"A","text":"string","imageBox":null}],"responseFields":[],"explanation":"","topic":"string","difficulty":"Medium"}]}
+{"title":"string","subject":"string","year":2026,"durationMinutes":35,"type":"practice","description":"string","questions":[{"sourceQuestionNumber":"1","questionType":"multiple-choice","text":"string","pageNumber":1,"imageBox":null,"choices":[{"label":"A","text":"string","imageBox":null}],"responseFields":[],"explanation":"","topic":"string","difficulty":"Medium"}]}
 Allowed type: full, practice, previous-year. Allowed difficulty: Easy, Medium, Hard. A multiple-choice question needs at least two choices whose text or imageBox is present. A multi-blank question needs at least one responseFields item shaped {"label":"af"}.
+
+COMPLETENESS IS REQUIRED: transcribe every numbered question in the supplied pages, including incomplete-looking questions and every EYESH II хэсэг / задгай даалгавар. Never omit a question because its choices, diagram, formula, or response-field labels are difficult to read. Preserve its sourceQuestionNumber separately while removing that number from text. For EYESH Part II, one printed problem may contain several named answer boxes; return one multi-blank question with every box name in responseFields.
 
 PyMuPDF4LLM extracted the following native structured layout JSON. Treat it as the primary source for reading order, text, tables, formulas, picture regions, page numbers, and bounding boxes. Use the attached PDF only to resolve ambiguity. Convert absolute PyMuPDF4LLM bounding boxes to normalized page coordinates for imageBox.
 
@@ -123,7 +125,6 @@ function normalize(raw: Record<string, unknown>, examType: ExamType, filename: s
       const record = choice as Record<string, unknown>;
       const text = stringValue(record.text);
       const imageUrl = assets[`q-${questionIndex}-c-${index}`] ?? "";
-      if (!text && !imageUrl) return [];
       return [{ id: randomUUID(), label: stringValue(record.label, String.fromCharCode(65 + index)).slice(0, 5), text, imageUrl }];
     });
     const text = stringValue(question.text);
@@ -132,7 +133,13 @@ function normalize(raw: Record<string, unknown>, examType: ExamType, filename: s
       const label = field && typeof field === "object" ? stringValue((field as Record<string, unknown>).label) : "";
       return label ? [{ id: randomUUID(), label, acceptedAnswers: [] }] : [];
     });
-    if (!text || (questionType === "multiple-choice" ? choices.length < 2 : responseFields.length < 1)) return [];
+    if (!text) return [];
+    const minimumChoiceCount = examType === "EYESH" ? 5 : 4;
+    while (questionType === "multiple-choice" && choices.length < minimumChoiceCount) {
+      const index = choices.length;
+      choices.push({ id: randomUUID(), label: String.fromCharCode(65 + index), text: "", imageUrl: "" });
+    }
+    if (questionType === "multi-blank" && !responseFields.length) responseFields.push({ id: randomUUID(), label: "answer", acceptedAnswers: [] });
     const difficulty = ["Easy", "Medium", "Hard"].includes(stringValue(question.difficulty)) ? stringValue(question.difficulty) as MaterialQuestion["difficulty"] : "Medium";
     return [{ id: randomUUID(), text, imageUrl: assets[`q-${questionIndex}`] ?? "", questionType, responseFields, choices: questionType === "multiple-choice" ? choices : [], correctAnswer: "", explanation: stringValue(question.explanation), topic: stringValue(question.topic), difficulty }];
   });
@@ -218,7 +225,7 @@ async function extractLayout(request: Request, file: File) {
   return body.layout;
 }
 
-function splitLayout(layout: unknown, maxChars = 350_000): string[] {
+function splitLayout(layout: unknown, maxChars = 120_000): string[] {
   const serialized = JSON.stringify(layout);
   if (serialized.length <= maxChars) return [serialized];
   const record = layout && typeof layout === "object" && !Array.isArray(layout) ? layout as Record<string, unknown> : null;
@@ -232,7 +239,7 @@ function splitLayout(layout: unknown, maxChars = 350_000): string[] {
     const wrapped = Array.isArray(layout) ? candidate : { ...record, [pageKey as string]: candidate };
     if (current.length && JSON.stringify(wrapped).length > maxChars) {
       chunks.push(JSON.stringify(Array.isArray(layout) ? current : { ...record, [pageKey as string]: current }));
-      current = [page];
+      current = [current.at(-1), page].filter((item) => item !== undefined);
     } else {
       current = candidate;
     }
@@ -244,12 +251,24 @@ function splitLayout(layout: unknown, maxChars = 350_000): string[] {
 
 function mergeImports(imports: Record<string, unknown>[]) {
   const first = imports[0] ?? {};
+  const questions: unknown[] = [];
+  const seen = new Set<string>();
+  for (const item of imports) for (const question of Array.isArray(item.questions) ? item.questions : []) {
+    if (!question || typeof question !== "object") continue;
+    const record = question as Record<string, unknown>;
+    const number = stringValue(record.sourceQuestionNumber);
+    const text = stringValue(record.text).toLocaleLowerCase().replace(/\s+/g, " ").slice(0, 160);
+    const key = number ? `${Number(record.pageNumber) || 0}:${number}` : `${Number(record.pageNumber) || 0}:${text}`;
+    if (!text || seen.has(key)) continue;
+    seen.add(key);
+    questions.push(question);
+  }
   return {
     ...first,
     title: imports.map((item) => stringValue(item.title)).find(Boolean) ?? "",
     subject: imports.map((item) => stringValue(item.subject)).find(Boolean) ?? "",
     description: imports.map((item) => stringValue(item.description)).find(Boolean) ?? "",
-    questions: imports.flatMap((item) => Array.isArray(item.questions) ? item.questions : []),
+    questions,
   };
 }
 
