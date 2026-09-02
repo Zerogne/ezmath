@@ -226,27 +226,39 @@ async function extractLayout(request: Request, file: File) {
 }
 
 function splitLayout(layout: unknown, maxChars = 120_000): string[] {
-  const serialized = JSON.stringify(layout);
+  const compacted = compactLayout(layout);
+  const serialized = JSON.stringify(compacted);
   if (serialized.length <= maxChars) return [serialized];
-  const record = layout && typeof layout === "object" && !Array.isArray(layout) ? layout as Record<string, unknown> : null;
+  const record = compacted && typeof compacted === "object" && !Array.isArray(compacted) ? compacted as Record<string, unknown> : null;
   const pageKey = record ? Object.keys(record).find((key) => Array.isArray(record[key]) && /page/i.test(key)) : undefined;
-  const pages = Array.isArray(layout) ? layout : pageKey && Array.isArray(record?.[pageKey]) ? record[pageKey] : null;
+  const pages = Array.isArray(compacted) ? compacted : pageKey && Array.isArray(record?.[pageKey]) ? record[pageKey] : null;
   if (!pages?.length) throw new Error("PyMuPDF4LLM layout хэт том бөгөөд хуудсаар хуваах бүтэц олдсонгүй.");
   const chunks: string[] = [];
   let current: unknown[] = [];
   for (const page of pages) {
     const candidate = [...current, page];
-    const wrapped = Array.isArray(layout) ? candidate : { ...record, [pageKey as string]: candidate };
+    const wrapped = Array.isArray(compacted) ? candidate : { ...record, [pageKey as string]: candidate };
     if (current.length && JSON.stringify(wrapped).length > maxChars) {
-      chunks.push(JSON.stringify(Array.isArray(layout) ? current : { ...record, [pageKey as string]: current }));
+      chunks.push(JSON.stringify(Array.isArray(compacted) ? current : { ...record, [pageKey as string]: current }));
       current = [current.at(-1), page].filter((item) => item !== undefined);
     } else {
       current = candidate;
     }
   }
-  if (current.length) chunks.push(JSON.stringify(Array.isArray(layout) ? current : { ...record, [pageKey as string]: current }));
-  if (chunks.some((item) => item.length > maxChars * 1.5)) throw new Error("PDF-ийн нэг хуудасны бүтэц хэт том байна.");
+  if (current.length) chunks.push(JSON.stringify(Array.isArray(compacted) ? current : { ...record, [pageKey as string]: current }));
+  if (chunks.some((item) => item.length > 650_000)) throw new Error("PDF-ийн нэг хуудасны бүтэц Claude-ийн context хэмжээнээс хэтэрсэн байна.");
   return chunks;
+}
+
+function compactLayout(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(compactLayout);
+  if (!value || typeof value !== "object") return value;
+  const noisyKeys = new Set(["chars", "words", "spans", "font", "color", "flags", "origin", "ascender", "descender"]);
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).flatMap(([key, item]) => {
+    if (noisyKeys.has(key)) return [];
+    if (typeof item === "string" && item.length > 20_000 && /^[A-Za-z0-9+/=\s]+$/.test(item)) return [];
+    return [[key, compactLayout(item)]];
+  }));
 }
 
 function mergeImports(imports: Record<string, unknown>[]) {
