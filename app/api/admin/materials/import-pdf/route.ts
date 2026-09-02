@@ -20,7 +20,7 @@ const defaults: Record<Provider, string> = {
 function extractionPrompt(examType: ExamType, layoutJson: string, chunk?: { index: number; total: number }) {
   return `Convert this ${examType} exam PDF into editable JSON. You are a transcription and layout parser only. Never solve a question, infer a correct answer, or copy an answer key. Preserve Mongolian Cyrillic, passages, math, and LaTeX. Remove printed question numbers. Normalize Cyrillic option labels А/Б/В/Г/Д to Latin A/B/C/D/E.
 
-Coordinates are normalized PDF page coordinates [x0,y0,x1,y1], each from 0 to 1. Return a tight imageBox for every diagram, graph, table, formula-as-image, or other visual required by a question. If an answer option is an image, leave its text empty and return its own tight imageBox. Do not use a full-page box.
+Coordinates are normalized PDF page coordinates [x0,y0,x1,y1], each from 0 to 1. Return an imageBox only for a diagram, graph, table, or genuinely pictorial answer that the student must see. Do not crop ordinary printed formulas or text. The box must tightly contain exactly that one visual: never include another question, answer-key row, score label, header, or neighboring content. If an answer option is an image, leave its text empty and return its own tight imageBox. Do not use a full-page or multi-question box; use null when no isolated visual exists.
 
 For ordinary choices use questionType "multiple-choice". For EYESH part 2 written/fill questions use "multi-blank" and return every printed answer field label exactly (examples: af, bg, abc) in responseFields. These labels remain editable. Do not provide accepted answers.
 

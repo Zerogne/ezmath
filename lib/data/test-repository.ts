@@ -30,10 +30,10 @@ export async function findPublishedTest(testId: string): Promise<Test | undefine
 export async function loadStudentQuestions(testId: string): Promise<StudentQuestion[]> {
   if (!isSupabaseConfigured()) return getStudentQuestions(testId);
   const supabase = createPublicClient();
-  const { data: questionRows, error } = await supabase.from("student_questions").select("id, test_id, question_number, question_text, topic, image_url").eq("test_id", testId).order("question_number");
+  const { data: questionRows, error } = await supabase.from("student_questions").select("id, test_id, question_number, question_text, question_type, response_fields, topic, image_url").eq("test_id", testId).order("question_number");
   if (error || !questionRows?.length) return getStudentQuestions(testId);
-  const { data: choiceRows } = await supabase.from("student_answer_choices").select("id, question_id, label, text, sort_order").in("question_id", questionRows.map((question) => question.id)).order("sort_order");
-  const choicesByQuestion = new Map<string, { id: string; label: string; text: string }[]>();
-  for (const choice of choiceRows ?? []) choicesByQuestion.set(choice.question_id, [...(choicesByQuestion.get(choice.question_id) ?? []), { id: choice.id, label: choice.label, text: choice.text }]);
-  return questionRows.map((question) => ({ id: question.id, testId: question.test_id, questionNumber: question.question_number, questionText: question.question_text, topic: question.topic ?? undefined, imageUrl: question.image_url ?? undefined, choices: choicesByQuestion.get(question.id) ?? [] }));
+  const { data: choiceRows } = await supabase.from("student_answer_choices").select("id, question_id, label, text, image_url, sort_order").in("question_id", questionRows.map((question) => question.id)).order("sort_order");
+  const choicesByQuestion = new Map<string, { id: string; label: string; text: string; imageUrl?: string }[]>();
+  for (const choice of choiceRows ?? []) choicesByQuestion.set(choice.question_id, [...(choicesByQuestion.get(choice.question_id) ?? []), { id: choice.id, label: choice.label, text: choice.text, imageUrl: choice.image_url ?? undefined }]);
+  return questionRows.map((question) => ({ id: question.id, testId: question.test_id, questionNumber: question.question_number, questionText: question.question_text, questionType: question.question_type === "multi-blank" ? "multi-blank" as const : "multiple-choice" as const, responseFields: Array.isArray(question.response_fields) ? question.response_fields as { id: string; label: string }[] : [], topic: question.topic ?? undefined, imageUrl: question.image_url ?? undefined, choices: choicesByQuestion.get(question.id) ?? [] }));
 }

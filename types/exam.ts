@@ -17,7 +17,7 @@ export type Test = {
   featured?: boolean;
 };
 
-export type Choice = { id: string; label: string; text: string };
+export type Choice = { id: string; label: string; text: string; imageUrl?: string };
 
 export type Question = {
   id: string;

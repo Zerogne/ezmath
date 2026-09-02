@@ -11,6 +11,8 @@ export type StudentQuestion = {
   choices: Choice[];
   topic?: string;
   imageUrl?: string;
+  questionType?: "multiple-choice" | "multi-blank";
+  responseFields?: { id: string; label: string }[];
 };
 
 export type TestSession = {
@@ -18,6 +20,7 @@ export type TestSession = {
   testId: string;
   currentQuestionIndex: number;
   answers: Record<string, string>;
+  writtenAnswers: Record<string, Record<string, string>>;
   markedForReview: string[];
   startedAt: string;
   remainingSeconds: number;
@@ -30,6 +33,7 @@ export type SubmissionPayload = {
   attemptId?: string;
   testId: string;
   answers: { questionId: string; selectedChoiceId: string }[];
+  writtenAnswers: { questionId: string; responses: Record<string, string> }[];
   markedForReview: string[];
   durationSeconds: number;
   startedAt: string;

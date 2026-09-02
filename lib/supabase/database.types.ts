@@ -8,6 +8,7 @@ type ClassroomStudentRow = { classroom_id: string; student_id: string; joined_at
 type TestRow = { id: string; exam_type: "SAT" | "EYESH"; title: string; subject: string; year: number | null; variant: "A" | "B" | "C" | "D" | null; duration_minutes: number; difficulty: "Easy" | "Medium" | "Hard" | null; test_type: "full" | "practice" | "previous-year"; status: "draft" | "published" | "archived"; instructions: string | null; created_by: string | null; created_at: string; updated_at: string };
 type QuestionRow = { id: string; test_id: string; question_number: number; question_text: string; question_type: string; response_fields: Json; topic: string | null; difficulty: "Easy" | "Medium" | "Hard" | null; explanation: string | null; image_url: string | null; created_at: string; updated_at: string };
 type ChoiceRow = { id: string; question_id: string; label: string; text: string; image_url: string | null; is_correct: boolean; sort_order: number };
+type QuestionResponseAnswerRow = { question_id: string; field_id: string; accepted_answers: string[] };
 type AttemptRow = { id: string; user_id: string; test_id: string; started_at: string; completed_at: string | null; score: number | null; duration_seconds: number | null; status: "not_started" | "in_progress" | "submitted"; session_snapshot: Json | null; session_version: number; last_saved_at: string | null; created_at: string };
 type AttemptAnswerRow = { id: string; attempt_id: string; question_id: string; selected_choice_id: string | null; written_response: Json | null; is_correct: boolean | null; time_spent_seconds: number | null; marked_for_review: boolean };
 type TestIntegrityEventRow = { id: string; attempt_id: string; user_id: string; event_type: "page_hidden" | "window_blur" | "fullscreen_exit"; occurred_at: string; created_at: string };
@@ -28,6 +29,7 @@ export type Database = {
       tests: Table<TestRow, Omit<TestRow, "id" | "created_at" | "updated_at"> & { id?: string }>;
       questions: Table<QuestionRow, Omit<QuestionRow, "id" | "created_at" | "updated_at"> & { id?: string }>;
       answer_choices: Table<ChoiceRow, Omit<ChoiceRow, "id"> & { id?: string }>;
+      question_response_answers: Table<QuestionResponseAnswerRow, QuestionResponseAnswerRow>;
       test_attempts: Table<AttemptRow, Partial<AttemptRow> & Pick<AttemptRow, "user_id" | "test_id">>;
       attempt_answers: Table<AttemptAnswerRow, Omit<AttemptAnswerRow, "id"> & { id?: string }>;
       test_integrity_events: Table<TestIntegrityEventRow, Pick<TestIntegrityEventRow, "attempt_id" | "user_id" | "event_type" | "occurred_at"> & Partial<TestIntegrityEventRow>>;

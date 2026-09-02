@@ -53,6 +53,44 @@ def original_image(doc: fitz.Document, page: fitz.Page, clip: fitz.Rect):
     return extracted["image"], extension
 
 
+def tight_visual_clip(page: fitz.Page, requested: fitz.Rect):
+    """Reduce an AI-proposed region to one native PDF drawing cluster.
+
+    Broad regions are deliberately rejected: showing no image is safer than
+    attaching answer-key content from elsewhere on the page to a question.
+    """
+    candidates = []
+    try:
+        clusters = page.cluster_drawings()
+    except (AttributeError, RuntimeError, ValueError):
+        clusters = []
+    for cluster in clusters:
+        rect = fitz.Rect(cluster)
+        intersection = rect & requested
+        if intersection.is_empty or rect.get_area() < 20:
+            continue
+        coverage = intersection.get_area() / max(rect.get_area(), 1)
+        if coverage < 0.85:
+            continue
+        candidates.append(rect)
+    if not candidates:
+        return None
+    # Prefer a substantial, compact diagram over tiny glyph/formula fragments.
+    requested_area = max(requested.get_area(), 1)
+    candidates = [rect for rect in candidates if rect.get_area() <= requested_area * 0.9]
+    if not candidates:
+        return None
+    visual = max(candidates, key=lambda rect: rect.get_area())
+    padding = 6
+    page_rect = page.rect
+    return fitz.Rect(
+        max(page_rect.x0, visual.x0 - padding),
+        max(page_rect.y0, visual.y0 - padding),
+        min(page_rect.x1, visual.x1 + padding),
+        min(page_rect.y1, visual.y1 + padding),
+    )
+
+
 @app.post("/api/pdf_extract")
 async def extract_pdf_regions(
     file: Annotated[UploadFile, File()],
@@ -116,6 +154,9 @@ async def extract_pdf_regions(
                 if source:
                     image_bytes, extension = source
                 else:
+                    clip = tight_visual_clip(page, clip)
+                    if clip is None:
+                        continue
                     pixmap = page.get_pixmap(matrix=fitz.Matrix(3, 3), clip=clip, alpha=False)
                     image_bytes, extension = pixmap.tobytes("png"), "png"
 

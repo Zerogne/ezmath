@@ -5,12 +5,13 @@ import { checkpointTestSession } from "./test-sync";
 import { testStorage } from "./test-storage";
 import type { SyncStatus, TestSession } from "./test-types";
 
-type Action = { type: "hydrate"; session: TestSession } | { type: "attempt"; attemptId: string } | { type: "answer"; questionId: string; choiceId: string } | { type: "navigate"; index: number } | { type: "mark"; questionId: string } | { type: "tick" } | { type: "submitted" };
+type Action = { type: "hydrate"; session: TestSession } | { type: "attempt"; attemptId: string } | { type: "answer"; questionId: string; choiceId: string } | { type: "write"; questionId: string; fieldId: string; value: string } | { type: "navigate"; index: number } | { type: "mark"; questionId: string } | { type: "tick" } | { type: "submitted" };
 function reducer(session: TestSession, action: Action): TestSession {
   switch (action.type) {
-    case "hydrate": return action.session;
+    case "hydrate": return { ...action.session, writtenAnswers: action.session.writtenAnswers ?? {} };
     case "attempt": return { ...session, attemptId: action.attemptId, version: session.version + 1 };
     case "answer": return { ...session, answers: { ...session.answers, [action.questionId]: action.choiceId }, version: session.version + 1 };
+    case "write": return { ...session, writtenAnswers: { ...session.writtenAnswers, [action.questionId]: { ...(session.writtenAnswers[action.questionId] ?? {}), [action.fieldId]: action.value } }, version: session.version + 1 };
     case "navigate": return { ...session, currentQuestionIndex: action.index, version: session.version + 1 };
     case "mark": return { ...session, markedForReview: session.markedForReview.includes(action.questionId) ? session.markedForReview.filter((id) => id !== action.questionId) : [...session.markedForReview, action.questionId], version: session.version + 1 };
     case "tick": return { ...session, remainingSeconds: Math.max(0, session.remainingSeconds - 1) };
@@ -22,7 +23,7 @@ export function useTestSession(testId: string, durationSeconds: number, active =
   const [restored, setRestored] = useState(false);
   const [ready, setReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("saved");
-  const [session, dispatch] = useReducer(reducer, null, (): TestSession => ({ testId, currentQuestionIndex: 0, answers: {}, markedForReview: [], startedAt: new Date().toISOString(), remainingSeconds: durationSeconds, version: 0, status: "in_progress" }));
+  const [session, dispatch] = useReducer(reducer, null, (): TestSession => ({ testId, currentQuestionIndex: 0, answers: {}, writtenAnswers: {}, markedForReview: [], startedAt: new Date().toISOString(), remainingSeconds: durationSeconds, version: 0, status: "in_progress" }));
   const latestRef = useRef(session);
   useEffect(() => { latestRef.current = session; }, [session]);
 
