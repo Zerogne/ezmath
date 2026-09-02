@@ -7,6 +7,7 @@ import { getAdminIdentity } from "@/lib/admin/auth";
 import type { MaterialEditorData } from "@/lib/admin/material-types";
 
 export type SaveMaterialResult = { id?: string; error?: string };
+export type MaterialActionResult = { success?: true; error?: string };
 
 function validate(payload: MaterialEditorData) {
   if (!payload.title.trim() || !payload.subject.trim() || payload.durationMinutes <= 0) return "Гарчиг, хичээл болон хугацааг зөв бөглөнө үү.";
@@ -56,4 +57,48 @@ export async function saveMaterial(payload: MaterialEditorData): Promise<SaveMat
   revalidatePath("/admin");
   revalidatePath("/admin/materials");
   return { id: data };
+}
+
+export async function setMaterialStatus(testId: string, status: "draft" | "published" | "archived"): Promise<MaterialActionResult> {
+  if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
+  const admin = createAdminClient();
+  if (status === "published") {
+    const { data: questions, error: questionError } = await admin.from("questions").select("id,question_type,response_fields").eq("test_id", testId);
+    if (questionError || !questions?.length) return { error: "Нийтлэхийн өмнө тестэд асуулт нэмнэ үү." };
+    const questionIds = questions.map((question) => question.id);
+    const [{ data: choices, error: choiceError }, { data: responseAnswers, error: responseError }] = await Promise.all([
+      admin.from("answer_choices").select("question_id,text,image_url,is_correct").in("question_id", questionIds),
+      admin.from("question_response_answers").select("question_id,field_id,accepted_answers").in("question_id", questionIds),
+    ]);
+    if (choiceError || responseError) return { error: "Асуултын хариултыг шалгаж чадсангүй." };
+    const incomplete = questions.some((question) => {
+      if (question.question_type === "multi-blank") {
+        const fields = Array.isArray(question.response_fields) ? question.response_fields as { id?: string; label?: string }[] : [];
+        return !fields.length || fields.some((field) => !field.label?.trim() || !(responseAnswers ?? []).some((answer) => answer.question_id === question.id && answer.field_id === field.id && (answer.accepted_answers as string[]).some((value: string) => value.trim())));
+      }
+      const questionChoices = (choices ?? []).filter((choice) => choice.question_id === question.id && (choice.text.trim() || choice.image_url));
+      return questionChoices.length < 2 || !questionChoices.some((choice) => choice.is_correct);
+    });
+    if (incomplete) return { error: "Зөв хариулт эсвэл сонголт дутуу асуулт байна. Тестийг засаж дуусгаад нийтэлнэ үү." };
+  }
+  const { error } = await admin.from("tests").update({ status }).eq("id", testId);
+  if (error) return { error: error.message || "Тестийн төлөв шинэчилж чадсангүй." };
+  revalidatePath("/tests");
+  revalidatePath("/admin/materials/sat");
+  revalidatePath("/admin/materials/eyesh");
+  return { success: true };
+}
+
+export async function deleteMaterial(testId: string): Promise<MaterialActionResult> {
+  if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
+  const admin = createAdminClient();
+  const { count, error: countError } = await admin.from("test_attempts").select("id", { count: "exact", head: true }).eq("test_id", testId);
+  if (countError) return { error: "Тестийн оролдлогыг шалгаж чадсангүй." };
+  if ((count ?? 0) > 0) return { error: `Энэ тестэд ${count} сурагчийн оролдлого байна. Түүхийг хадгалахын тулд устгахын оронд Archive хийнэ үү.` };
+  const { error } = await admin.from("tests").delete().eq("id", testId);
+  if (error) return { error: error.message || "Тест устгаж чадсангүй." };
+  revalidatePath("/tests");
+  revalidatePath("/admin/materials/sat");
+  revalidatePath("/admin/materials/eyesh");
+  return { success: true };
 }
