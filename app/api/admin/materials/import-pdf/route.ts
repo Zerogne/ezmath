@@ -18,7 +18,9 @@ const defaults: Record<Provider, string> = {
 };
 
 function extractionPrompt(examType: ExamType, layoutJson: string, chunk?: { index: number; total: number }) {
-  return `Convert this ${examType} exam PDF into editable JSON. You are a transcription and layout parser only. Never solve a question, infer a correct answer, or copy an answer key. Preserve Mongolian Cyrillic, passages, math, and LaTeX. Remove printed question numbers. Normalize Cyrillic option labels А/Б/В/Г/Д to Latin A/B/C/D/E.
+  return `Convert this ${examType} exam PDF into editable JSON. You are a transcription and layout parser only. Never solve a question, infer a correct answer, or copy an answer key. Preserve Mongolian Cyrillic and passages exactly. Remove printed question numbers. Normalize Cyrillic option labels А/Б/В/Г/Д to Latin A/B/C/D/E.
+
+MATH TRANSCRIPTION: Convert every mathematical expression in question and choice text to valid KaTeX-compatible LaTeX. Wrap inline math in $...$ and standalone equations in $$...$$. Use proper commands such as \\frac, \\sqrt, exponents, subscripts, \\log, \\sin, \\angle, \\triangle, and matrices instead of ambiguous Unicode/plain-text approximations. Keep Mongolian prose outside math delimiters. Escape LaTeX backslashes correctly for JSON. Transcribe only what is printed; never simplify, solve, repair values, or invent missing notation.
 
 Coordinates are normalized PDF page coordinates [x0,y0,x1,y1], each from 0 to 1. Return an imageBox only for a diagram, graph, table, or genuinely pictorial answer that the student must see. Do not crop ordinary printed formulas or text. The box must tightly contain exactly that one visual: never include another question, answer-key row, score label, header, or neighboring content. If an answer option is an image, leave its text empty and return its own tight imageBox. Do not use a full-page or multi-question box; use null when no isolated visual exists.
 

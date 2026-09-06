@@ -16,5 +16,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   return <button ref={ref} type={type} disabled={disabled || loading} aria-busy={loading || undefined} className={cn("inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50", variants[variant], sizes[size], className)} {...props}>{children}</button>;
 });
 export function ButtonLink({ href, className, variant = "primary", size = "md", children, ...props }: Shared & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & { href: string }) {
-  return <Link href={href} className={cn("inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors aria-disabled:pointer-events-none aria-disabled:opacity-50", variants[variant], sizes[size], className)} {...props}>{children}</Link>;
+  const classes = cn("inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors aria-disabled:pointer-events-none aria-disabled:opacity-50", variants[variant], sizes[size], className);
+  // OAuth endpoints must perform a document navigation. Next client navigation
+  // follows the external provider redirect as fetch(), which CSP correctly blocks.
+  if (href.startsWith("/auth/google")) return <a href={href} className={classes} {...props}>{children}</a>;
+  return <Link href={href} className={classes} {...props}>{children}</Link>;
 }
