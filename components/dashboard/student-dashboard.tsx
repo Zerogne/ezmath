@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { BarChart3, BookOpen, ChevronRight, CircleHelp, ClipboardCheck, Home, LogOut, Menu, Settings, Target, Users, type LucideIcon } from "lucide-react";
-import { signOut } from "@/app/auth/actions";
+import { BarChart3, BookOpen, ChevronRight, CircleHelp, ClipboardCheck, Home, Settings, Target, Users, type LucideIcon } from "lucide-react";
 import type { StudentDashboardData } from "@/lib/data/student-dashboard";
+import { StudentMobileNav } from "@/components/dashboard/student-mobile-nav";
 
 const nav: { label: string; href: string; icon: LucideIcon; active?: boolean }[] = [
   { label: "Хяналтын самбар", href: "/dashboard", icon: Home, active: true },
@@ -28,7 +28,7 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
   const attemptedIds = new Set(attempts.map((attempt) => attempt.testId));
   const nextTest = data.tests.find((test) => !attemptedIds.has(test.id)) ?? data.tests[0];
 
-  return <div className="min-h-screen bg-[#f6f7fb] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+  return <div className="min-h-screen bg-[#f6f7fb] pb-[calc(4rem+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[248px_minmax(0,1fr)] lg:pb-0">
     <aside className="hidden h-screen flex-col border-r bg-white px-4 py-5 lg:sticky lg:top-0 lg:flex"><Brand/><nav className="mt-2 space-y-1">{nav.map(({ label, href, icon: Icon, active }) => <Link key={label} href={href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><Icon size={17}/>{label}</Link>)}</nav><SidebarPlanCard data={data}/></aside>
     <div className="min-w-0">
       <MobileHeader data={data}/>
@@ -41,11 +41,12 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
         </div>
       </main>
     </div>
+    <StudentMobileNav active="/dashboard"/>
   </div>;
 }
 
 function Brand() { return <Link href="/" className="flex items-center gap-2.5 px-2 pb-4 pt-1 text-lg font-semibold"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">∑</span>EzMath</Link>; }
-function MobileHeader({ data }: { data: StudentDashboardData }) { return <header className="relative flex h-16 items-center border-b bg-white px-4 lg:hidden"><Brand/><div className="ml-auto"><PlanBadge planCode={data.planCode}/></div><details className="group ml-2"><summary aria-label="Сурагчийн цэс нээх" className="list-none rounded-lg p-2 [&::-webkit-details-marker]:hidden"><Menu size={21}/></summary><nav aria-label="Сурагчийн цэс" className="absolute left-0 right-0 z-40 mt-3 border-y bg-white p-3 shadow-lg">{nav.map(({label,href,icon:Icon,active}) => <Link key={label} href={href} aria-current={active ? "page" : undefined} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm ${active ? "bg-primary/10 font-medium text-primary" : "hover:bg-muted"}`}><Icon size={17}/>{label}</Link>)}<form action={signOut}><button type="submit" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-700 hover:bg-red-50"><LogOut size={17}/>Гарах</button></form></nav></details></header>; }
+function MobileHeader({ data }: { data: StudentDashboardData }) { return <header className="flex h-16 items-center border-b bg-white px-4 lg:hidden"><Brand/><Link href="/dashboard/settings" aria-label="Профайл болон тохиргоо" className="ml-auto flex min-h-11 items-center gap-2 rounded-xl px-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><PlanBadge planCode={data.planCode}/><Settings aria-hidden="true" size={20} className="text-muted-foreground"/></Link></header>; }
 function Avatar({ data }: { data: StudentDashboardData }) { return data.avatarUrl ? <span role="img" aria-label={`${data.name} профайл зураг`} className="h-10 w-10 rounded-full bg-cover bg-center" style={{backgroundImage:`url(${JSON.stringify(data.avatarUrl)})`}}/> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{initials(data.name)}</span>; }
 function PlanBadge({ planCode }: { planCode: StudentDashboardData["planCode"] }) { const paid = planCode !== "free"; return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${paid ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{planCode === "mentor_monthly" ? "Ментор+" : planCode === "standard_monthly" ? "Стандарт" : "Үнэгүй"}</span>; }
 function SidebarPlanCard({ data }: { data: StudentDashboardData }) { const paid = data.planCode !== "free"; return <div className="mt-auto rounded-2xl bg-[#0b1030] p-4 text-white">{paid ? <><div className="flex items-center justify-between gap-2"><p className="text-sm font-medium">Таны багц</p><span className="h-2 w-2 rounded-full bg-emerald-400"/></div><p className="mt-2 text-lg font-semibold">{data.planCode === "mentor_monthly" ? "Ментор+" : "Стандарт"}</p><p className="mt-1 text-xs text-slate-400">{data.planExpiresAt ? `${formatPlanDate(data.planExpiresAt)} хүртэл идэвхтэй` : "Идэвхтэй эрх"}</p></> : <><p className="text-sm font-medium">Үнэгүй багц</p><p className="mt-2 text-xs leading-5 text-slate-400">Бүх сорил, тайлангаа нээхийн тулд багцаа ахиулаарай.</p><Link href="/#pricing" className="mt-3 flex justify-center rounded-lg bg-primary py-2 text-xs">Багц харах</Link></>}</div>; }
