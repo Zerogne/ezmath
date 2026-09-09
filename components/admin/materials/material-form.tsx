@@ -100,8 +100,11 @@ export function MaterialForm({ examType, initial }: { examType: ExamType; initia
     form.set("examType", examType);
     try {
       const response = await fetch("/api/admin/materials/import-pdf", { method: "POST", body: form });
-      const body = await response.json() as { material?: MaterialEditorData; error?: string };
-      if (!response.ok || !body.material) throw new Error(body.error ?? "PDF импорт амжилтгүй боллоо.");
+      const body = await response.json().catch(() => ({})) as { material?: MaterialEditorData; error?: string; stage?: string };
+      if (!response.ok || !body.material) {
+        if (response.status === 504) throw new Error("PDF боловсруулах хугацаа серверийн хязгаараас хэтэрлээ. Дахин оролдох эсвэл PDF-ээ хэсэгчлэн оруулна уу.");
+        throw new Error(body.error ? `${body.error}${body.stage ? ` (${body.stage})` : ""}` : "PDF импорт амжилтгүй боллоо.");
+      }
       const material = body.material;
       setTitle(material.title);
       setSubject(material.subject);

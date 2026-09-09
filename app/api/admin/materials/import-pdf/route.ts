@@ -49,15 +49,18 @@ function apiError(provider: Provider, status: number, body: unknown) {
 
 async function requestJson(provider: Provider, apiKey: string, model: string, prompt: string, pdfBase64: string, pdfText: string, filename: string) {
   let response: Response;
+  const signal = AbortSignal.timeout(140_000);
   if (provider === "openai") {
     response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
+      signal,
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model, input: [{ role: "user", content: [{ type: "input_file", filename, file_data: `data:application/pdf;base64,${pdfBase64}` }, { type: "input_text", text: prompt }] }], temperature: 0.1 }),
     });
   } else if (provider === "anthropic") {
     response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
+      signal,
       headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
@@ -75,12 +78,14 @@ async function requestJson(provider: Provider, apiKey: string, model: string, pr
   } else if (provider === "gemini") {
     response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
+      signal,
       headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ parts: [{ inline_data: { mime_type: "application/pdf", data: pdfBase64 } }, { text: prompt }] }], generationConfig: { responseMimeType: "application/json" } }),
     });
   } else {
     response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
       method: "POST",
+      signal,
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model, messages: [{ role: "user", content: `${prompt}\n\nPDF TEXT:\n${pdfText}` }], max_tokens: 32000, temperature: 0.1 }),
     });
@@ -220,7 +225,7 @@ async function extractAndUploadImages(request: Request, file: File, raw: Record<
   form.set("file", file);
   form.set("regions", JSON.stringify(regions));
   form.set("upload_prefix", randomUUID());
-  const response = await fetch(new URL("/api/pdf_extract", request.url), { method: "POST", headers: { "x-extractor-secret": secret }, body: form });
+  const response = await fetch(new URL("/api/pdf_extract", request.url), { method: "POST", headers: { "x-extractor-secret": secret }, body: form, signal: AbortSignal.timeout(60_000) });
   const body = await response.json().catch(() => ({})) as { assets?: Record<string, string>; detail?: string };
   if (!response.ok) throw new Error(body.detail ?? "PDF зургийг Python extractor-аар задлаж чадсангүй.");
   return body.assets ?? {};
@@ -232,7 +237,7 @@ async function extractLayout(request: Request, file: File) {
   const form = new FormData();
   form.set("file", file);
   form.set("action", "layout");
-  const response = await fetch(new URL("/api/pdf_extract", request.url), { method: "POST", headers: { "x-extractor-secret": secret }, body: form });
+  const response = await fetch(new URL("/api/pdf_extract", request.url), { method: "POST", headers: { "x-extractor-secret": secret }, body: form, signal: AbortSignal.timeout(60_000) });
   const body = await response.json().catch(() => ({})) as { layout?: unknown; detail?: string };
   if (!response.ok || !body.layout) throw new Error(body.detail ?? "PyMuPDF4LLM PDF бүтцийг уншиж чадсангүй.");
   return body.layout;
@@ -325,20 +330,29 @@ export async function POST(request: Request) {
     if (examType === "EYESH" && !["A", "B", "C", "D"].includes(selectedVariant)) return NextResponse.json({ error: "ЭЕШ-ийн хувилбар A–D байна." }, { status: 400 });
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") return NextResponse.json({ error: "Файл PDF форматтай биш байна." }, { status: 400 });
+    const startedAt = Date.now();
     stage = "pymupdf4llm";
     const layout = await extractLayout(request, file);
     const layoutChunks = splitLayout(layout);
+    console.info("PDF import stage completed", { stage, durationMs: Date.now() - startedAt, chunks: layoutChunks.length });
     stage = "claude_mapping";
-    const imports: Record<string, unknown>[] = [];
-    for (const [index, layoutJson] of layoutChunks.entries()) {
-      stage = `claude_mapping_${index + 1}_of_${layoutChunks.length}`;
-      const output = await requestJson(provider, apiKey, model, extractionPrompt(examType, layoutJson, layoutChunks.length > 1 ? { index, total: layoutChunks.length } : undefined), Buffer.from(bytes).toString("base64"), layoutJson, file.name);
-      stage = `json_parse_${index + 1}_of_${layoutChunks.length}`;
-      imports.push(parseJson(output));
-    }
+    const mappingStartedAt = Date.now();
+    const pdfBase64 = Buffer.from(bytes).toString("base64");
+    const imports = await Promise.all(layoutChunks.map(async (layoutJson, index) => {
+      try {
+        const output = await requestJson(provider, apiKey, model, extractionPrompt(examType, layoutJson, layoutChunks.length > 1 ? { index, total: layoutChunks.length } : undefined), pdfBase64, layoutJson, file.name);
+        return parseJson(output);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "AI mapping failed";
+        throw new Error(`AI chunk ${index + 1}/${layoutChunks.length}: ${message}`);
+      }
+    }));
+    console.info("PDF import stage completed", { stage, durationMs: Date.now() - mappingStartedAt, chunks: layoutChunks.length });
     const raw = mergeImports(imports);
     stage = "image_extraction";
+    const imageStartedAt = Date.now();
     const assets = await extractAndUploadImages(request, file, raw);
+    console.info("PDF import stage completed", { stage, durationMs: Date.now() - imageStartedAt, assets: Object.keys(assets).length, totalDurationMs: Date.now() - startedAt });
     stage = "normalization";
     return NextResponse.json({ material: normalize(raw, examType, file.name, assets, selectedYear, selectedVariant) });
   } catch (error) {
