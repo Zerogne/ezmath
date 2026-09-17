@@ -26,11 +26,13 @@ Coordinates are normalized PDF page coordinates [x0,y0,x1,y1], each from 0 to 1.
 
 For ordinary choices use questionType "multiple-choice". For EYESH part 2 written/fill questions use "multi-blank" and return every printed answer field label exactly (examples: af, bg, abc) in responseFields. These labels remain editable. Do not provide accepted answers.
 
+EYESH PART II HIERARCHY (CRITICAL): Part II contains exactly FOUR parent problems. Each parent problem can contain several instructions, equations, subquestions, and named answer blanks. Return exactly one question object per parent problem—not one object per subquestion, sentence, blank, or layout block. Put the entire parent problem text and all of its subquestions into that one object's text, in reading order, and put all named blanks into that object's responseFields. Set section to "II" and parentProblemNumber to the printed parent problem number. If the layout makes you emit a fragment despite this rule, repeat the same parentProblemNumber and set subpartLabel so the server can merge it. Part I questions use section "I" and an empty parentProblemNumber/subpartLabel.
+
 Return ONLY valid JSON:
-{"title":"string","subject":"string","year":2026,"durationMinutes":35,"type":"practice","description":"string","questions":[{"sourceQuestionNumber":"1","questionType":"multiple-choice","text":"string","pageNumber":1,"imageBox":null,"choices":[{"label":"A","text":"string","imageBox":null}],"responseFields":[],"explanation":"","topic":"string","difficulty":"Medium"}]}
+{"title":"string","subject":"string","year":2026,"durationMinutes":35,"type":"practice","description":"string","questions":[{"sourceQuestionNumber":"1","section":"I","parentProblemNumber":"","subpartLabel":"","questionType":"multiple-choice","text":"string","pageNumber":1,"imageBox":null,"choices":[{"label":"A","text":"string","imageBox":null}],"responseFields":[],"explanation":"","topic":"string","difficulty":"Medium"}]}
 Allowed type: full, practice, previous-year. Allowed difficulty: Easy, Medium, Hard. A multiple-choice question needs at least two choices whose text or imageBox is present. A multi-blank question needs at least one responseFields item shaped {"label":"af"}.
 
-COMPLETENESS IS REQUIRED: transcribe every numbered question in the supplied pages, including incomplete-looking questions and every EYESH II хэсэг / задгай даалгавар. Never omit a question because its choices, diagram, formula, or response-field labels are difficult to read. Preserve its sourceQuestionNumber separately while removing that number from text. For EYESH Part II, one printed problem may contain several named answer boxes; return one multi-blank question with every box name in responseFields.
+COMPLETENESS IS REQUIRED: transcribe every numbered question in the supplied pages, including incomplete-looking questions and every EYESH II хэсэг / задгай даалгавар. Never omit a question because its choices, diagram, formula, or response-field labels are difficult to read. Preserve its sourceQuestionNumber separately while removing that number from text. Never promote nested numbering such as a), б), 1), 2), or an individual answer blank into a separate parent problem.
 
 PyMuPDF4LLM extracted the following native structured layout JSON. Treat it as the primary source for reading order, text, tables, formulas, picture regions, page numbers, and bounding boxes. Use the attached PDF only to resolve ambiguity. Convert absolute PyMuPDF4LLM bounding boxes to normalized page coordinates for imageBox.
 
@@ -131,6 +133,68 @@ function parseJson(text: string) {
 }
 
 function stringValue(value: unknown, fallback = "") { return typeof value === "string" ? value.trim() : fallback; }
+
+function normalizedText(value: unknown) {
+  return stringValue(value).toLocaleLowerCase("mn").replace(/\s+/g, " ").trim();
+}
+
+function partTwoParentNumber(question: Record<string, unknown>) {
+  const explicit = stringValue(question.parentProblemNumber);
+  const section = stringValue(question.section).toUpperCase().replace(/\s+/g, "");
+  const partTwoSection = new Set(["II", "2", "PARTII", "ХЭСЭГII", "IIХЭСЭГ"]).has(section);
+  if (question.questionType !== "multi-blank" && !partTwoSection && !explicit) return "";
+  if (explicit) {
+    const numeric = explicit.match(/^0*(\d+)/);
+    return numeric?.[1] ?? explicit;
+  }
+  if (!partTwoSection) return "";
+  const source = stringValue(question.sourceQuestionNumber);
+  const match = source.match(/^0*(\d+)/);
+  return match?.[1] ?? "";
+}
+
+function mergeQuestionText(questions: Record<string, unknown>[]) {
+  const texts = questions.map((question) => stringValue(question.text)).filter(Boolean);
+  const unique = texts.filter((text, index) => texts.findIndex((candidate) => normalizedText(candidate) === normalizedText(text)) === index);
+  const fragments = unique.filter((text, index) => !unique.some((candidate, candidateIndex) => candidateIndex !== index && normalizedText(candidate).includes(normalizedText(text))));
+  return fragments.join("\n\n");
+}
+
+function consolidateEyeshPartTwo(raw: Record<string, unknown>) {
+  const source = Array.isArray(raw.questions) ? raw.questions : [];
+  const output: Record<string, unknown>[] = [];
+  const groupIndexes = new Map<string, number>();
+  for (const item of source) {
+    if (!item || typeof item !== "object") continue;
+    const question = item as Record<string, unknown>;
+    const parent = partTwoParentNumber(question);
+    if (!parent) {
+      output.push(question);
+      continue;
+    }
+    const key = `part-II:${parent}`;
+    const existingIndex = groupIndexes.get(key);
+    if (existingIndex === undefined) {
+      groupIndexes.set(key, output.length);
+      output.push({ ...question, section: "II", parentProblemNumber: parent, sourceQuestionNumber: parent, questionType: "multi-blank", choices: [] });
+      continue;
+    }
+    const existing = output[existingIndex];
+    const fragments = [existing, question];
+    const fields = fragments.flatMap((fragment) => Array.isArray(fragment.responseFields) ? fragment.responseFields : []).filter((field): field is Record<string, unknown> => Boolean(field) && typeof field === "object");
+    const seenFields = new Set<string>();
+    existing.text = mergeQuestionText(fragments);
+    existing.responseFields = fields.filter((field) => {
+      const label = normalizedText(field.label);
+      if (!label || seenFields.has(label)) return false;
+      seenFields.add(label);
+      return true;
+    });
+    existing.pageNumber = Math.min(Number(existing.pageNumber) || Number(question.pageNumber) || 1, Number(question.pageNumber) || Number(existing.pageNumber) || 1);
+    if (!validBox(existing.imageBox) && validBox(question.imageBox)) existing.imageBox = question.imageBox;
+  }
+  return { ...raw, questions: output };
+}
 
 function normalize(raw: Record<string, unknown>, examType: ExamType, filename: string, assets: Record<string, string>, selectedYear?: number, selectedVariant?: "A" | "B" | "C" | "D"): MaterialEditorData {
   const rawQuestions = Array.isArray(raw.questions) ? raw.questions.slice(0, 200) : [];
@@ -288,7 +352,9 @@ function mergeImports(imports: Record<string, unknown>[]) {
     const record = question as Record<string, unknown>;
     const number = stringValue(record.sourceQuestionNumber);
     const text = stringValue(record.text).toLocaleLowerCase().replace(/\s+/g, " ").slice(0, 160);
-    const key = number ? `${Number(record.pageNumber) || 0}:${number}` : `${Number(record.pageNumber) || 0}:${text}`;
+    const parent = stringValue(record.parentProblemNumber);
+    const subpart = stringValue(record.subpartLabel);
+    const key = `${Number(record.pageNumber) || 0}:${number}:${parent}:${subpart}:${text}`;
     if (!text || seen.has(key)) continue;
     seen.add(key);
     questions.push(question);
@@ -348,7 +414,12 @@ export async function POST(request: Request) {
       }
     }));
     console.info("PDF import stage completed", { stage, durationMs: Date.now() - mappingStartedAt, chunks: layoutChunks.length });
-    const raw = mergeImports(imports);
+    const merged = mergeImports(imports);
+    const raw = examType === "EYESH" ? consolidateEyeshPartTwo(merged) : merged;
+    if (examType === "EYESH") {
+      const partTwoCount = (Array.isArray(raw.questions) ? raw.questions : []).filter((question) => question && typeof question === "object" && (question as Record<string, unknown>).questionType === "multi-blank").length;
+      console.info("EYESH Part II consolidation completed", { partTwoCount });
+    }
     stage = "image_extraction";
     const imageStartedAt = Date.now();
     const assets = await extractAndUploadImages(request, file, raw);
