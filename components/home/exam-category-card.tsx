@@ -1,8 +1,0 @@
-import Link from "next/link";
-import { ArrowRight, BookOpen, Calculator } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-
-export function ExamCategories() {
-  return <section className="container-page py-12"><div className="mb-7"><p className="eyebrow">Сонголтууд</p><h2 className="mt-2 text-2xl font-bold sm:text-3xl">Шалгалтын төрлөө сонго</h2></div><div className="grid gap-5 md:grid-cols-2"><Category exam="SAT" title="Digital SAT" items={["Math", "Reading & Writing", "Full Mock Test"]} href="/tests?exam=SAT" icon={<Calculator />} /><Category exam="ЭЕШ" title="Монголын ЭЕШ" items={["Математик", "Англи хэл", "Физик"]} href="/tests?exam=EYESH" icon={<BookOpen />} note="Өмнөх оны бодит материал" /></div></section>;
-}
-function Category({ exam, title, items, href, icon, note }: { exam: string; title: string; items: string[]; href: string; icon: React.ReactNode; note?: string }) { return <Link href={href} className="group rounded-2xl border bg-white p-6 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft sm:p-8"><div className="flex items-start justify-between"><span className="rounded-xl bg-emerald-50 p-3 text-primary [&>svg]:h-6 [&>svg]:w-6">{icon}</span><Badge tone="green">{exam}</Badge></div><h3 className="mt-7 text-2xl font-bold">{title}</h3>{note && <p className="mt-1 text-sm text-muted-foreground">{note}</p>}<div className="mt-5 flex flex-wrap gap-2">{items.map((x) => <span key={x} className="rounded-lg bg-muted px-3 py-2 text-sm">{x}</span>)}</div><span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-primary">{exam} бэлтгэл <ArrowRight size={16} className="transition group-hover:translate-x-1" /></span></Link>; }

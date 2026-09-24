@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { safeNextPath } from "@/lib/auth/safe-next";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
@@ -9,14 +9,9 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
-      const admin = createAdminClient();
-      const { data: profile } = await admin.from("profiles").select("role").eq("id", data.user.id).single();
-      let effectiveRole = profile?.role ?? "student";
-      if (url.searchParams.get("setRole") === "1" && profile?.role !== "admin") {
-        await admin.from("profiles").update({ role: "student", school_id: null }).eq("id", data.user.id);
-        effectiveRole = "student";
-      }
-      const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : effectiveRole === "admin" ? "/admin" : effectiveRole === "school_admin" ? "/school" : effectiveRole === "teacher" ? "/teacher" : "/dashboard";
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
+      const effectiveRole = profile?.role ?? "student";
+      const next = safeNextPath(requestedNext) ?? (effectiveRole === "admin" ? "/admin" : effectiveRole === "school_admin" ? "/school" : effectiveRole === "teacher" ? "/teacher" : "/dashboard");
       return NextResponse.redirect(new URL(next, url.origin));
     }
   }

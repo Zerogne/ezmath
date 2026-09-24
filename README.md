@@ -128,7 +128,7 @@ npm run lint
 npm run build
 npm audit
 ```
-pp
+
 The current codebase audit is documented in [CODEBASE_AUDIT.md](./CODEBASE_AUDIT.md). The most important remaining work is adding automated tests and CI, introducing rate limits for mutation/import endpoints, and validating the admin material RPC on a clean Supabase project.
 
 ## Repository hygiene

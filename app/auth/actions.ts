@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createHash, timingSafeEqual } from "node:crypto";
+import { safeNextPath } from "@/lib/auth/safe-next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -29,15 +30,11 @@ function credentials(formData: FormData) {
     email: String(formData.get("email") ?? "").trim(),
     password: String(formData.get("password") ?? ""),
     fullName: String(formData.get("fullName") ?? "").trim(),
-    next: safeNext(String(formData.get("next") ?? "")),
+    next: safeNextPath(String(formData.get("next") ?? "")),
     role: String(formData.get("role") ?? "student") === "teacher" ? "teacher" as const : "student" as const,
     schoolSlug: String(formData.get("school") ?? ""),
     schoolCode: String(formData.get("schoolCode") ?? "").trim().toUpperCase(),
   };
-}
-
-function safeNext(value: string) {
-  return value.startsWith("/") && !value.startsWith("//") ? value : undefined;
 }
 
 export async function signIn(_state: AuthState, formData: FormData): Promise<AuthState> {
@@ -73,7 +70,10 @@ export async function signUp(_state: AuthState, formData: FormData): Promise<Aut
   });
   if (error || !data.user) return { error: signUpErrorMessage(error?.code) };
   if (role === "teacher") {
-    const { error: profileError } = await admin.from("profiles").update({ role: "teacher", school_id: schoolId }).eq("id", data.user.id);
+    const { error: profileError } = await admin
+      .from("profiles")
+      .update({ role: "teacher", school_id: schoolId, teacher_status: "pending" })
+      .eq("id", data.user.id);
     if (profileError) {
       await admin.auth.admin.deleteUser(data.user.id);
       return { error: "Багшийн эрхийг тохируулж чадсангүй. Дахин оролдоно уу." };

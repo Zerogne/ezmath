@@ -66,13 +66,3 @@ export const plans: readonly Plan[] = [
 export const paidPlans = plans.filter((plan) => plan.priceMnt > 0);
 
 export const planByCode = Object.fromEntries(plans.map((plan) => [plan.code, plan])) as Record<PlanCode, Plan>;
-
-export const FREE_FULL_EXAM_ATTEMPT_LIMIT = 1;
-
-export function hasDetailedReports(planCode: PlanCode) {
-  return planCode !== "free";
-}
-
-export function hasAllLearningContent(planCode: PlanCode) {
-  return planCode !== "free";
-}

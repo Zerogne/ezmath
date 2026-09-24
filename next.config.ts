@@ -23,6 +23,11 @@ const questionImagePattern = supabaseUrl
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "4mb",
+    },
+  },
   images: { remotePatterns: questionImagePattern ? [questionImagePattern] : [] },
   async headers() {
     return [{

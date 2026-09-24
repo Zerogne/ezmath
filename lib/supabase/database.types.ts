@@ -1,10 +1,19 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = { Row: Row; Insert: Insert; Update: Update; Relationships: [] };
 
-type Profile = { id: string; full_name: string | null; avatar_url: string | null; role: "student" | "teacher" | "school_admin" | "admin"; school_id: string | null; created_at: string };
+export type TeacherVerificationStatus = "pending" | "approved" | "rejected";
+export type SchoolLibraryAnswerType = "multiple_choice" | "numeric" | "free_response";
+export type ClassExamStatus = "draft" | "scheduled" | "active" | "closed";
+export type ClassExamSubmissionStatus = "in_progress" | "submitted" | "graded";
+type Profile = { id: string; full_name: string | null; avatar_url: string | null; role: "student" | "teacher" | "school_admin" | "admin"; school_id: string | null; teacher_status: TeacherVerificationStatus | null; created_at: string };
 type SchoolRow = { id: string; name: string; slug: string; is_active: boolean; registration_code_hash: string; teacher_registration_code: string | null; created_at: string };
 type ClassroomRow = { id: string; teacher_id: string; school_id: string; name: string; code: string; created_at: string; updated_at: string };
 type ClassroomStudentRow = { classroom_id: string; student_id: string; joined_at: string };
+type SchoolLibraryMaterialRow = { id: string; school_id: string; created_by: string | null; title: string; topic: string; question_latex: string; answer_type: SchoolLibraryAnswerType; answer_key: string; choices: Json; created_at: string; updated_at: string };
+type ClassExamRow = { id: string; classroom_id: string; school_id: string; teacher_id: string; title: string; instructions: string; duration_minutes: number; starts_at: string | null; closes_at: string | null; status: ClassExamStatus; created_at: string; updated_at: string };
+type ClassExamQuestionRow = { id: string; exam_id: string; source_material_id: string | null; position: number; title: string; topic: string; question_latex: string; answer_type: SchoolLibraryAnswerType; answer_key: string; choices: Json; max_points: number; created_at: string };
+type ClassExamSubmissionRow = { id: string; exam_id: string; student_id: string; status: ClassExamSubmissionStatus; started_at: string; submitted_at: string | null; graded_at: string | null; auto_score: number; manual_score: number; total_score: number; max_score: number; needs_manual_grading: boolean; teacher_feedback: string; created_at: string; updated_at: string };
+type ClassExamAnswerRow = { id: string; submission_id: string; question_id: string; selected_choice: string | null; response_text: string | null; is_correct: boolean | null; auto_score: number; manual_score: number | null; teacher_feedback: string; created_at: string; updated_at: string };
 type TestRow = { id: string; exam_type: "SAT" | "EYESH"; title: string; subject: string; year: number | null; variant: "A" | "B" | "C" | "D" | null; duration_minutes: number; difficulty: "Easy" | "Medium" | "Hard" | null; test_type: "full" | "practice" | "previous-year"; status: "draft" | "published" | "archived"; instructions: string | null; created_by: string | null; created_at: string; updated_at: string };
 type QuestionRow = { id: string; test_id: string; question_number: number; question_text: string; question_type: string; response_fields: Json; topic: string | null; difficulty: "Easy" | "Medium" | "Hard" | null; explanation: string | null; image_url: string | null; created_at: string; updated_at: string };
 type ChoiceRow = { id: string; question_id: string; label: string; text: string; image_url: string | null; is_correct: boolean; sort_order: number };
@@ -22,10 +31,15 @@ type CourseLessonRow = { id: string; slug: string; course_slug: string; module_i
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "teacher" | "school_admin" | "admin"; school_id?: string | null }>;
+      profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "teacher" | "school_admin" | "admin"; school_id?: string | null; teacher_status?: TeacherVerificationStatus | null }>;
       schools: Table<SchoolRow, Pick<SchoolRow, "name" | "slug"> & Partial<SchoolRow>>;
       classrooms: Table<ClassroomRow, Pick<ClassroomRow, "teacher_id" | "school_id" | "name" | "code"> & Partial<ClassroomRow>>;
       classroom_students: Table<ClassroomStudentRow, ClassroomStudentRow>;
+      school_library_materials: Table<SchoolLibraryMaterialRow, Pick<SchoolLibraryMaterialRow, "school_id" | "created_by" | "title" | "topic" | "question_latex" | "answer_type" | "answer_key" | "choices"> & Partial<SchoolLibraryMaterialRow>>;
+      class_exams: Table<ClassExamRow, Pick<ClassExamRow, "classroom_id" | "school_id" | "teacher_id" | "title" | "duration_minutes" | "status"> & Partial<ClassExamRow>>;
+      class_exam_questions: Table<ClassExamQuestionRow, Pick<ClassExamQuestionRow, "exam_id" | "position" | "title" | "topic" | "question_latex" | "answer_type" | "answer_key" | "choices" | "max_points"> & Partial<ClassExamQuestionRow>>;
+      class_exam_submissions: Table<ClassExamSubmissionRow, Pick<ClassExamSubmissionRow, "exam_id" | "student_id" | "max_score"> & Partial<ClassExamSubmissionRow>>;
+      class_exam_answers: Table<ClassExamAnswerRow, Pick<ClassExamAnswerRow, "submission_id" | "question_id"> & Partial<ClassExamAnswerRow>>;
       tests: Table<TestRow, Omit<TestRow, "id" | "created_at" | "updated_at"> & { id?: string }>;
       questions: Table<QuestionRow, Omit<QuestionRow, "id" | "created_at" | "updated_at"> & { id?: string }>;
       answer_choices: Table<ChoiceRow, Omit<ChoiceRow, "id"> & { id?: string }>;
@@ -45,6 +59,13 @@ export type Database = {
       student_answer_choices: { Row: Pick<ChoiceRow, "id" | "question_id" | "label" | "text" | "image_url" | "sort_order">; Relationships: [] };
     };
     Functions: {
+      submit_class_exam: {
+        Args: {
+          p_exam_id: string;
+          p_answers?: Json;
+        };
+        Returns: Json;
+      };
       save_admin_material: {
         Args: {
           p_test_id: string | null;
@@ -66,6 +87,10 @@ export type Database = {
       test_type: "full" | "practice" | "previous-year";
       difficulty: "Easy" | "Medium" | "Hard";
       profile_role: "student" | "teacher" | "school_admin" | "admin";
+      teacher_verification_status: TeacherVerificationStatus;
+      school_library_answer_type: SchoolLibraryAnswerType;
+      class_exam_status: ClassExamStatus;
+      class_exam_submission_status: ClassExamSubmissionStatus;
       content_status: "draft" | "published" | "archived";
       attempt_status: "not_started" | "in_progress" | "submitted";
     };

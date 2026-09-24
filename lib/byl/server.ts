@@ -19,10 +19,6 @@ function bylConfig() {
   return { projectId, apiToken };
 }
 
-export function isBylConfigured() {
-  return Boolean(process.env.BYL_PROJECT_ID && process.env.BYL_API_TOKEN && process.env.BYL_WEBHOOK_SECRET);
-}
-
 export async function createBylCheckout(input: CreateBylCheckout): Promise<BylCheckout> {
   const { projectId, apiToken } = bylConfig();
   const response = await fetch(`${BYL_API_URL}/projects/${encodeURIComponent(projectId)}/checkouts`, {

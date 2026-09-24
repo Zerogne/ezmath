@@ -120,7 +120,3 @@ export const coreMathCourse = {
 export const allLessons = coreMathCourse.modules.flatMap((module) =>
   module.lessons.map((item) => ({ ...item, moduleId: module.id, moduleTitle: module.title })),
 );
-
-export function getLessonById(id: string) {
-  return allLessons.find((item) => item.id === id);
-}

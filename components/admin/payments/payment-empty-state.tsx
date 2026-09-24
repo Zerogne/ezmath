@@ -1,2 +1,0 @@
-import { CreditCard } from "lucide-react";
-export function PaymentEmptyState() { return <div className="mt-8 rounded-xl border border-dashed bg-white px-6 py-16 text-center"><span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-muted text-muted-foreground"><CreditCard size={20}/></span><h2 className="mt-5 font-bold">Төлбөрийн систем холбогдоогүй</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">Төлбөрийн бүртгэл болон subscription удирдлагыг дараагийн хувилбарт энд нэмнэ.</p></div>; }
