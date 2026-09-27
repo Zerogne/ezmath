@@ -13,10 +13,18 @@ export async function listAdminSchools() {
   ]);
   if (error) throw new Error("Сургуулиудыг ачаалж чадсангүй.");
   const emails = new Map((usersResult.data?.users ?? []).map((user) => [user.id, user.email ?? "—"]));
+  const accountMap = new Map<string, NonNullable<typeof accounts>>();
+  const teacherCounts = new Map<string, number>();
+  const studentCounts = new Map<string, number>();
+  const classCounts = new Map<string, number>();
+  for (const account of accounts ?? []) if (account.school_id) accountMap.set(account.school_id, [...(accountMap.get(account.school_id) ?? []), account]);
+  for (const teacher of teachers ?? []) if (teacher.school_id) teacherCounts.set(teacher.school_id, (teacherCounts.get(teacher.school_id) ?? 0) + 1);
+  for (const student of students ?? []) if (student.school_id) studentCounts.set(student.school_id, (studentCounts.get(student.school_id) ?? 0) + 1);
+  for (const classroom of classrooms ?? []) classCounts.set(classroom.school_id, (classCounts.get(classroom.school_id) ?? 0) + 1);
   return (schools ?? []).map((school) => ({ ...school,
-    accounts: (accounts ?? []).filter((item) => item.school_id === school.id).map((item) => ({ id: item.id, name: item.full_name || "Сургуулийн админ", email: emails.get(item.id) || "—", createdAt: item.created_at })),
-    teacherCount: (teachers ?? []).filter((item) => item.school_id === school.id).length,
-    studentCount: (students ?? []).filter((item) => item.school_id === school.id).length,
-    classCount: (classrooms ?? []).filter((item) => item.school_id === school.id).length,
+    accounts: (accountMap.get(school.id) ?? []).map((item) => ({ id: item.id, name: item.full_name || "Сургуулийн админ", email: emails.get(item.id) || "—", createdAt: item.created_at })),
+    teacherCount: teacherCounts.get(school.id) ?? 0,
+    studentCount: studentCounts.get(school.id) ?? 0,
+    classCount: classCounts.get(school.id) ?? 0,
   }));
 }
