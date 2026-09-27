@@ -67,15 +67,28 @@ export async function signUp(_state: AuthState, formData: FormData): Promise<Aut
     password,
     email_confirm: true,
     user_metadata: { full_name: fullName },
+    app_metadata: role === "teacher" ? { account_type: "teacher", school_id: schoolId } : { account_type: "student" },
   });
   if (error || !data.user) return { error: signUpErrorMessage(error?.code) };
   if (role === "teacher") {
-    const { error: profileError } = await admin
+    const { data: teacherProfile, error: profileError } = await admin
       .from("profiles")
-      .update({ role: "teacher", school_id: schoolId, teacher_status: "pending" })
-      .eq("id", data.user.id);
-    if (profileError) {
-      await admin.auth.admin.deleteUser(data.user.id);
+      .upsert({
+        id: data.user.id,
+        full_name: fullName,
+        role: "teacher",
+        school_id: schoolId,
+        teacher_status: "pending",
+      }, { onConflict: "id" })
+      .select("id, role, school_id, teacher_status")
+      .single();
+    const teacherConfigured = teacherProfile?.role === "teacher"
+      && teacherProfile.school_id === schoolId
+      && teacherProfile.teacher_status === "pending";
+    if (profileError || !teacherConfigured) {
+      const { error: cleanupError } = await admin.auth.admin.deleteUser(data.user.id);
+      if (cleanupError) console.error("Failed to clean up teacher signup", { userId: data.user.id, code: cleanupError.code });
+      console.error("Failed to configure teacher signup", { userId: data.user.id, code: profileError?.code });
       return { error: "Багшийн эрхийг тохируулж чадсангүй. Дахин оролдоно уу." };
     }
   }
