@@ -26,7 +26,7 @@ export function MaterialsTable({ materials, exam }: { materials: AdminMaterial[]
   });
 
   const remove = (material: AdminMaterial) => {
-    if (!window.confirm(`“${material.title}” тестийг бүрмөсөн устгах уу? Энэ үйлдлийг буцаах боломжгүй.`)) return;
+    if (!window.confirm(`“${material.title}”-г устгах уу? Буцаах боломжгүй.`)) return;
     startTransition(async () => {
       setError("");
       const result = await deleteMaterial(material.id);

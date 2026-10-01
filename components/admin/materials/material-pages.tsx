@@ -11,12 +11,12 @@ const copy = {
   SAT: {
     slug: "sat",
     label: "SAT",
-    description: "SAT шалгалт, модуль болон дасгалуудыг удирдах",
+    description: "SAT материал удирдах",
   },
   EYESH: {
     slug: "eyesh",
     label: "ЭЕШ",
-    description: "ЭЕШ-ийн өмнөх оны материал болон дасгалуудыг удирдах",
+    description: "ЭЕШ материал удирдах",
   },
 } as const;
 
@@ -33,5 +33,5 @@ export async function AdminMaterialEdit({ examType, testId }: { examType: ExamTy
 }
 
 export function AdminMaterialCreate({ examType }: { examType: ExamType }) {
-  return <><AdminPageHeader title={`${copy[examType].label} материал нэмэх`} description="Үндсэн мэдээлэл болон асуултуудаа оруулна уу"/><MaterialForm examType={examType}/></>;
+  return <><AdminPageHeader title={`${copy[examType].label} материал нэмэх`} description="Мэдээлэл болон асуултаа оруулна уу"/><MaterialForm examType={examType}/></>;
 }
