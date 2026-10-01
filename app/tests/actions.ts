@@ -6,16 +6,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { SubmissionPayload, SubmissionResult } from "@/lib/exam/test-types";
 
-export async function startTestAttempt(testId: string, startedAt: string) {
-  if (!isSupabaseConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+export type StartAttemptResult = { attemptId: string; error?: undefined } | { attemptId: null; error?: "auth_required" | "limit_reached" | "failed" };
+
+export async function startTestAttempt(testId: string, startedAt: string): Promise<StartAttemptResult> {
+  if (!isSupabaseConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return { attemptId: null };
   const authClient = await createClient();
   const { data: { user } } = await authClient.auth.getUser();
-  if (!user) throw new Error("Шалгалтаа эхлүүлэхийн тулд нэвтэрнэ үү.");
+  if (!user) return { attemptId: null, error: "auth_required" };
   const admin = createAdminClient();
   const { data: test } = await admin.from("tests").select("id,test_type").eq("id", testId).eq("status", "published").maybeSingle();
-  if (!test) return null;
+  if (!test) return { attemptId: null };
   const { data: existing } = await admin.from("test_attempts").select("id").eq("user_id", user.id).eq("test_id", testId).eq("status", "in_progress").order("started_at", { ascending: false }).limit(1).maybeSingle();
-  if (existing) return existing.id;
+  if (existing) return { attemptId: existing.id };
   if (test.test_type !== "practice") {
     const [{ data: profile }, { data: subscription }] = await Promise.all([
       admin.from("profiles").select("role").eq("id", user.id).maybeSingle(),
@@ -27,13 +29,13 @@ export async function startTestAttempt(testId: string, startedAt: string) {
       const completedIds = [...new Set((completed ?? []).map((attempt) => attempt.test_id))];
       if (completedIds.length) {
         const { count } = await admin.from("tests").select("id", { count: "exact", head: true }).in("id", completedIds).neq("test_type", "practice");
-        if ((count ?? 0) >= 1) throw new Error("Үнэгүй эрхийн 1 бүтэн шалгалтын лимит дууссан. Багцаа ахиулна уу.");
+        if ((count ?? 0) >= 1) return { attemptId: null, error: "limit_reached" };
       }
     }
   }
   const { data, error } = await admin.from("test_attempts").insert({ user_id: user.id, test_id: testId, started_at: startedAt, status: "in_progress" }).select("id").single();
-  if (error || !data) throw new Error("Оролдлого үүсгэж чадсангүй.");
-  return data.id;
+  if (error || !data) return { attemptId: null, error: "failed" };
+  return { attemptId: data.id };
 }
 
 export async function submitTestAttempt(payload: SubmissionPayload): Promise<SubmissionResult> {

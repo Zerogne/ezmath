@@ -15,7 +15,7 @@ import { QuestionNavigation } from "./question-navigation";
 import { QuestionView } from "./question-view";
 
 const subscribeToBrowserCapabilities = () => () => undefined;
-const AUTH_REQUIRED_MESSAGE = "Шалгалтаа эхлүүлэхийн тулд нэвтэрнэ үү.";
+const START_ERROR_MESSAGES = { limit_reached: "Үнэгүй эрхийн 1 бүтэн шалгалтын лимит дууссан. Багцаа ахиулна уу.", failed: "Оролдлого үүсгэж чадсангүй. Дахин оролдоно уу." } as const;
 
 export function ExamShell({ test, questions }: { test: Test; questions: StudentQuestion[] }) {
   const router = useRouter();
@@ -71,17 +71,24 @@ export function ExamShell({ test, questions }: { test: Test; questions: StudentQ
     try {
       if (fullscreenSupported) await document.documentElement.requestFullscreen();
       if (!session.attemptId) {
-        const attemptId = await startTestAttempt(test.id, new Date().toISOString());
-        if (!attemptId) throw new Error("attempt_not_created");
-        dispatch({ type: "attempt", attemptId });
+        const result = await startTestAttempt(test.id, new Date().toISOString());
+        if (result.error === "auth_required") {
+          if (fullscreenSupported && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+          setAuthRequired(true);
+          return;
+        }
+        if (!result.attemptId) {
+          if (fullscreenSupported && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+          setStartError(result.error ? START_ERROR_MESSAGES[result.error] : "Шалгалтыг эхлүүлэхийн тулд бүтэн дэлгэцийн зөвшөөрлийг идэвхжүүлнэ үү.");
+          return;
+        }
+        dispatch({ type: "attempt", attemptId: result.attemptId });
       }
       setFullscreenActive(true);
       setMonitoringStarted(true);
-    } catch (error) {
+    } catch {
       if (fullscreenSupported && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
-      const message = error instanceof Error ? error.message : null;
-      if (message === AUTH_REQUIRED_MESSAGE) { setAuthRequired(true); return; }
-      setStartError(message && message !== "attempt_not_created" ? message : "Шалгалтыг эхлүүлэхийн тулд бүтэн дэлгэцийн зөвшөөрлийг идэвхжүүлнэ үү.");
+      setStartError("Шалгалтыг эхлүүлэхийн тулд бүтэн дэлгэцийн зөвшөөрлийг идэвхжүүлнэ үү.");
     }
   }
 
