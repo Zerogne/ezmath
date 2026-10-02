@@ -13,7 +13,7 @@ async function currentUser(expectedRole: "student" | "teacher", nextPath: string
     .from("profiles")
     .select("full_name, role, school_id, teacher_status")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
   if (profile?.role === "admin") redirect("/admin");
   if (profile?.role === "school_admin") redirect("/school");
   if (profile?.role !== expectedRole) redirect(expectedRole === "teacher" ? "/dashboard" : "/teacher");

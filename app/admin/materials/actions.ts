@@ -45,11 +45,14 @@ export async function saveMaterial(payload: MaterialEditorData): Promise<SaveMat
   });
   if (error) return { error: error.message || "Материал хадгалж чадсангүй." };
   const adminClient = createAdminClient();
+  const { data: ownedQuestions } = await adminClient.from("questions").select("id").eq("test_id", data);
+  const ownedQuestionIds = new Set((ownedQuestions ?? []).map((question) => question.id));
+  const scopedQuestions = payload.questions.filter((question) => ownedQuestionIds.has(question.id));
   const { error: testMetadataError } = await adminClient.from("tests").update({ variant: payload.examType === "EYESH" ? payload.variant ?? null : null }).eq("id", data);
-  const questionUpdates = await Promise.all(payload.questions.map((question) => adminClient.from("questions").update({ image_url: question.imageUrl || null, question_type: question.questionType, response_fields: question.responseFields.map(({ id, label }) => ({ id, label })) }).eq("id", question.id).eq("test_id", data)));
-  const choiceUpdates = await Promise.all(payload.questions.flatMap((question) => question.choices.map((choice) => adminClient.from("answer_choices").update({ image_url: choice.imageUrl || null }).eq("id", choice.id).eq("question_id", question.id))));
-  const { error: clearResponseAnswersError } = await adminClient.from("question_response_answers").delete().in("question_id", payload.questions.map((question) => question.id));
-  const responseAnswers = payload.questions.flatMap((question) => question.responseFields.map((field) => ({ question_id: question.id, field_id: field.id, accepted_answers: field.acceptedAnswers.filter((answer) => answer.trim()) })));
+  const questionUpdates = await Promise.all(scopedQuestions.map((question) => adminClient.from("questions").update({ image_url: question.imageUrl || null, question_type: question.questionType, response_fields: question.responseFields.map(({ id, label }) => ({ id, label })) }).eq("id", question.id).eq("test_id", data)));
+  const choiceUpdates = await Promise.all(scopedQuestions.flatMap((question) => question.choices.map((choice) => adminClient.from("answer_choices").update({ image_url: choice.imageUrl || null }).eq("id", choice.id).eq("question_id", question.id))));
+  const { error: clearResponseAnswersError } = await adminClient.from("question_response_answers").delete().in("question_id", scopedQuestions.map((question) => question.id));
+  const responseAnswers = scopedQuestions.flatMap((question) => question.responseFields.map((field) => ({ question_id: question.id, field_id: field.id, accepted_answers: field.acceptedAnswers.filter((answer) => answer.trim()) })));
   const responseAnswersError = responseAnswers.length ? (await adminClient.from("question_response_answers").insert(responseAnswers)).error : null;
   if (testMetadataError || questionUpdates.some((result) => result.error) || choiceUpdates.some((result) => result.error) || clearResponseAnswersError || responseAnswersError) return { error: "Материалын нэмэлт мэдээллийг хадгалж чадсангүй." };
   revalidatePath("/");

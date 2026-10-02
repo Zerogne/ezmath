@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     session_snapshot: { currentQuestionIndex: session.currentQuestionIndex, answers: session.answers, markedForReview: session.markedForReview, remainingSeconds: session.remainingSeconds },
     session_version: session.version,
     last_saved_at: new Date().toISOString(),
-  }).eq("id", session.attemptId).eq("user_id", auth.user.id).lt("session_version", session.version);
+  }).eq("id", session.attemptId).eq("user_id", auth.user.id).eq("status", "in_progress").lt("session_version", session.version);
   if (error) return NextResponse.json({ error: "checkpoint_failed" }, { status: 503 });
   return NextResponse.json({ persisted: "server" });
 }

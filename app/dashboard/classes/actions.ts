@@ -12,7 +12,7 @@ export async function joinClass(formData: FormData) {
   const admin = createAdminClient();
   const { data: classroom } = await admin.from("classrooms").select("id, school_id").eq("code", code).maybeSingle();
   if (!classroom) redirect("/dashboard/classes?error=not-found");
-  const { data: profile } = await admin.from("profiles").select("school_id").eq("id", user.id).single();
+  const { data: profile } = await admin.from("profiles").select("school_id").eq("id", user.id).maybeSingle();
   if (profile?.school_id && profile.school_id !== classroom.school_id) redirect("/dashboard/classes?error=wrong-school");
   if (!profile?.school_id) {
     const { error: schoolError } = await admin.from("profiles").update({ school_id: classroom.school_id }).eq("id", user.id).eq("role", "student");

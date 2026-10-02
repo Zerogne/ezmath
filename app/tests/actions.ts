@@ -138,7 +138,7 @@ async function submitDatabaseAttempt(payload: SubmissionPayload): Promise<Submis
   const { error: answersError } = await admin.from("attempt_answers").upsert(answerRows, { onConflict: "attempt_id,question_id" });
   if (answersError) { console.error("Attempt answer save failed", { attemptId, testId: payload.testId, error: answersError }); throw new Error("Хариултуудыг хадгалж чадсангүй."); }
   const score = test.exam_type === "SAT" ? Math.round((400 + accuracy * 4) / 10) * 10 : accuracy;
-  const { error: completeError } = await admin.from("test_attempts").update({ status: "submitted", completed_at: new Date().toISOString(), score, duration_seconds: durationSeconds }).eq("id", attemptId).eq("user_id", user.id);
+  const { error: completeError } = await admin.from("test_attempts").update({ status: "submitted", completed_at: new Date().toISOString(), score, duration_seconds: durationSeconds }).eq("id", attemptId).eq("user_id", user.id).eq("status", "in_progress");
   if (completeError) { console.error("Attempt completion failed", { attemptId, testId: payload.testId, error: completeError }); throw new Error("Шалгалтыг дуусгаж чадсангүй."); }
   return { score, maxScore: test.exam_type === "SAT" ? 800 : 100, correct, incorrect, unanswered: questions.length - correct - incorrect, accuracy, durationSeconds, answerResults, topicBreakdown: Array.from(topics, ([topic, value]) => ({ topic, ...value, accuracy: Math.round(value.correct / value.total * 100) })) };
 }
