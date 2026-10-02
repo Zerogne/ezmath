@@ -10,6 +10,21 @@
   --muted-foreground: 226 17% 43%;
   --primary: 231 80% 53%;
   --primary-foreground: 0 0% 100%;
+
+  /* shadcn/ui — admin-only components reuse the tokens above and add these */
+  --card: 0 0% 100%;
+  --card-foreground: 232 63% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 232 63% 12%;
+  --secondary: 228 38% 97%;
+  --secondary-foreground: 232 63% 12%;
+  --accent: 228 38% 97%;
+  --accent-foreground: 232 63% 12%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 225 29% 92%;
+  --ring: 231 80% 53%;
+  --radius: 0.625rem;
 }
 
 * { border-color: hsl(var(--border)); }
@@ -28,6 +43,16 @@ body {
   h1, h2, h3 { @apply tracking-[-0.025em]; }
   button, a, input, select, textarea, summary { @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2; }
   button:not(:disabled), summary { @apply cursor-pointer; }
+  :root {
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 232 63% 12%;
+    --sidebar-primary: 231 80% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 38% 97%;
+    --sidebar-accent-foreground: 232 63% 12%;
+    --sidebar-border: 225 29% 92%;
+    --sidebar-ring: 231 80% 53%;
+  }
 }
 
 @layer components {
