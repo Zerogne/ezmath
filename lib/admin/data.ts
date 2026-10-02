@@ -111,8 +111,16 @@ export async function listAdminStudents() {
 }
 
 export async function getAdminStudent(studentId: string) {
-  const students = await listAdminStudents();
-  return students.find((student) => student.id === studentId);
+  await requireAdmin();
+  const id = encodeURIComponent(studentId);
+  const [profiles, attempts, authUser] = await Promise.all([
+    request<ProfileRow[]>(`/rest/v1/profiles?select=id,full_name,role,created_at&id=eq.${id}&limit=1`),
+    request<AttemptRow[]>(`/rest/v1/test_attempts?select=user_id,started_at,completed_at,tests(exam_type)&user_id=eq.${id}`),
+    request<AuthUser>(`/auth/v1/admin/users/${id}`).catch(() => undefined),
+  ]);
+  const profile = profiles[0];
+  if (!profile || profile.role !== "student") return undefined;
+  return toStudents([profile], authUser ? [authUser] : [], attempts)[0];
 }
 
 export async function getAdminDashboardData() {
@@ -216,10 +224,9 @@ export type AdminMaterialListItem = Test & { status: "draft" | "published" | "ar
 
 export async function listAdminMaterials(examType: ExamType): Promise<AdminMaterialListItem[]> {
   await requireAdmin();
-  const [tests, questions] = await Promise.all([
-    request<MaterialRow[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,duration_minutes,difficulty,test_type,status,instructions,updated_at&exam_type=eq.${examType}&order=updated_at.desc`),
-    request<{ test_id: string }[]>("/rest/v1/questions?select=test_id"),
-  ]);
+  const tests = await request<MaterialRow[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,duration_minutes,difficulty,test_type,status,instructions,updated_at&exam_type=eq.${examType}&order=updated_at.desc`);
+  const testIds = tests.map((test) => test.id);
+  const questions = testIds.length ? await request<{ test_id: string }[]>(`/rest/v1/questions?select=test_id&test_id=in.(${testIds.join(",")})`) : [];
   const counts = new Map<string, number>();
   for (const question of questions) counts.set(question.test_id, (counts.get(question.test_id) ?? 0) + 1);
   return tests.map((test) => ({
