@@ -17,11 +17,12 @@ import { QuestionView } from "./question-view";
 const subscribeToBrowserCapabilities = () => () => undefined;
 const START_ERROR_MESSAGES = { limit_reached: "Үнэгүй эрхийн 1 бүтэн шалгалтын лимит дууссан. Багцаа ахиулна уу.", failed: "Оролдлого үүсгэж чадсангүй. Дахин оролдоно уу." } as const;
 
-export function ExamShell({ test, questions, isAuthenticated = true }: { test: Test; questions: StudentQuestion[]; isAuthenticated?: boolean }) {
+export function ExamShell({ test, questions, isAuthenticated = true, fullscreenRequired = true }: { test: Test; questions: StudentQuestion[]; isAuthenticated?: boolean; fullscreenRequired?: boolean }) {
   const router = useRouter();
   const [monitoringStarted, setMonitoringStarted] = useState(false);
   const [fullscreenActive, setFullscreenActive] = useState(false);
   const fullscreenSupported = useSyncExternalStore(subscribeToBrowserCapabilities, () => typeof document.documentElement.requestFullscreen === "function", () => false);
+  const useFullscreen = fullscreenRequired && fullscreenSupported;
   const { session, dispatch, ready, restored, syncStatus } = useTestSession(test.id, test.durationMinutes * 60, monitoringStarted && fullscreenActive);
   const [timerVisible, setTimerVisible] = useState(true);
   const [gridOpen, setGridOpen] = useState(false);
@@ -58,13 +59,13 @@ export function ExamShell({ test, questions, isAuthenticated = true }: { test: T
     };
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
-    if (fullscreenSupported) document.addEventListener("fullscreenchange", onFullscreen);
+    if (useFullscreen) document.addEventListener("fullscreenchange", onFullscreen);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
-      if (fullscreenSupported) document.removeEventListener("fullscreenchange", onFullscreen);
+      if (useFullscreen) document.removeEventListener("fullscreenchange", onFullscreen);
     };
-  }, [fullscreenSupported, monitoringStarted, reportViolation, session.attemptId, session.status]);
+  }, [useFullscreen, monitoringStarted, reportViolation, session.attemptId, session.status]);
 
   async function enterMonitoredMode() {
     if (starting) return;
@@ -72,16 +73,16 @@ export function ExamShell({ test, questions, isAuthenticated = true }: { test: T
     setStartError(null);
     setAuthRequired(false);
     try {
-      if (fullscreenSupported) await document.documentElement.requestFullscreen();
+      if (useFullscreen) await document.documentElement.requestFullscreen();
       if (!session.attemptId) {
         const result = await startTestAttempt(test.id, new Date().toISOString());
         if (result.error === "auth_required") {
-          if (fullscreenSupported && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+          if (useFullscreen && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
           setAuthRequired(true);
           return;
         }
         if (!result.attemptId) {
-          if (fullscreenSupported && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+          if (useFullscreen && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
           setStartError(result.error ? START_ERROR_MESSAGES[result.error] : "Шалгалтыг эхлүүлэхийн тулд Full Screen зөвшөөрлийг идэвхжүүлнэ үү.");
           return;
         }
@@ -90,7 +91,7 @@ export function ExamShell({ test, questions, isAuthenticated = true }: { test: T
       setFullscreenActive(true);
       setMonitoringStarted(true);
     } catch {
-      if (fullscreenSupported && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+      if (useFullscreen && document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
       setStartError("Шалгалтыг эхлүүлэхийн тулд Full Screen зөвшөөрлийг идэвхжүүлнэ үү.");
     } finally {
       setStarting(false);
@@ -139,6 +140,6 @@ export function ExamShell({ test, questions, isAuthenticated = true }: { test: T
     <QuestionNavigation index={session.currentQuestionIndex} total={questions.length} onPrevious={() => updateIndex(session.currentQuestionIndex - 1)} onNext={() => updateIndex(session.currentQuestionIndex + 1)} onToggleGrid={() => setGridOpen(true)}/>
     {gridOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onMouseDown={(event) => event.target === event.currentTarget && setGridOpen(false)}><aside className="absolute inset-y-0 right-0 w-[min(88vw,360px)] overflow-y-auto bg-background p-6 shadow-xl"><button type="button" onClick={() => setGridOpen(false)} className="absolute right-4 top-4 rounded-lg p-2 hover:bg-muted" aria-label="Хаах"><X size={20}/></button><QuestionGrid questions={questions} currentIndex={session.currentQuestionIndex} answers={answeredQuestions} marked={session.markedForReview} onSelect={updateIndex}/></aside></div>}
     <FinishTestDialog open={finishOpen} answered={Object.keys(answeredQuestions).length} total={questions.length} marked={session.markedForReview.length} submitting={submitting} onClose={() => !submitting && setFinishOpen(false)} onConfirm={() => void finish()}/>
-    {(!monitoringStarted || !fullscreenActive) && session.status === "in_progress" && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" aria-labelledby="integrity-title" className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl sm:p-8"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary"><ShieldCheck size={27}/></span><h2 id="integrity-title" className="mt-5 text-xl font-bold">{authRequired ? "Нэвтэрч үргэлжлүүлнэ үү" : monitoringStarted ? "Шалгалт түр зогслоо" : !fullscreenSupported ? "Гар утасны хяналттай шалгалт" : "Хяналттай шалгалт"}</h2>{!authRequired && <p className="mt-3 text-sm leading-6 text-muted-foreground">{monitoringStarted ? "Үргэлжлүүлэхийн тулд бүтэн дэлгэцийн горимд дахин орно уу." : !fullscreenSupported ? "Таны browser Full screen горимыг дэмжихгүй байна. Апп солих, дэлгэц түгжих, таб солих, фокус алдах үйлдэл тэмдэглэгдэнэ." : "Эхэлсний дараа таб солих, цонхны фокус алдах болон бүтэн дэлгэцээс гарах үйлдэл бүр тэмдэглэгдэж багшид харагдана."}</p>}{violationCount > 0 && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">Тэмдэглэгдсэн үйлдэл: {violationCount}</p>}{authRequired ? <div className="mt-4"><p className="text-sm leading-6 text-muted-foreground">Шалгалт өгөхийн тулд нэвтэрнэ үү.</p><ButtonLink href={`/login?next=${encodeURIComponent(`/tests/${test.id}/take`)}`} className="mt-5 w-full">Нэвтрэх</ButtonLink></div> : <>{startError && <p role="alert" className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{startError}</p>}<button type="button" disabled={starting} onClick={() => void enterMonitoredMode()} className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white transition-opacity disabled:opacity-70">{starting ? <Loader2 size={17} className="animate-spin"/> : <Maximize2 size={17}/>}{starting ? "Бэлдэж байна…" : !fullscreenSupported ? "Шалгалт эхлэх" : monitoringStarted ? "Full screen үргэлжлүүлэх" : "Full screen эхлэх"}</button></>}</section></div>}
+    {(!monitoringStarted || !fullscreenActive) && session.status === "in_progress" && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" aria-labelledby="integrity-title" className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl sm:p-8"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary"><ShieldCheck size={27}/></span><h2 id="integrity-title" className="mt-5 text-xl font-bold">{authRequired ? "Нэвтэрч үү" : monitoringStarted ? "Шалгалт түр зогслоо" : !fullscreenRequired ? "Шалгалт эхлэх" : !fullscreenSupported ? "Гар утасны хяналттай шалгалт" : "Хяналттай шалгалт"}</h2>{!authRequired && <p className="mt-3 text-sm leading-6 text-muted-foreground">{monitoringStarted ? "Үргэлжлүүлэхийн тулд бүтэн дэлгэцийн горимд дахин орно уу." : !fullscreenRequired ? "Таб солих, фокус алдах үйлдэл тэмдэглэгдэнэ." : !fullscreenSupported ? "Таны browser Full screen горимыг дэмжихгүй байна. Апп солих, дэлгэц түгжих, таб солих, фокус алдах үйлдэл тэмдэглэгдэнэ." : "Эхэлсний дараа таб солих, цонхны фокус алдах болон бүтэн дэлгэцээс гарах үйлдэл бүр тэмдэглэгдэж багшид харагдана."}</p>}{violationCount > 0 && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">Тэмдэглэгдсэн үйлдэл: {violationCount}</p>}{authRequired ? <div className="mt-4"><p className="text-sm leading-6 text-muted-foreground">Шалгалт өгөхийн тулд нэвтэрнэ үү.</p><ButtonLink href={`/login?next=${encodeURIComponent(`/tests/${test.id}/take`)}`} className="mt-5 w-full">Нэвтрэх</ButtonLink></div> : <>{startError && <p role="alert" className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{startError}</p>}<button type="button" disabled={starting} onClick={() => void enterMonitoredMode()} className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white transition-opacity disabled:opacity-70">{starting ? <Loader2 size={17} className="animate-spin"/> : <Maximize2 size={17}/>}{starting ? "Бэлдэж байна…" : !fullscreenRequired || !fullscreenSupported ? "Шалгалт эхлэх" : monitoringStarted ? "Full screen үргэлжлүүлэх" : "Full screen эхлэх"}</button></>}</section></div>}
   </div>;
 }
