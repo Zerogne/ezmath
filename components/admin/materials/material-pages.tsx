@@ -1,9 +1,10 @@
 import { Plus } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { MaterialForm } from "@/components/admin/materials/material-form";
 import { MaterialsTable } from "@/components/admin/materials/materials-table";
-import { ButtonLink } from "@/components/ui/button";
+import { Button } from "@/components/ui/shadcn/button";
 import { getAdminMaterial, listAdminMaterials } from "@/lib/admin/data";
 import type { ExamType } from "@/types/exam";
 
@@ -23,7 +24,7 @@ const copy = {
 export async function AdminMaterialsIndex({ examType }: { examType: ExamType }) {
   const materials = await listAdminMaterials(examType);
   const current = copy[examType];
-  return <><AdminPageHeader title={`${current.label} материал`} description={current.description} action={<ButtonLink href={`/admin/materials/${current.slug}/new`}><Plus size={16}/>Материал нэмэх</ButtonLink>}/><div className="mt-7"><MaterialsTable exam={current.slug} materials={materials}/></div></>;
+  return <><AdminPageHeader title={`${current.label} материал`} description={current.description} action={<Button asChild><Link href={`/admin/materials/${current.slug}/new`}><Plus size={16}/>Материал нэмэх</Link></Button>}/><div className="mt-7"><MaterialsTable exam={current.slug} materials={materials}/></div></>;
 }
 
 export async function AdminMaterialEdit({ examType, testId }: { examType: ExamType; testId: string }) {
