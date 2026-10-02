@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-export function FinishTestDialog({ open, answered, total, marked, onClose, onConfirm }: { open: boolean; answered: number; total: number; marked: number; onClose: () => void; onConfirm: () => void }) {
+export function FinishTestDialog({ open, answered, total, marked, submitting = false, onClose, onConfirm }: { open: boolean; answered: number; total: number; marked: number; submitting?: boolean; onClose: () => void; onConfirm: () => void }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -22,6 +23,6 @@ export function FinishTestDialog({ open, answered, total, marked, onClose, onCon
     return () => { document.removeEventListener("keydown", handleKeyDown); previousFocus?.focus(); };
   }, [onClose, open]);
   if (!open) return null;
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="finish-title" aria-describedby="finish-description" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"><h2 id="finish-title" className="text-xl font-bold">Шалгалтыг дуусгах уу?</h2><p id="finish-description" className="mt-2 text-sm text-muted-foreground">Дуусгасны дараа хариултаа өөрчлөх боломжгүй.</p><dl className="mt-6 grid grid-cols-3 gap-3"><Stat label="Хариулсан" value={answered}/><Stat label="Хариулаагүй" value={total - answered}/><Stat label="Тэмдэглэсэн" value={marked}/></dl><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button ref={cancelRef} type="button" variant="secondary" onClick={onClose}>Буцаж шалгах</Button><Button type="button" variant="danger" onClick={onConfirm}>Шалгалт дуусгах</Button></div></div></div>;
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="finish-title" aria-describedby="finish-description" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"><h2 id="finish-title" className="text-xl font-bold">Шалгалтыг дуусгах уу?</h2><p id="finish-description" className="mt-2 text-sm text-muted-foreground">Дуусгасны дараа хариултаа өөрчлөх боломжгүй.</p><dl className="mt-6 grid grid-cols-3 gap-3"><Stat label="Хариулсан" value={answered}/><Stat label="Хариулаагүй" value={total - answered}/><Stat label="Тэмдэглэсэн" value={marked}/></dl><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button ref={cancelRef} type="button" variant="secondary" disabled={submitting} onClick={onClose}>Буцаж шалгах</Button><Button type="button" variant="danger" loading={submitting} onClick={onConfirm}>{submitting && <Loader2 size={16} className="animate-spin"/>}{submitting ? "Илгээж байна…" : "Шалгалт дуусгах"}</Button></div></div></div>;
 }
 function Stat({ label, value }: { label: string; value: number }) { return <div className="rounded-xl bg-muted p-3 text-center"><dd className="text-xl font-bold">{value}</dd><dt className="mt-1 text-[11px] text-muted-foreground">{label}</dt></div>; }

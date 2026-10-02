@@ -14,9 +14,11 @@ export async function startTestAttempt(testId: string, startedAt: string): Promi
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) return { attemptId: null, error: "auth_required" };
   const admin = createAdminClient();
-  const { data: test } = await admin.from("tests").select("id,test_type").eq("id", testId).eq("status", "published").maybeSingle();
+  const [{ data: test }, { data: existing }] = await Promise.all([
+    admin.from("tests").select("id,test_type").eq("id", testId).eq("status", "published").maybeSingle(),
+    admin.from("test_attempts").select("id").eq("user_id", user.id).eq("test_id", testId).eq("status", "in_progress").order("started_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
   if (!test) return { attemptId: null };
-  const { data: existing } = await admin.from("test_attempts").select("id").eq("user_id", user.id).eq("test_id", testId).eq("status", "in_progress").order("started_at", { ascending: false }).limit(1).maybeSingle();
   if (existing) return { attemptId: existing.id };
   if (test.test_type !== "practice") {
     const [{ data: profile }, { data: subscription }] = await Promise.all([
