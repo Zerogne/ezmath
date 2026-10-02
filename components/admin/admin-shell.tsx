@@ -1,5 +1,21 @@
-"use client";
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
 import { AdminSidebar } from "./admin-sidebar";
-export function AdminShell({ children, adminName }: { children: React.ReactNode; adminName: string }) { const [open, setOpen] = useState(false); return <div className="min-h-screen bg-background lg:grid lg:grid-cols-[240px_1fr]"><aside className="fixed inset-y-0 left-0 z-40 hidden w-60 border-r bg-white lg:block"><AdminSidebar/></aside>{open && <div className="fixed inset-0 z-50 bg-black/35 lg:hidden" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}><aside className="h-full w-72 bg-white shadow-xl"><AdminSidebar onNavigate={() => setOpen(false)}/></aside></div>}<div className="min-w-0 lg:col-start-2"><header className="sticky top-0 z-30 flex h-16 items-center border-b bg-white px-4 sm:px-6"><button type="button" className="mr-3 rounded-lg p-2 hover:bg-muted lg:hidden" onClick={() => setOpen(!open)} aria-label={open ? "Цэс хаах" : "Цэс нээх"}>{open ? <X size={20}/> : <Menu size={20}/>}</button><p className="text-sm font-semibold lg:hidden">EzMath Admin</p><div className="ml-auto flex items-center gap-3"><span className="hidden text-sm text-muted-foreground sm:block">{adminName}</span><span className="grid h-8 w-8 place-items-center rounded-full bg-emerald-50 text-xs font-bold text-primary">A</span></div></header><main className="px-4 py-7 sm:px-6 lg:px-8 lg:py-8">{children}</main></div></div>; }
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+
+export function AdminShell({ children, adminName }: { children: React.ReactNode; adminName: string }) {
+  return (
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background px-4 sm:px-6">
+          <SidebarTrigger className="mr-3 lg:hidden" />
+          <p className="text-sm font-semibold lg:hidden">EzMath Admin</p>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="hidden text-sm text-muted-foreground sm:block">{adminName}</span>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">A</span>
+          </div>
+        </header>
+        <div className="px-4 py-7 sm:px-6 lg:px-8 lg:py-8">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}

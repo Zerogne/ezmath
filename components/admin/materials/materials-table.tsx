@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteMaterial, setMaterialStatus } from "@/app/admin/materials/actions";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/shadcn/badge";
 import { AdminTable } from "@/components/admin/data-table";
 import { AdminRowActions, type AdminRowAction } from "@/components/admin/row-actions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { Test } from "@/types/exam";
 
 type MaterialStatus = "draft" | "published" | "archived";
@@ -16,6 +17,7 @@ export function MaterialsTable({ materials, exam }: { materials: AdminMaterial[]
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<AdminMaterial | null>(null);
   const headers = exam === "sat" ? ["Гарчиг", "Хэсэг", "Төрөл", "Асуулт", "Хугацаа", "Төлөв", "Шинэчилсэн", ""] : ["Гарчиг", "Хичээл", "Он", "Асуулт", "Хугацаа", "Төлөв", "Шинэчилсэн", ""];
 
   const changeStatus = (id: string, status: MaterialStatus) => startTransition(async () => {
@@ -25,8 +27,10 @@ export function MaterialsTable({ materials, exam }: { materials: AdminMaterial[]
     else router.refresh();
   });
 
-  const remove = (material: AdminMaterial) => {
-    if (!window.confirm(`“${material.title}”-г устгах уу? Буцаах боломжгүй.`)) return;
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    const material = deleteTarget;
+    setDeleteTarget(null);
     startTransition(async () => {
       setError("");
       const result = await deleteMaterial(material.id);
@@ -41,9 +45,22 @@ export function MaterialsTable({ materials, exam }: { materials: AdminMaterial[]
       { label: "Засах", href: editHref },
       ...(material.status === "published" ? [{ label: "Тестийг нээх", href: `/tests/${material.id}` }, { label: "Draft болгох", onSelect: () => changeStatus(material.id, "draft"), disabled: pending }] : [{ label: "Нийтлэх", onSelect: () => changeStatus(material.id, "published"), disabled: pending }]),
       ...(material.status !== "archived" ? [{ label: "Archive хийх", onSelect: () => changeStatus(material.id, "archived"), disabled: pending }] : [{ label: "Draft болгож сэргээх", onSelect: () => changeStatus(material.id, "draft"), disabled: pending }]),
-      { label: "Устгах", onSelect: () => remove(material), destructive: true, disabled: pending },
+      { label: "Устгах", onSelect: () => setDeleteTarget(material), destructive: true, disabled: pending },
     ];
     const statusLabel = material.status === "published" ? "Published" : material.status === "archived" ? "Archived" : "Draft";
-    return <tr key={material.id}><td className="px-4 py-3"><Link href={editHref} className="font-semibold hover:text-primary">{material.title}</Link></td><td className="px-4 py-3 text-muted-foreground">{material.subject}</td><td className="px-4 py-3 text-muted-foreground">{exam === "sat" ? material.type : material.year ?? "—"}</td><td className="px-4 py-3">{material.questionCount}</td><td className="px-4 py-3">{material.durationMinutes} мин</td><td className="px-4 py-3"><Badge tone={material.status === "published" ? "green" : "neutral"}>{statusLabel}</Badge></td><td className="px-4 py-3 text-muted-foreground">{material.updated}</td><td className="px-4 py-3"><AdminRowActions label={`${material.title} үйлдэл`} actions={actions} /></td></tr>;
-  })}</AdminTable></div>;
+    return <tr key={material.id}><td className="px-4 py-3"><Link href={editHref} className="font-semibold hover:text-primary">{material.title}</Link></td><td className="px-4 py-3 text-muted-foreground">{material.subject}</td><td className="px-4 py-3 text-muted-foreground">{exam === "sat" ? material.type : material.year ?? "—"}</td><td className="px-4 py-3">{material.questionCount}</td><td className="px-4 py-3">{material.durationMinutes} мин</td><td className="px-4 py-3"><Badge variant={material.status === "published" ? "success" : "secondary"}>{statusLabel}</Badge></td><td className="px-4 py-3 text-muted-foreground">{material.updated}</td><td className="px-4 py-3"><AdminRowActions label={`${material.title} үйлдэл`} actions={actions} /></td></tr>;
+  })}</AdminTable>
+  <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>&ldquo;{deleteTarget?.title}&rdquo;-г устгах уу?</AlertDialogTitle>
+        <AlertDialogDescription>Буцаах боломжгүй.</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Болих</AlertDialogCancel>
+        <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Устгах</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  </div>;
 }

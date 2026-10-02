@@ -1,1 +1,16 @@
-export function AdminTable({ headers, children }: { headers: string[]; children: React.ReactNode }) { return <div className="overflow-x-auto rounded-xl border bg-white"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b bg-muted/55 text-xs text-muted-foreground"><tr>{headers.map((header) => <th key={header} className="px-4 py-3 font-semibold">{header}</th>)}</tr></thead><tbody className="divide-y">{children}</tbody></table></div>; }
+import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
+
+export function AdminTable({ headers, children }: { headers: string[]; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border bg-card">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {headers.map((header) => <TableHead key={header} className="whitespace-nowrap">{header}</TableHead>)}
+          </TableRow>
+        </TableHeader>
+        <TableBody>{children}</TableBody>
+      </Table>
+    </div>
+  );
+}
