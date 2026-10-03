@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { signOut } from "@/app/auth/actions";
 
-const links = [ { href: "/tests?exam=SAT", label: "SAT" }, { href: "/tests?exam=EYESH", label: "ЭЕШ" }, { href: "/lesson", label: "Онолын хичээл" }, { href: "/#pricing", label: "Үнэ" },];
+const links = [ { href: "/tests?exam=SAT", label: "SAT" }, { href: "/tests?exam=EYESH", label: "ЭЕШ" }, { href: "/lesson", label: "Онолын хичээл" }, { href: "/pricing", label: "Үнэ" },];
 
 export function Navbar() {
   return <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur"><div className="container-page flex h-[79px] items-center gap-8"><Brand/><nav className="hidden items-center gap-1 lg:flex" aria-label="Үндсэн цэс"><NavigationLinks/></nav><div className="ml-auto hidden items-center gap-2 lg:flex"><Suspense fallback={<AccountFallback/>}><AccountActions/></Suspense></div><details className="group ml-auto lg:hidden"><summary className="list-none rounded-lg p-2 [&::-webkit-details-marker]:hidden" aria-label="Цэс нээх"><Menu/></summary><div className="absolute left-0 right-0 top-[79px] border-t bg-white shadow-lg"><nav className="container-page grid gap-1 py-3" aria-label="Гар утасны цэс"><NavigationLinks/><div className="mt-2 border-t pt-3"><Suspense fallback={<AccountFallback/>}><AccountActions/></Suspense></div></nav></div></details></div></header>;

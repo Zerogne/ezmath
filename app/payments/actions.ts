@@ -11,12 +11,12 @@ const paidPlanCodes = new Set<PlanCode>(paidPlans.map((plan) => plan.code));
 
 export async function startBylCheckout(formData: FormData) {
   const rawPlanCode = String(formData.get("planCode") ?? "");
-  if (!paidPlanCodes.has(rawPlanCode as PlanCode)) redirect("/?payment=invalid-plan#pricing");
+  if (!paidPlanCodes.has(rawPlanCode as PlanCode)) redirect("/pricing?payment=invalid-plan");
   const planCode = rawPlanCode as Exclude<PlanCode, "free">;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email) redirect(`/login?next=${encodeURIComponent(`/?plan=${planCode}#pricing`)}`);
+  if (!user?.email) redirect(`/login?next=${encodeURIComponent(`/pricing?plan=${planCode}`)}`);
 
   const admin = createAdminClient();
   const { data: existingSubscription } = await admin.from("student_subscriptions")
@@ -34,7 +34,7 @@ export async function startBylCheckout(formData: FormData) {
     amount_mnt: bylChargeAmount(planCode),
     status: "pending",
   }).select("id").single();
-  if (orderError || !order) redirect("/?payment=order-failed#pricing");
+  if (orderError || !order) redirect("/pricing?payment=order-failed");
 
   let stage: "customer_lookup" | "customer_create" | "checkout" | "order_update" = "customer_lookup";
   try {
@@ -49,7 +49,7 @@ export async function startBylCheckout(formData: FormData) {
       client_reference_id: order.id,
       items: [{ price_id: priceId, quantity: 1 }],
       success_url: `${appUrl}/dashboard?payment=processing`,
-      cancel_url: `${appUrl}/?payment=canceled#pricing`,
+      cancel_url: `${appUrl}/pricing?payment=canceled`,
       email_collection: false,
       allow_promotion_codes: false,
     });
@@ -65,7 +65,7 @@ export async function startBylCheckout(formData: FormData) {
     if (isRedirectError(error)) throw error;
     await admin.from("payment_orders").update({ status: "failed" }).eq("id", order.id).eq("user_id", user.id);
     console.error("BYL checkout creation failed", { orderId: order.id, planCode, stage, source: error instanceof BylApiError ? "byl_api" : "internal", httpStatus: error instanceof BylApiError ? error.status : undefined, providerCode: error instanceof BylApiError ? error.code : undefined, error: error instanceof Error ? error.message : "Unknown error" });
-    redirect("/?payment=checkout-failed#pricing");
+    redirect("/pricing?payment=checkout-failed");
   }
 }
 
