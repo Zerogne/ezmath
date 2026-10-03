@@ -27,7 +27,8 @@ function parseLesson(formData: FormData): ParsedLesson | { error: string } {
   const moduleId = String(formData.get("moduleId") ?? "");
   const summary = String(formData.get("summary") ?? "").trim();
   const durationMinutes = Number(formData.get("durationMinutes"));
-  const sortOrder = Number(formData.get("sortOrder"));
+  const sortOrderRaw = formData.get("sortOrder");
+  const sortOrder = sortOrderRaw === null ? 100 : Number(sortOrderRaw);
   const status = formData.get("status") === "published" ? "published" as const : "draft" as const;
   const objectives = String(formData.get("objectives") ?? "").split("\n").map((item) => item.trim()).filter(Boolean);
   const sectionCount = Math.max(0, Math.min(10, Number(formData.get("sectionCount")) || 0));
@@ -41,7 +42,8 @@ function parseLesson(formData: FormData): ParsedLesson | { error: string } {
   if (allLessons.some((item) => item.id === slug)) return { error: "Энэ slug суурь хичээлд ашиглагдсан байна." };
   if (title.length < 3 || summary.length < 10 || !Number.isInteger(durationMinutes) || durationMinutes < 1) return { error: "Гарчиг, тайлбар болон хугацааг зөв бөглөнө үү." };
   if (!coreMathCourse.modules.some((item) => item.id === moduleId)) return { error: "Хичээл буруу байна." };
-  if (!objectives.length || !sections.length) return { error: "Дор хаяж нэг зорилго, нэг агуулгын хэсэг нэмнэ үү." };
+  if (!objectives.length) return { error: "Дор хаяж нэг зорилго нэмнэ үү." };
+  if (status === "published" && !sections.length) return { error: "Нийтлэхийн тулд дор хаяж нэг агуулгын хэсэг нэмнэ үү." };
 
   return { title, slug, moduleId, summary, durationMinutes, sortOrder: Number.isInteger(sortOrder) ? sortOrder : 100, status, objectives, sections };
 }
