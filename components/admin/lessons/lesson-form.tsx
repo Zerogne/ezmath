@@ -55,7 +55,6 @@ export function LessonForm({ initial }: { initial?: LessonEditorData }) {
         <CardHeader><CardTitle>Үндсэн мэдээлэл</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <Field label="Сэдвийн нэр" className="sm:col-span-2"><Input name="title" required minLength={3} maxLength={160} defaultValue={initial?.title} placeholder="Жишээ: Анхны тооны тархалт"/></Field>
-          <Field label="URL slug"><Input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" defaultValue={initial?.slug} placeholder="prime-number-distribution"/></Field>
           <Field label="Хичээл"><Select name="moduleId" required defaultValue={initial?.moduleId}><SelectTrigger><SelectValue placeholder="Хичээл сонгох"/></SelectTrigger><SelectContent>{coreMathCourse.modules.map((item) => <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>)}</SelectContent></Select></Field>
           <Field label="Хугацаа (минут)"><Input name="durationMinutes" type="number" required min={1} max={300} defaultValue={initial?.durationMinutes ?? 15}/></Field>
           {initial && <Field label="Дараалал"><Input name="sortOrder" type="number" min={0} max={10000} defaultValue={initial.sortOrder}/></Field>}

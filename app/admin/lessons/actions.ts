@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { getAdminIdentity } from "@/lib/admin/auth";
 import { coreMathCourse } from "@/lib/learning/course-catalog";
-import { allLessons } from "@/lib/learning/course-catalog";
 import { createClient } from "@/lib/supabase/server";
 
 export type LessonFormState = { error?: string; success?: string; id?: string };
@@ -11,7 +10,6 @@ export type LessonActionResult = { error?: string; success?: true };
 
 type ParsedLesson = {
   title: string;
-  slug: string;
   moduleId: string;
   summary: string;
   durationMinutes: number;
@@ -23,7 +21,6 @@ type ParsedLesson = {
 
 function parseLesson(formData: FormData): ParsedLesson | { error: string } {
   const title = String(formData.get("title") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
   const moduleId = String(formData.get("moduleId") ?? "");
   const summary = String(formData.get("summary") ?? "").trim();
   const durationMinutes = Number(formData.get("durationMinutes"));
@@ -38,14 +35,16 @@ function parseLesson(formData: FormData): ParsedLesson | { error: string } {
     example: String(formData.get(`sectionExample${index}`) ?? "").trim() || undefined,
   })).filter((item) => item.title && item.body);
 
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return { error: "Slug нь зөвхөн жижиг латин үсэг, тоо, зураастай байна." };
-  if (allLessons.some((item) => item.id === slug)) return { error: "Энэ slug суурь хичээлд ашиглагдсан байна." };
   if (title.length < 3 || summary.length < 10 || !Number.isInteger(durationMinutes) || durationMinutes < 1) return { error: "Гарчиг, тайлбар болон хугацааг зөв бөглөнө үү." };
   if (!coreMathCourse.modules.some((item) => item.id === moduleId)) return { error: "Хичээл буруу байна." };
   if (!objectives.length) return { error: "Дор хаяж нэг зорилго нэмнэ үү." };
   if (status === "published" && !sections.length) return { error: "Нийтлэхийн тулд дор хаяж нэг агуулгын хэсэг нэмнэ үү." };
 
-  return { title, slug, moduleId, summary, durationMinutes, sortOrder: Number.isInteger(sortOrder) ? sortOrder : 100, status, objectives, sections };
+  return { title, moduleId, summary, durationMinutes, sortOrder: Number.isInteger(sortOrder) ? sortOrder : 100, status, objectives, sections };
+}
+
+function generateSlug() {
+  return `lesson-${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
 }
 
 export async function createLesson(_: LessonFormState, formData: FormData): Promise<LessonFormState> {
@@ -55,25 +54,28 @@ export async function createLesson(_: LessonFormState, formData: FormData): Prom
   if ("error" in parsed) return parsed;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("course_lessons").insert({
-    slug: parsed.slug,
-    course_slug: coreMathCourse.slug,
-    module_id: parsed.moduleId,
-    title: parsed.title,
-    duration_minutes: parsed.durationMinutes,
-    summary: parsed.summary,
-    objectives: parsed.objectives,
-    sections: parsed.sections,
-    status: parsed.status,
-    sort_order: parsed.sortOrder,
-    created_by: admin.id,
-  }).select("id").single();
-  if (error?.code === "23505") return { error: "Энэ slug-тай хичээл аль хэдийн байна." };
-  if (error || !data) return { error: error?.message || "Хичээл хадгалж чадсангүй." };
-  revalidatePath("/admin/lessons");
-  revalidatePath("/lesson");
-  revalidatePath(`/lesson/${coreMathCourse.slug}`);
-  return { id: data.id, success: parsed.status === "published" ? "Сэдэв нийтлэгдлээ." : "Draft сэдэв хадгалагдлаа." };
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await supabase.from("course_lessons").insert({
+      slug: generateSlug(),
+      course_slug: coreMathCourse.slug,
+      module_id: parsed.moduleId,
+      title: parsed.title,
+      duration_minutes: parsed.durationMinutes,
+      summary: parsed.summary,
+      objectives: parsed.objectives,
+      sections: parsed.sections,
+      status: parsed.status,
+      sort_order: parsed.sortOrder,
+      created_by: admin.id,
+    }).select("id").single();
+    if (error?.code === "23505") continue;
+    if (error || !data) return { error: error?.message || "Хичээл хадгалж чадсангүй." };
+    revalidatePath("/admin/lessons");
+    revalidatePath("/lesson");
+    revalidatePath(`/lesson/${coreMathCourse.slug}`);
+    return { id: data.id, success: parsed.status === "published" ? "Сэдэв нийтлэгдлээ." : "Draft сэдэв хадгалагдлаа." };
+  }
+  return { error: "Хичээл хадгалж чадсангүй. Дахин оролдоно уу." };
 }
 
 export async function updateLesson(_: LessonFormState, formData: FormData): Promise<LessonFormState> {
@@ -86,7 +88,6 @@ export async function updateLesson(_: LessonFormState, formData: FormData): Prom
 
   const supabase = await createClient();
   const { error } = await supabase.from("course_lessons").update({
-    slug: parsed.slug,
     module_id: parsed.moduleId,
     title: parsed.title,
     duration_minutes: parsed.durationMinutes,
@@ -96,7 +97,6 @@ export async function updateLesson(_: LessonFormState, formData: FormData): Prom
     status: parsed.status,
     sort_order: parsed.sortOrder,
   }).eq("id", lessonId);
-  if (error?.code === "23505") return { error: "Энэ slug-тай хичээл аль хэдийн байна." };
   if (error) return { error: error.message || "Хичээл шинэчилж чадсангүй." };
   revalidatePath("/admin/lessons");
   revalidatePath("/lesson");
