@@ -21,7 +21,6 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
     <Navbar/>
     <main className="py-16 lg:py-20">
       <div className="container-page text-center">
-        <p className="text-xs font-semibold tracking-[.15em] text-primary">ҮНИЙН СОНГОЛТ</p>
         <h1 className="mt-3 text-3xl font-bold tracking-[-.03em] sm:text-4xl">Өөрт тохирох багцаа сонго</h1>
         <p className="mt-3 text-muted-foreground">Төлбөртэй багцын эрх сар бүр сунгагдах бөгөөд хүссэн үедээ цуцлах бүрэн боломжтой.</p>
       </div>

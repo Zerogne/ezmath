@@ -33,7 +33,7 @@ export function TestFilter({ tests, initialExam = "ALL" }: { tests: Test[]; init
 
   return <>
     <div className="flex items-center justify-between border-b pb-6">
-      <h2 className="text-lg font-semibold">{filtered.length} материал</h2>
+      <h2 className="text-lg font-semibold">{filtered.length} шалгалт</h2>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button type="button" variant="secondary"><SlidersHorizontal size={16}/>Шүүлтүүр{hasActiveFilters && <span className="h-2 w-2 rounded-full bg-primary" aria-label="Идэвхтэй шүүлтүүртэй"/>}</Button>
