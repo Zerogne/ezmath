@@ -6,7 +6,7 @@ import { coreMathCourse } from "@/lib/learning/course-catalog";
 import { allLessons } from "@/lib/learning/course-catalog";
 import { createClient } from "@/lib/supabase/server";
 
-export type LessonFormState = { error?: string; success?: string };
+export type LessonFormState = { error?: string; success?: string; id?: string };
 export type LessonActionResult = { error?: string; success?: true };
 
 type ParsedLesson = {
@@ -53,7 +53,7 @@ export async function createLesson(_: LessonFormState, formData: FormData): Prom
   if ("error" in parsed) return parsed;
 
   const supabase = await createClient();
-  const { error } = await supabase.from("course_lessons").insert({
+  const { data, error } = await supabase.from("course_lessons").insert({
     slug: parsed.slug,
     course_slug: coreMathCourse.slug,
     module_id: parsed.moduleId,
@@ -65,13 +65,13 @@ export async function createLesson(_: LessonFormState, formData: FormData): Prom
     status: parsed.status,
     sort_order: parsed.sortOrder,
     created_by: admin.id,
-  });
+  }).select("id").single();
   if (error?.code === "23505") return { error: "Энэ slug-тай хичээл аль хэдийн байна." };
-  if (error) return { error: error.message || "Хичээл хадгалж чадсангүй." };
+  if (error || !data) return { error: error?.message || "Хичээл хадгалж чадсангүй." };
   revalidatePath("/admin/lessons");
   revalidatePath("/lesson");
   revalidatePath(`/lesson/${coreMathCourse.slug}`);
-  return { success: parsed.status === "published" ? "Сэдэв нийтлэгдлээ." : "Draft сэдэв хадгалагдлаа." };
+  return { id: data.id, success: parsed.status === "published" ? "Сэдэв нийтлэгдлээ." : "Draft сэдэв хадгалагдлаа." };
 }
 
 export async function updateLesson(_: LessonFormState, formData: FormData): Promise<LessonFormState> {

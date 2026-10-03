@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BookPlus, Plus, Trash2 } from "lucide-react";
 import { createLesson, updateLesson, type LessonFormState } from "@/app/admin/lessons/actions";
 import { coreMathCourse } from "@/lib/learning/course-catalog";
@@ -33,8 +34,10 @@ function blankSection(): SectionDraft {
 }
 
 export function LessonForm({ initial }: { initial?: LessonEditorData }) {
+  const router = useRouter();
   const action = initial ? updateLesson : createLesson;
   const [state, formAction, pending] = useActionState(action, initialState);
+  useEffect(() => { if (!initial && state.id) router.replace(`/admin/lessons/${state.id}/edit`); }, [initial, router, state.id]);
   const [sections, setSections] = useState<SectionDraft[]>(
     initial?.sections.length
       ? initial.sections.map((section) => ({ id: crypto.randomUUID(), title: section.title, body: section.body, example: section.example ?? "" }))

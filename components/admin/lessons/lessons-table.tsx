@@ -40,6 +40,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }) {
   return <div>
     {error && <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
     <AdminTable headers={["Сэдэв", "Хичээл", "Хугацаа", "Төлөв", ""]}>
+      {lessons.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Одоогоор сэдэв нэмээгүй байна.</td></tr>}
       {lessons.map((lesson) => {
         const editHref = `/admin/lessons/${lesson.id}/edit`;
         const actions: AdminRowAction[] = [
