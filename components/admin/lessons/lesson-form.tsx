@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookPlus, Plus, Trash2 } from "lucide-react";
 import { createLesson, updateLesson, type LessonFormState } from "@/app/admin/lessons/actions";
-import { coreMathCourse } from "@/lib/learning/course-catalog";
+import type { ModuleSummary } from "@/lib/data/course-catalog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,7 +33,7 @@ function blankSection(): SectionDraft {
   return { id: crypto.randomUUID(), title: "", body: "", example: "" };
 }
 
-export function LessonForm({ initial }: { initial?: LessonEditorData }) {
+export function LessonForm({ initial, modules }: { initial?: LessonEditorData; modules: ModuleSummary[] }) {
   const router = useRouter();
   const action = initial ? updateLesson : createLesson;
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -55,7 +55,7 @@ export function LessonForm({ initial }: { initial?: LessonEditorData }) {
         <CardHeader><CardTitle>Үндсэн мэдээлэл</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <Field label="Сэдвийн нэр" className="sm:col-span-2"><Input name="title" required minLength={3} maxLength={160} defaultValue={initial?.title} placeholder="Жишээ: Анхны тооны тархалт"/></Field>
-          <Field label="Хичээл"><Select name="moduleId" required defaultValue={initial?.moduleId}><SelectTrigger><SelectValue placeholder="Хичээл сонгох"/></SelectTrigger><SelectContent>{coreMathCourse.modules.map((item) => <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>)}</SelectContent></Select></Field>
+          <Field label="Модуль"><Select name="moduleId" required defaultValue={initial?.moduleId}><SelectTrigger><SelectValue placeholder="Модуль сонгох"/></SelectTrigger><SelectContent>{modules.map((item) => <SelectItem key={item.id} value={item.id}>{item.title}{!item.builtin && " (шинэ)"}</SelectItem>)}</SelectContent></Select></Field>
           <Field label="Хугацаа (минут)"><Input name="durationMinutes" type="number" required min={1} max={300} defaultValue={initial?.durationMinutes ?? 15}/></Field>
           {initial && <Field label="Дараалал"><Input name="sortOrder" type="number" min={0} max={10000} defaultValue={initial.sortOrder}/></Field>}
           <Field label="Товч тайлбар" className="sm:col-span-2"><Textarea name="summary" required minLength={10} maxLength={1000} rows={4} defaultValue={initial?.summary} placeholder="Сурагч энэ хичээлээс юу ойлгох вэ?"/></Field>

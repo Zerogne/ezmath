@@ -1,12 +1,16 @@
 import { notFound } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { LessonForm, type LessonEditorData } from "@/components/admin/lessons/lesson-form";
+import { listAllModules } from "@/lib/data/course-catalog";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function EditLessonPage({ params }: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await params;
   const supabase = await createClient();
-  const { data } = await supabase.from("course_lessons").select("id,title,slug,module_id,summary,duration_minutes,sort_order,status,objectives,sections").eq("id", lessonId).maybeSingle();
+  const [{ data }, modules] = await Promise.all([
+    supabase.from("course_lessons").select("id,title,slug,module_id,summary,duration_minutes,sort_order,status,objectives,sections").eq("id", lessonId).maybeSingle(),
+    listAllModules(),
+  ]);
   if (!data) notFound();
   const initial: LessonEditorData = {
     id: data.id,
@@ -22,6 +26,6 @@ export default async function EditLessonPage({ params }: { params: Promise<{ les
   };
   return <div className="mx-auto max-w-[1280px]">
     <AdminPageHeader title="Сэдэв засах" description={data.title}/>
-    <LessonForm initial={initial}/>
+    <LessonForm initial={initial} modules={modules}/>
   </div>;
 }

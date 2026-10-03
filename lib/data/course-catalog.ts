@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 type Section = Lesson["sections"][number];
+export type ModuleSummary = { id: string; title: string; description: string; builtin: boolean };
 
 function isSection(value: unknown): value is Section {
   if (!value || typeof value !== "object") return false;
@@ -11,20 +12,43 @@ function isSection(value: unknown): value is Section {
   return typeof item.title === "string" && typeof item.body === "string" && (item.example === undefined || typeof item.example === "string");
 }
 
+export async function listCustomModules() {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("course_modules")
+    .select("id,title,description")
+    .eq("course_slug", coreMathCourse.slug)
+    .order("sort_order", { ascending: true });
+  if (error) return [];
+  return data;
+}
+
+export async function listAllModules(): Promise<ModuleSummary[]> {
+  const builtin = coreMathCourse.modules.map((item) => ({ id: item.id, title: item.title, description: item.description, builtin: true as const }));
+  const custom = (await listCustomModules()).map((item) => ({ id: item.id, title: item.title, description: item.description ?? "", builtin: false as const }));
+  return [...builtin, ...custom];
+}
+
 export async function getCourseCatalog(): Promise<Course> {
   if (!isSupabaseConfigured()) return coreMathCourse;
   const supabase = await createClient();
-  const { data, error } = await supabase.from("course_lessons")
-    .select("slug,module_id,title,duration_minutes,summary,objectives,sections,sort_order")
-    .eq("course_slug", coreMathCourse.slug)
-    .eq("status", "published")
-    .order("sort_order", { ascending: true });
+  const [{ data, error }, customModules] = await Promise.all([
+    supabase.from("course_lessons")
+      .select("slug,module_id,title,duration_minutes,summary,objectives,sections,sort_order")
+      .eq("course_slug", coreMathCourse.slug)
+      .eq("status", "published")
+      .order("sort_order", { ascending: true }),
+    listCustomModules(),
+  ]);
   if (error) {
     if (error.code === "42P01" || error.code === "PGRST205") return coreMathCourse;
     throw new Error(`Хичээлүүдийг уншиж чадсангүй: ${error.message}`);
   }
 
-  const modules = coreMathCourse.modules.map((item) => ({ ...item, lessons: [...item.lessons] }));
+  const modules = [
+    ...coreMathCourse.modules.map((item) => ({ ...item, lessons: [...item.lessons] })),
+    ...customModules.map((item) => ({ id: item.id, title: item.title, description: item.description ?? "", lessons: [] as Lesson[] })),
+  ];
   for (const row of data ?? []) {
     const target = modules.find((item) => item.id === row.module_id);
     const sections = Array.isArray(row.sections) ? row.sections.filter(isSection) : [];
@@ -38,7 +62,8 @@ export async function getCourseCatalog(): Promise<Course> {
       sections,
     });
   }
-  return { ...coreMathCourse, modules };
+  // Custom modules with no published lessons yet would render as an empty section on the public page.
+  return { ...coreMathCourse, modules: modules.filter((item) => item.lessons.length) };
 }
 
 export function findCourseLesson(course: Course, lessonId: string) {

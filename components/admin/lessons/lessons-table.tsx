@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 type LessonRow = { id: string; title: string; module_id: string; status: "draft" | "published"; duration_minutes: number; slug: string };
 
-export function LessonsTable({ lessons }: { lessons: LessonRow[] }) {
+export function LessonsTable({ lessons, moduleTitles }: { lessons: LessonRow[]; moduleTitles: Record<string, string> }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -50,7 +50,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }) {
         ];
         return <tr key={lesson.id}>
           <td className="px-4 py-3"><Link href={editHref} className="font-semibold hover:text-primary">{lesson.title}</Link></td>
-          <td className="px-4 py-3 text-muted-foreground">{lesson.module_id}</td>
+          <td className="px-4 py-3 text-muted-foreground">{moduleTitles[lesson.module_id] ?? lesson.module_id}</td>
           <td className="px-4 py-3">{lesson.duration_minutes} мин</td>
           <td className="px-4 py-3"><Badge variant={lesson.status === "published" ? "success" : "secondary"}>{lesson.status === "published" ? "Published" : "Draft"}</Badge></td>
           <td className="px-4 py-3"><div className="flex items-center justify-end gap-1">{lesson.status === "published" && <Link href={`/lesson/theory-core/${lesson.slug}`} className="rounded-lg p-2 text-muted-foreground hover:bg-muted" aria-label={`${lesson.title} нээх`}><ExternalLink size={16}/></Link>}<AdminRowActions label={`${lesson.title} үйлдэл`} actions={actions}/></div></td>

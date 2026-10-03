@@ -27,6 +27,7 @@ type PaymentWebhookEventRow = { id: string; provider: "byl"; provider_event_id: 
 type StudentSubscriptionRow = { id: string; user_id: string; provider: "byl"; plan_code: "standard_monthly" | "mentor_monthly"; status: "trialing" | "active" | "past_due" | "canceled"; provider_customer_id: number | null; provider_subscription_id: number; current_period_start: string | null; current_period_end: string | null; canceled_at: string | null; provider_updated_at: string; created_at: string; updated_at: string };
 type StudentLessonProgressRow = { id: string; user_id: string; lesson_id: string; completed_at: string | null; last_opened_at: string; created_at: string; updated_at: string };
 type CourseLessonRow = { id: string; slug: string; course_slug: string; module_id: string; title: string; duration_minutes: number; summary: string; objectives: string[]; sections: Json; status: "draft" | "published" | "archived"; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
+type CourseModuleRow = { id: string; course_slug: string; title: string; description: string; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
 
 export type Database = {
   public: {
@@ -53,6 +54,7 @@ export type Database = {
       student_subscriptions: Table<StudentSubscriptionRow, Pick<StudentSubscriptionRow, "user_id" | "plan_code" | "status" | "provider_subscription_id"> & Partial<StudentSubscriptionRow>>;
       student_lesson_progress: Table<StudentLessonProgressRow, Pick<StudentLessonProgressRow, "user_id" | "lesson_id"> & Partial<StudentLessonProgressRow>>;
       course_lessons: Table<CourseLessonRow, Pick<CourseLessonRow, "slug" | "course_slug" | "module_id" | "title" | "duration_minutes" | "summary" | "objectives" | "sections" | "status" | "sort_order"> & Partial<CourseLessonRow>>;
+      course_modules: Table<CourseModuleRow, Pick<CourseModuleRow, "id" | "course_slug" | "title"> & Partial<CourseModuleRow>>;
     };
     Views: {
       student_questions: { Row: Pick<QuestionRow, "id" | "test_id" | "question_number" | "question_text" | "question_type" | "response_fields" | "topic" | "image_url">; Relationships: [] };
