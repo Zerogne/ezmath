@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -18,9 +19,16 @@ export function AdminRowActions({ label, actions }: { label: string; actions: Ad
             disabled={action.disabled}
             className={action.destructive ? "text-destructive focus:bg-destructive/10 focus:text-destructive" : undefined}
             asChild={Boolean(action.href)}
-            onSelect={action.href ? undefined : action.onSelect}
+            onSelect={action.href || !action.onSelect ? undefined : (event) => {
+              // Opening another overlay (e.g. a confirm dialog) synchronously from
+              // here races the dropdown's own close/focus-return cycle, so run the
+              // callback after the dropdown has fully closed.
+              event.preventDefault();
+              const callback = action.onSelect!;
+              window.setTimeout(callback, 0);
+            }}
           >
-            {action.href ? <a href={action.href}>{action.label}</a> : action.label}
+            {action.href ? <Link href={action.href}>{action.label}</Link> : action.label}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

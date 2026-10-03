@@ -1,0 +1,27 @@
+import { notFound } from "next/navigation";
+import { AdminPageHeader } from "@/components/admin/page-header";
+import { LessonForm, type LessonEditorData } from "@/components/admin/lessons/lesson-form";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function EditLessonPage({ params }: { params: Promise<{ lessonId: string }> }) {
+  const { lessonId } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.from("course_lessons").select("id,title,slug,module_id,summary,duration_minutes,sort_order,status,objectives,sections").eq("id", lessonId).maybeSingle();
+  if (!data) notFound();
+  const initial: LessonEditorData = {
+    id: data.id,
+    title: data.title,
+    slug: data.slug,
+    moduleId: data.module_id,
+    summary: data.summary,
+    durationMinutes: data.duration_minutes,
+    sortOrder: data.sort_order,
+    status: data.status === "published" ? "published" : "draft",
+    objectives: data.objectives ?? [],
+    sections: Array.isArray(data.sections) ? data.sections as LessonEditorData["sections"] : [],
+  };
+  return <div className="mx-auto max-w-[1280px]">
+    <AdminPageHeader title="Сэдэв засах" description={data.title}/>
+    <LessonForm initial={initial}/>
+  </div>;
+}
