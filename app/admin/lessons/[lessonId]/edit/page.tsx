@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { LessonForm, type LessonEditorData } from "@/components/admin/lessons/lesson-form";
 import { listAllModules } from "@/lib/data/course-catalog";
@@ -24,7 +26,9 @@ export default async function EditLessonPage({ params }: { params: Promise<{ les
     objectives: data.objectives ?? [],
     sections: Array.isArray(data.sections) ? data.sections as LessonEditorData["sections"] : [],
   };
+  const parentModule = modules.find((item) => item.id === data.module_id);
   return <div className="mx-auto max-w-[1280px]">
+    {parentModule && <Link href={`/admin/lessons/module/${parentModule.id}`} className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft size={16}/>{parentModule.title}</Link>}
     <AdminPageHeader title="Сэдэв засах" description={data.title}/>
     <LessonForm initial={initial} modules={modules}/>
   </div>;

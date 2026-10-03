@@ -54,6 +54,7 @@ export async function createModule(_: ModuleFormState, formData: FormData): Prom
   if (!admin || admin.id === "demo-admin") return { error: "Админ эрх болон Supabase холболт шаардлагатай." };
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
   if (title.length < 3) return { error: "Модулийн нэрийг зөв оруулна уу." };
 
   const supabase = await createClient();
@@ -63,6 +64,7 @@ export async function createModule(_: ModuleFormState, formData: FormData): Prom
       course_slug: coreMathCourse.slug,
       title,
       description,
+      parent_id: parentId,
       created_by: admin.id,
     });
     if (error?.code === "23505") continue;
@@ -77,8 +79,12 @@ export async function createModule(_: ModuleFormState, formData: FormData): Prom
 export async function deleteModule(moduleId: string): Promise<LessonActionResult> {
   if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
   const supabase = await createClient();
-  const { count } = await supabase.from("course_lessons").select("id", { count: "exact", head: true }).eq("module_id", moduleId);
-  if ((count ?? 0) > 0) return { error: "Энэ модульд сэдэв байна. Эхлээд тэдгээрийг устгана уу." };
+  const [{ count: lessonCount }, { count: childCount }] = await Promise.all([
+    supabase.from("course_lessons").select("id", { count: "exact", head: true }).eq("module_id", moduleId),
+    supabase.from("course_modules").select("id", { count: "exact", head: true }).eq("parent_id", moduleId),
+  ]);
+  if ((lessonCount ?? 0) > 0) return { error: "Энэ модульд сэдэв байна. Эхлээд тэдгээрийг устгана уу." };
+  if ((childCount ?? 0) > 0) return { error: "Энэ модульд дэд модуль байна. Эхлээд тэдгээрийг устгана уу." };
   const { error } = await supabase.from("course_modules").delete().eq("id", moduleId);
   if (error) return { error: error.message || "Модуль устгаж чадсангүй." };
   revalidatePath("/admin/lessons");

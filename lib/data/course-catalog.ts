@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 type Section = Lesson["sections"][number];
-export type ModuleSummary = { id: string; title: string; description: string; builtin: boolean };
+export type ModuleSummary = { id: string; title: string; description: string; builtin: boolean; parentId: string | null };
 
 function isSection(value: unknown): value is Section {
   if (!value || typeof value !== "object") return false;
@@ -16,7 +16,7 @@ export async function listCustomModules() {
   if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();
   const { data, error } = await supabase.from("course_modules")
-    .select("id,title,description")
+    .select("id,title,description,parent_id")
     .eq("course_slug", coreMathCourse.slug)
     .order("sort_order", { ascending: true });
   if (error) return [];
@@ -24,9 +24,13 @@ export async function listCustomModules() {
 }
 
 export async function listAllModules(): Promise<ModuleSummary[]> {
-  const builtin = coreMathCourse.modules.map((item) => ({ id: item.id, title: item.title, description: item.description, builtin: true as const }));
-  const custom = (await listCustomModules()).map((item) => ({ id: item.id, title: item.title, description: item.description ?? "", builtin: false as const }));
+  const builtin = coreMathCourse.modules.map((item) => ({ id: item.id, title: item.title, description: item.description, builtin: true as const, parentId: null }));
+  const custom = (await listCustomModules()).map((item) => ({ id: item.id, title: item.title, description: item.description ?? "", builtin: false as const, parentId: item.parent_id }));
   return [...builtin, ...custom];
+}
+
+export async function getModule(moduleId: string): Promise<ModuleSummary | undefined> {
+  return (await listAllModules()).find((item) => item.id === moduleId);
 }
 
 export async function getCourseCatalog(): Promise<Course> {
@@ -62,7 +66,7 @@ export async function getCourseCatalog(): Promise<Course> {
       sections,
     });
   }
-  // Custom modules with no published lessons yet would render as an empty section on the public page.
+  // Custom modules (and submodules, treated as flat peers on the public page) with no published lessons yet would render as an empty section.
   return { ...coreMathCourse, modules: modules.filter((item) => item.lessons.length) };
 }
 
