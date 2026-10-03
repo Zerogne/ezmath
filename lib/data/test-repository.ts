@@ -5,8 +5,8 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getStudentQuestions, getTest, tests as mockTests } from "./mock-tests";
 import type { StudentQuestion, Test } from "@/types/exam";
 
-const TEST_COLUMNS = "id, exam_type, title, subject, year, duration_minutes, difficulty, test_type, instructions";
-function mapTest(row: { id: string; exam_type: "SAT" | "EYESH"; title: string; subject: string; year: number | null; duration_minutes: number; difficulty: "Easy" | "Medium" | "Hard" | null; test_type: "full" | "practice" | "previous-year"; instructions: string | null }, questionCount = 0): Test { return { id: row.id, title: row.title, description: row.instructions ?? "", examType: row.exam_type, subject: row.subject, year: row.year ?? undefined, questionCount, durationMinutes: row.duration_minutes, difficulty: row.difficulty ?? undefined, type: row.test_type }; }
+const TEST_COLUMNS = "id, exam_type, title, subject, year, variant, duration_minutes, difficulty, test_type, instructions";
+function mapTest(row: { id: string; exam_type: "SAT" | "EYESH"; title: string; subject: string; year: number | null; variant: "A" | "B" | "C" | "D" | "E" | null; duration_minutes: number; difficulty: "Easy" | "Medium" | "Hard" | null; test_type: "full" | "practice" | "previous-year"; instructions: string | null }, questionCount = 0): Test { return { id: row.id, title: row.title, description: row.instructions ?? "", examType: row.exam_type, subject: row.subject, year: row.year ?? undefined, variant: row.variant ?? undefined, questionCount, durationMinutes: row.duration_minutes, difficulty: row.difficulty ?? undefined, type: row.test_type }; }
 
 const listFromDatabase = unstable_cache(async () => {
   const supabase = createPublicClient();

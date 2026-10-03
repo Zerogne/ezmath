@@ -21,7 +21,7 @@ export type MaterialEditorData = {
   title: string;
   subject: string;
   year?: number;
-  variant?: "A" | "B" | "C" | "D";
+  variant?: "A" | "B" | "C" | "D" | "E";
   durationMinutes: number;
   type: TestType;
   status: "draft" | "published" | "archived";

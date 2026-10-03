@@ -9,6 +9,7 @@ export type Test = {
   examType: ExamType;
   subject: string;
   year?: number;
+  variant?: "A" | "B" | "C" | "D" | "E";
   questionCount: number;
   durationMinutes: number;
   difficulty?: Difficulty;

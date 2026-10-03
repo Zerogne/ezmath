@@ -20,10 +20,11 @@ export function TestFilter({ tests, initialExam = "ALL" }: { tests: Test[]; init
   const filtered = useMemo(() => {
     const result = tests.filter((test) => (exam === "ALL" || test.examType === exam) && (exam !== "SAT" || type === "ALL" || test.type === type));
     return result.slice().sort((a, b) => {
-      if (a.year === undefined && b.year === undefined) return 0;
+      if (a.year === undefined && b.year === undefined) return (a.variant ?? "").localeCompare(b.variant ?? "");
       if (a.year === undefined) return 1;
       if (b.year === undefined) return -1;
-      return sortOrder === "newest" ? b.year - a.year : a.year - b.year;
+      if (a.year !== b.year) return sortOrder === "newest" ? b.year - a.year : a.year - b.year;
+      return (a.variant ?? "").localeCompare(b.variant ?? "");
     });
   }, [tests, exam, type, sortOrder]);
 

@@ -196,7 +196,7 @@ function consolidateEyeshPartTwo(raw: Record<string, unknown>) {
   return { ...raw, questions: output };
 }
 
-function normalize(raw: Record<string, unknown>, examType: ExamType, filename: string, assets: Record<string, string>, selectedYear?: number, selectedVariant?: "A" | "B" | "C" | "D"): MaterialEditorData {
+function normalize(raw: Record<string, unknown>, examType: ExamType, filename: string, assets: Record<string, string>, selectedYear?: number, selectedVariant?: "A" | "B" | "C" | "D" | "E"): MaterialEditorData {
   const rawQuestions = Array.isArray(raw.questions) ? raw.questions.slice(0, 200) : [];
   const questions: MaterialQuestion[] = rawQuestions.flatMap((item, questionIndex) => {
     if (!item || typeof item !== "object") return [];
@@ -391,9 +391,9 @@ export async function POST(request: Request) {
     if (!(file instanceof File) || file.type !== "application/pdf") return NextResponse.json({ error: "PDF файл сонгоно уу." }, { status: 400 });
     if (file.size <= 0 || file.size > 4 * 1024 * 1024) return NextResponse.json({ error: "PDF файл 4 MB-аас бага байх ёстой." }, { status: 400 });
     const selectedYear = Number(form.get("year"));
-    const selectedVariant = stringValue(form.get("variant")) as "A" | "B" | "C" | "D";
+    const selectedVariant = stringValue(form.get("variant")) as "A" | "B" | "C" | "D" | "E";
     if (examType === "EYESH" && (!Number.isInteger(selectedYear) || selectedYear < 2006 || selectedYear > 2026)) return NextResponse.json({ error: "ЭЕШ-ийн он 2006–2026 хооронд байна." }, { status: 400 });
-    if (examType === "EYESH" && !["A", "B", "C", "D"].includes(selectedVariant)) return NextResponse.json({ error: "ЭЕШ-ийн хувилбар A–D байна." }, { status: 400 });
+    if (examType === "EYESH" && !["A", "B", "C", "D", "E"].includes(selectedVariant)) return NextResponse.json({ error: "ЭЕШ-ийн хувилбар A–E байна." }, { status: 400 });
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") return NextResponse.json({ error: "Файл PDF форматтай биш байна." }, { status: 400 });
     const startedAt = Date.now();

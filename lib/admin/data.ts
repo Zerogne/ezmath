@@ -248,7 +248,7 @@ export async function listAdminMaterials(examType: ExamType): Promise<AdminMater
 export async function getAdminMaterial(testId: string): Promise<MaterialEditorData | undefined> {
   await requireAdmin();
   const [tests, questions] = await Promise.all([
-    request<(MaterialRow & { variant: "A" | "B" | "C" | "D" | null })[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,variant,duration_minutes,difficulty,test_type,status,instructions,updated_at&id=eq.${encodeURIComponent(testId)}&limit=1`),
+    request<(MaterialRow & { variant: "A" | "B" | "C" | "D" | "E" | null })[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,variant,duration_minutes,difficulty,test_type,status,instructions,updated_at&id=eq.${encodeURIComponent(testId)}&limit=1`),
     request<{ id: string; test_id: string; question_number: number; question_text: string; question_type: string; response_fields: { id: string; label: string; acceptedAnswers: string[] }[]; image_url: string | null; topic: string | null; difficulty: "Easy" | "Medium" | "Hard" | null; explanation: string | null }[]>(`/rest/v1/questions?select=id,test_id,question_number,question_text,question_type,response_fields,image_url,topic,difficulty,explanation&test_id=eq.${encodeURIComponent(testId)}&order=question_number`),
   ]);
   const test = tests[0];
