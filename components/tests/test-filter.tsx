@@ -19,7 +19,12 @@ export function TestFilter({ tests, initialExam = "ALL" }: { tests: Test[]; init
 
   const filtered = useMemo(() => {
     const result = tests.filter((test) => (exam === "ALL" || test.examType === exam) && (exam !== "SAT" || type === "ALL" || test.type === type));
-    return sortOrder === "oldest" ? result.slice().reverse() : result;
+    return result.slice().sort((a, b) => {
+      if (a.year === undefined && b.year === undefined) return 0;
+      if (a.year === undefined) return 1;
+      if (b.year === undefined) return -1;
+      return sortOrder === "newest" ? b.year - a.year : a.year - b.year;
+    });
   }, [tests, exam, type, sortOrder]);
 
   const hasActiveFilters = type !== "ALL" || sortOrder !== "newest";
