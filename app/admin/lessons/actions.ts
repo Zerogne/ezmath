@@ -164,6 +164,13 @@ export async function deleteLesson(lessonId: string): Promise<LessonActionResult
 export async function setLessonStatus(lessonId: string, status: "draft" | "published"): Promise<LessonActionResult> {
   if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
   const supabase = await createClient();
+  if (status === "published") {
+    const { data: lesson } = await supabase.from("course_lessons").select("sections").eq("id", lessonId).maybeSingle();
+    const sections = Array.isArray(lesson?.sections) ? lesson.sections as { title?: unknown; body?: unknown }[] : [];
+    if (!sections.some((item) => typeof item.title === "string" && item.title.trim() && typeof item.body === "string" && item.body.trim())) {
+      return { error: "Нийтлэхийн тулд дор хаяж нэг агуулгын хэсэг нэмнэ үү." };
+    }
+  }
   const { error } = await supabase.from("course_lessons").update({ status }).eq("id", lessonId);
   if (error) return { error: error.message || "Төлөв шинэчилж чадсангүй." };
   revalidatePath("/admin/lessons");
