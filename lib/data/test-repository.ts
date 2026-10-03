@@ -12,7 +12,11 @@ const listFromDatabase = unstable_cache(async () => {
   const supabase = createPublicClient();
   const { data, error } = await supabase.from("tests").select(TEST_COLUMNS).eq("status", "published").order("created_at", { ascending: false }).limit(100);
   if (error) throw new Error("Published tests could not be loaded.");
-  return data.map((row) => mapTest(row));
+  const testIds = data.map((row) => row.id);
+  const { data: questionRows } = testIds.length ? await supabase.from("student_questions").select("test_id").in("test_id", testIds) : { data: [] };
+  const counts = new Map<string, number>();
+  for (const question of questionRows ?? []) counts.set(question.test_id, (counts.get(question.test_id) ?? 0) + 1);
+  return data.map((row) => mapTest(row, counts.get(row.id) ?? 0));
 }, ["published-tests"], { revalidate: 300, tags: ["tests"] });
 
 export async function listPublishedTests() { return isSupabaseConfigured() ? listFromDatabase() : mockTests; }
