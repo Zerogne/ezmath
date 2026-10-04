@@ -15,9 +15,7 @@ export function CourseOverview({ progress, course }: { progress: LessonProgress[
     <section className="bg-[#0b102e] text-white">
       <div className="container-page grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-center lg:py-20">
         <div>
-          <p className="text-sm text-slate-400"><Link href="/dashboard/courses" className="hover:text-white">Миний хичээлүүд</Link><span className="px-2">/</span><span className="text-slate-200">{course.title}</span></p>
-          <div className="mt-6 flex flex-wrap gap-2"><Badge>ЦӨМ ХӨТӨЛБӨР</Badge><Badge>{course.level}</Badge></div>
-          <h1 className="mt-7 max-w-3xl text-4xl font-semibold leading-[1.08] sm:text-5xl lg:text-[54px]">{course.title}</h1>
+          <h1 className="max-w-3xl text-4xl font-semibold leading-[1.08] sm:text-5xl lg:text-[54px]">{course.title}</h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">{course.description}</p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href={nextLesson ? `/lesson/${course.slug}/${nextLesson.id}` : "#modules"} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#3151e8] px-6 text-sm font-semibold text-white hover:bg-[#2945cc]">{completed.size ? "Үргэлжлүүлэн сурах" : "Хөтөлбөр эхлүүлэх"}<ChevronRight size={17}/></Link>
@@ -37,7 +35,6 @@ export function CourseOverview({ progress, course }: { progress: LessonProgress[
   </main>;
 }
 
-function Badge({ children }: { children: React.ReactNode }) { return <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 ring-1 ring-white/10">{children}</span>; }
 function ProgressCard({percent,completed,total,nextLesson,course}:{percent:number;completed:number;total:number;nextLesson?:{id:string;title:string};course:Course}) { return <div className="rounded-[24px] bg-white p-6 text-[#111735] shadow-2xl shadow-black/20 sm:p-7"><p className="text-lg font-semibold">Таны явц</p><div className="mt-5 flex items-baseline gap-2"><strong className="text-5xl font-semibold text-[#8057eb]">{percent}</strong><span className="text-sm text-slate-500">% дууссан</span></div><div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#8057eb]" style={{width:`${percent}%`}}/></div><dl className="mt-6 space-y-4 text-sm"><div className="flex justify-between"><dt className="text-slate-500">Дууссан сэдэв</dt><dd className="font-semibold">{completed} / {total}</dd></div><div className="flex justify-between"><dt className="text-slate-500">Нийт модуль</dt><dd className="font-semibold">{course.modules.length}</dd></div></dl>{nextLesson ? <Link href={`/lesson/${course.slug}/${nextLesson.id}`} className="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-[#eee9ff] px-4 text-center text-sm font-semibold text-[#7045df] hover:bg-[#e5dcff]">{completed ? "Үргэлжлүүлэх" : "Эхлэх"}: {nextLesson.title}</Link> : <p className="mt-6 rounded-xl bg-emerald-50 p-3 text-center text-sm font-semibold text-emerald-700">Хөтөлбөр дууссан!</p>}</div>; }
 
 function MainModuleCard({ main, index, completed, courseSlug }: { main: CourseMainModule; index: number; completed: Set<string>; courseSlug: string }) {
