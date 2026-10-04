@@ -76,7 +76,8 @@ async function attachManager(schoolId: string, fullName: string, email: string, 
     email,
     password: temporaryPassword,
     email_confirm: true,
-    user_metadata: { full_name: fullName },
+    // Cleared when the school admin sets their own password at /school/settings.
+    user_metadata: { full_name: fullName, password_temporary: true },
   });
   if (error || !data.user) return { error: authErrorMessage(error?.code) } as const;
 

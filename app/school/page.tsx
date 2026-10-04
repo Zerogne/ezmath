@@ -1,4 +1,5 @@
-import { BookOpenCheck, Building2, Check, ClipboardCheck, Clock3, GraduationCap, Users, X } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, BookOpenCheck, Building2, Check, ClipboardCheck, Clock3, GraduationCap, Users, X } from "lucide-react";
 import { SchoolShell } from "@/components/school/school-shell";
 import { TeacherCodeCard } from "@/components/school/teacher-code-card";
 import { getSchoolDashboard } from "@/lib/data/school-dashboard";
@@ -21,6 +22,7 @@ export default async function SchoolPage({ searchParams }: { searchParams: Promi
         <p className="mt-1 text-sm leading-6 text-muted-foreground">Багш, анги, сурагчдын сургалтын үйл ажиллагааны нэгдсэн хяналт.</p>
       </header>
 
+      {data.mustChangePassword && <div role="alert" className="mt-5 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center"><AlertTriangle size={18} className="shrink-0"/><p className="flex-1">Та түр нууц үгээр нэвтэрсэн байна. Өөрийн нууц үгээ тохируулна уу.</p><Link href="/school/settings#password" className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-amber-900 px-4 text-xs font-semibold text-white hover:bg-amber-950">Нууц үг солих</Link></div>}
       {query.error && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">Багшийн хүсэлтийг шинэчилж чадсангүй. Дахин оролдоно уу.</p>}
       {query.teacherUpdated && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Багшийн эрхийн төлөв амжилттай шинэчлэгдлээ.</p>}
 

@@ -15,7 +15,7 @@ export async function requireSchoolAdmin(nextPath = "/school") {
 }
 
 export async function getSchoolDashboard() {
-  const { profile, schoolId } = await requireSchoolAdmin();
+  const { user, profile, schoolId } = await requireSchoolAdmin();
   const admin = createAdminClient();
   const [schoolResult, peopleResult, classesResult] = await Promise.all([
     admin.from("schools").select("id, name, teacher_registration_code").eq("id", schoolId).single(),
@@ -42,6 +42,7 @@ export async function getSchoolDashboard() {
   return {
     accountName: profile.full_name || "Сургуулийн админ",
     schoolName: school?.name || "Сургууль",
+    mustChangePassword: user.user_metadata?.password_temporary === true,
     teacherCode: school?.teacher_registration_code ?? null,
     teacherCount: teachers.filter((teacher) => teacher.teacher_status === "approved").length,
     pendingTeacherCount: teachers.filter((teacher) => teacher.teacher_status === "pending").length,
