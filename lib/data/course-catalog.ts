@@ -75,11 +75,8 @@ export async function getCourseCatalog(): Promise<Course> {
       sections,
     });
   }
-  // Hide empty branches so students never land on a module with nothing to open.
-  const modules = mains
-    .map((main) => ({ ...main, submodules: main.submodules.filter((sub) => sub.lessons.length) }))
-    .filter((main) => main.submodules.length);
-  return { ...coreMathCourse, modules };
+  // Modules/submodules without published lessons stay listed; the UI shows them as "coming soon".
+  return { ...coreMathCourse, modules: mains };
 }
 
 export function findCourseLesson(course: Course, lessonId: string): LessonInContext | undefined {

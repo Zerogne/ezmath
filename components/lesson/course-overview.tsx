@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Check, ChevronRight, Layers } from "lucide-react";
+import { ArrowRight, Check, ChevronRight } from "lucide-react";
 import { moduleLessons, type Course, type CourseMainModule } from "@/lib/learning/course-catalog";
 import type { LessonProgress } from "@/lib/data/lesson-progress";
 
@@ -33,7 +33,7 @@ export function CourseOverview({ progress, course }: { progress: LessonProgress[
 
     <section id="modules" className="container-page grid gap-8 py-12 lg:grid-cols-[minmax(0,1fr)_340px] lg:py-16">
       <div>
-        <div className="flex items-end justify-between gap-4"><h2 className="text-3xl font-semibold">Хичээлийн бүтэц</h2><p className="text-sm text-slate-500">{course.modules.length} модуль · {total} сэдэв</p></div>
+        <h2 className="text-3xl font-semibold">Хичээлийн бүтэц</h2>
         <div className="mt-7 grid gap-4 md:grid-cols-2">
           {course.modules.map((main, index) => <MainModuleCard key={main.id} main={main} index={index} completed={completed} courseSlug={course.slug}/>)}
         </div>
@@ -53,20 +53,19 @@ function ProgressCard({percent,completed,total,nextLesson,course}:{percent:numbe
 function MainModuleCard({ main, index, completed, courseSlug }: { main: CourseMainModule; index: number; completed: Set<string>; courseSlug: string }) {
   const lessons = moduleLessons(main);
   const count = lessons.filter((item) => completed.has(item.id)).length;
-  const done = count === lessons.length;
+  const empty = lessons.length === 0;
+  const done = !empty && count === lessons.length;
   const started = count > 0;
-  const percent = Math.round((count / lessons.length) * 100);
+  const percent = empty ? 0 : Math.round((count / lessons.length) * 100);
   return <Link href={`/lesson/${courseSlug}/module/${main.id}`} className={`group flex flex-col rounded-2xl border bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#8057eb]/10 sm:p-6 ${started && !done ? "border-[#8057eb] ring-1 ring-[#8057eb]" : "border-[#e1e4ec] hover:border-[#c9bdf5]"}`}>
     <div className="flex items-start gap-4">
       <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-semibold ${done ? "bg-[#8057eb] text-white" : "bg-[#eee9ff] text-[#8057eb]"}`}>{done ? <Check size={18}/> : String(index + 1).padStart(2, "0")}</span>
-      <div className="min-w-0 flex-1"><h3 className="font-semibold sm:text-lg">{main.title}</h3>{main.description && <p className="mt-1 text-sm leading-6 text-slate-500">{main.description}</p>}</div>
+      <div className="min-w-0 flex-1"><h3 className="truncate font-semibold sm:text-lg" title={main.title}>{main.title}</h3><p className="mt-1 line-clamp-2 min-h-12 text-sm leading-6 text-slate-500">{main.description}</p></div>
       <ChevronRight size={18} className="mt-1 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#8057eb]"/>
     </div>
-    <ul className="mt-5 flex flex-wrap gap-2">{main.submodules.map((sub) => <li key={sub.id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{sub.title}</li>)}</ul>
-    <div className="mt-auto pt-5">
-      <div className="flex items-center justify-between text-xs"><span className="inline-flex items-center gap-1.5 text-slate-500"><Layers size={13}/>{main.submodules.length} дэд модуль · {lessons.length} сэдэв</span><span className={`font-semibold ${done ? "text-emerald-600" : started ? "text-[#8057eb]" : "text-slate-400"}`}>{done ? "Дууссан" : started ? `${count}/${lessons.length}` : "Эхлээгүй"}</span></div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${done ? "bg-emerald-500" : "bg-[#8057eb]"}`} style={{ width: `${percent}%` }}/></div>
-      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#3151e8]">{done ? "Дахин үзэх" : started ? "Үргэлжлүүлэх" : "Модуль нээх"}<ArrowRight size={15}/></span>
+    <div className="mt-auto pt-6">
+      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${done ? "bg-emerald-500" : "bg-[#8057eb]"}`} style={{ width: `${percent}%` }}/></div>
+      <div className="mt-4 flex items-center justify-between gap-3"><span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3151e8]">{empty ? "Агуулга удахгүй нэмэгдэнэ" : done ? "Дахин үзэх" : started ? "Үргэлжлүүлэх" : "Хичээл эхлүүлэх"}<ArrowRight size={15}/></span>{started && !done && <span className="text-xs font-semibold text-[#8057eb]">{count}/{lessons.length}</span>}{done && <span className="text-xs font-semibold text-emerald-600">Дууссан</span>}</div>
     </div>
   </Link>;
 }

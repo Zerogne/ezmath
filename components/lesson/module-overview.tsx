@@ -8,7 +8,7 @@ export function ModuleOverview({ progress, course, main }: { progress: LessonPro
   const completed = new Set(progress.filter((item) => item.completed_at).map((item) => item.lesson_id));
   const lessons = moduleLessons(main);
   const done = lessons.filter((item) => completed.has(item.id)).length;
-  const percent = Math.round((done / lessons.length) * 100);
+  const percent = lessons.length ? Math.round((done / lessons.length) * 100) : 0;
   const recentId = progress.find((item) => !item.completed_at)?.lesson_id;
   const nextLesson = lessons.find((item) => item.id === recentId) ?? lessons.find((item) => !completed.has(item.id));
   const mainIndex = course.modules.findIndex((item) => item.id === main.id);
@@ -29,7 +29,7 @@ export function ModuleOverview({ progress, course, main }: { progress: LessonPro
           <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
             <div className="rounded-full bg-white p-1"><ProgressRing value={percent} size={56}/></div>
             <div><p className="text-sm font-semibold">{done}/{lessons.length} сэдэв дууссан</p>
-              {nextLesson ? <Link href={`/lesson/${course.slug}/${nextLesson.id}`} className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#3151e8] px-4 text-sm font-semibold text-white hover:bg-[#2945cc]">{done ? "Үргэлжлүүлэх" : "Эхлэх"}<ChevronRight size={15}/></Link> : <p className="mt-1 text-sm font-semibold text-emerald-400">Модуль дууссан!</p>}
+              {nextLesson ? <Link href={`/lesson/${course.slug}/${nextLesson.id}`} className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#3151e8] px-4 text-sm font-semibold text-white hover:bg-[#2945cc]">{done ? "Үргэлжлүүлэх" : "Эхлэх"}<ChevronRight size={15}/></Link> : <p className="mt-1 text-sm font-semibold text-emerald-400">{lessons.length ? "Модуль дууссан!" : "Сэдвүүд удахгүй нэмэгдэнэ"}</p>}
             </div>
           </div>
         </div>
@@ -38,6 +38,7 @@ export function ModuleOverview({ progress, course, main }: { progress: LessonPro
 
     <section className="container-page grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-14">
       <div className="space-y-4">
+        {main.submodules.length === 0 && <p className="rounded-2xl border border-dashed border-[#d5d9e4] bg-white px-6 py-12 text-center text-sm text-slate-500">Энэ модулийн агуулга удахгүй нэмэгдэнэ.</p>}
         {main.submodules.map((sub, index) => <SubmoduleCard key={sub.id} sub={sub} label={`${mainIndex + 1}.${index + 1}`} completed={completed} courseSlug={course.slug}/>)}
       </div>
       <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
@@ -54,14 +55,16 @@ export function ModuleOverview({ progress, course, main }: { progress: LessonPro
 
 function SubmoduleCard({ sub, label, completed, courseSlug }: { sub: CourseModule; label: string; completed: Set<string>; courseSlug: string }) {
   const count = sub.lessons.filter((item) => completed.has(item.id)).length;
-  const done = count === sub.lessons.length;
+  const empty = sub.lessons.length === 0;
+  const done = !empty && count === sub.lessons.length;
   const started = count > 0;
   return <section id={sub.id} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-white ${started && !done ? "border-[#8057eb] ring-1 ring-[#8057eb]" : "border-[#e1e4ec]"}`}>
     <div className="flex items-center gap-4 p-5 sm:p-6">
       <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-semibold ${done ? "bg-[#8057eb] text-white" : "bg-[#eee9ff] text-[#8057eb]"}`}>{done ? <Check size={18}/> : label}</span>
       <div className="min-w-0 flex-1"><h2 className="font-semibold sm:text-lg">{sub.title}</h2>{sub.description && <p className="mt-1 text-sm text-slate-500">{sub.description}</p>}</div>
-      <div className="hidden text-right sm:block"><p className="text-xs text-slate-500">{sub.lessons.length} сэдэв</p><p className={`mt-1 text-xs font-semibold ${done ? "text-emerald-600" : started ? "text-[#8057eb]" : "text-slate-400"}`}>{done ? "Дууссан" : started ? `${count}/${sub.lessons.length} дууссан` : "Эхлээгүй"}</p></div>
+      <div className="hidden text-right sm:block"><p className="text-xs text-slate-500">{sub.lessons.length} сэдэв</p><p className={`mt-1 text-xs font-semibold ${done ? "text-emerald-600" : started ? "text-[#8057eb]" : "text-slate-400"}`}>{empty ? "Удахгүй" : done ? "Дууссан" : started ? `${count}/${sub.lessons.length} дууссан` : "Эхлээгүй"}</p></div>
     </div>
-    <div className="border-t px-4 py-2 sm:px-6">{sub.lessons.map((item) => <Link key={item.id} href={`/lesson/${courseSlug}/${item.id}`} className="group flex min-h-12 items-center gap-3 rounded-xl px-2 py-2 text-sm hover:bg-slate-50"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${completed.has(item.id) ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500 group-hover:bg-[#eee9ff] group-hover:text-[#8057eb]"}`}>{completed.has(item.id) ? <Check size={14}/> : <Play size={13} fill="currentColor"/>}</span><span className="min-w-0 flex-1 font-medium">{item.title}</span><span className="flex items-center gap-1 text-xs text-slate-400"><Clock3 size={13}/>{item.duration}</span></Link>)}</div>
+    {empty && <p className="border-t px-6 py-4 text-sm text-slate-400">Сэдвүүд удахгүй нэмэгдэнэ.</p>}
+    {!empty && <div className="border-t px-4 py-2 sm:px-6">{sub.lessons.map((item) => <Link key={item.id} href={`/lesson/${courseSlug}/${item.id}`} className="group flex min-h-12 items-center gap-3 rounded-xl px-2 py-2 text-sm hover:bg-slate-50"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${completed.has(item.id) ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500 group-hover:bg-[#eee9ff] group-hover:text-[#8057eb]"}`}>{completed.has(item.id) ? <Check size={14}/> : <Play size={13} fill="currentColor"/>}</span><span className="min-w-0 flex-1 font-medium">{item.title}</span><span className="flex items-center gap-1 text-xs text-slate-400"><Clock3 size={13}/>{item.duration}</span></Link>)}</div>}
   </section>;
 }
