@@ -29,7 +29,5 @@ export async function updateLessonProgress(lessonId: string, completed: boolean)
     { onConflict: "user_id,lesson_id" },
   );
   if (error) throw new Error(`Явцыг хадгалж чадсангүй: ${error.message}`);
-  revalidatePath("/lesson");
-  revalidatePath("/lesson/theory-core");
-  revalidatePath(`/lesson/theory-core/${lessonId}`);
+  revalidatePath("/lesson", "layout");
 }

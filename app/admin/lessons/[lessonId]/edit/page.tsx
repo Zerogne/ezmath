@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { LessonBreadcrumbs } from "@/components/admin/lessons/breadcrumbs";
 import { LessonForm, type LessonEditorData } from "@/components/admin/lessons/lesson-form";
 import { listAllModules } from "@/lib/data/course-catalog";
+import { moduleTrail, toModuleGroups } from "@/lib/data/admin-lessons";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function EditLessonPage({ params }: { params: Promise<{ lessonId: string }> }) {
@@ -26,10 +26,10 @@ export default async function EditLessonPage({ params }: { params: Promise<{ les
     objectives: data.objectives ?? [],
     sections: Array.isArray(data.sections) ? data.sections as LessonEditorData["sections"] : [],
   };
-  const parentModule = modules.find((item) => item.id === data.module_id);
+  const trail = moduleTrail(modules, data.module_id);
   return <div className="mx-auto max-w-[1280px]">
-    {parentModule && <Link href={`/admin/lessons/module/${parentModule.id}`} className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft size={16}/>{parentModule.title}</Link>}
+    <LessonBreadcrumbs items={[{ label: "Модулиуд", href: "/admin/lessons" }, ...trail.map((item) => ({ label: item.title, href: `/admin/lessons/module/${item.id}` })), { label: data.title }]}/>
     <AdminPageHeader title="Сэдэв засах" description={data.title}/>
-    <LessonForm initial={initial} modules={modules}/>
+    <LessonForm initial={initial} moduleGroups={toModuleGroups(modules)}/>
   </div>;
 }

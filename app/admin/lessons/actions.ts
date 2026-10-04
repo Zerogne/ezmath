@@ -38,7 +38,7 @@ function parseLesson(formData: FormData, validModuleIds: Set<string>): ParsedLes
   })).filter((item) => item.title && item.body);
 
   if (title.length < 3 || summary.length < 10 || !Number.isInteger(durationMinutes) || durationMinutes < 1) return { error: "Гарчиг, тайлбар болон хугацааг зөв бөглөнө үү." };
-  if (!validModuleIds.has(moduleId)) return { error: "Модуль буруу байна." };
+  if (!validModuleIds.has(moduleId)) return { error: "Сэдвийг дэд модульд хадгална. Дэд модулиа сонгоно уу." };
   if (!objectives.length) return { error: "Дор хаяж нэг зорилго нэмнэ үү." };
   if (status === "published" && !sections.length) return { error: "Нийтлэхийн тулд дор хаяж нэг агуулгын хэсэг нэмнэ үү." };
 
@@ -49,54 +49,89 @@ function generateSlug(prefix: string) {
   return `${prefix}-${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
 }
 
+function revalidateCatalog() {
+  revalidatePath("/admin/lessons", "layout");
+  revalidatePath("/lesson", "layout");
+}
+
+async function submoduleIds() {
+  return new Set((await listAllModules()).filter((item) => item.parentId).map((item) => item.id));
+}
+
+function parseModuleFields(formData: FormData) {
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  if (title.length < 3 || title.length > 160) return { error: "Нэр 3-160 тэмдэгт байх ёстой." };
+  if (description.length > 500) return { error: "Тайлбар 500 тэмдэгтээс хэтрэхгүй." };
+  return { title, description };
+}
+
 export async function createModule(_: ModuleFormState, formData: FormData): Promise<ModuleFormState> {
   const admin = await getAdminIdentity();
   if (!admin || admin.id === "demo-admin") return { error: "Админ эрх болон Supabase холболт шаардлагатай." };
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  const fields = parseModuleFields(formData);
+  if ("error" in fields) return fields;
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
-  if (title.length < 3) return { error: "Модулийн нэрийг зөв оруулна уу." };
+  if (parentId) {
+    const parent = (await listAllModules()).find((item) => item.id === parentId);
+    // Only two levels: a submodule's parent must itself be a main module.
+    if (!parent || parent.parentId) return { error: "Дэд модулийг зөвхөн үндсэн модуль дотор нэмнэ." };
+  }
 
   const supabase = await createClient();
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const { error } = await supabase.from("course_modules").insert({
       id: generateSlug("module"),
       course_slug: coreMathCourse.slug,
-      title,
-      description,
+      title: fields.title,
+      description: fields.description,
       parent_id: parentId,
       created_by: admin.id,
     });
     if (error?.code === "23505") continue;
     if (error) return { error: error.message || "Модуль үүсгэж чадсангүй." };
-    revalidatePath("/admin/lessons");
-    revalidatePath("/lesson");
-    return { success: "Шинэ модуль нэмэгдлээ." };
+    revalidateCatalog();
+    return { success: parentId ? "Дэд модуль нэмэгдлээ." : "Модуль нэмэгдлээ." };
   }
   return { error: "Модуль үүсгэж чадсангүй. Дахин оролдоно уу." };
 }
 
+export async function updateModule(_: ModuleFormState, formData: FormData): Promise<ModuleFormState> {
+  const admin = await getAdminIdentity();
+  if (!admin || admin.id === "demo-admin") return { error: "Админ эрх болон Supabase холболт шаардлагатай." };
+  const moduleId = String(formData.get("moduleId") ?? "");
+  const target = (await listAllModules()).find((item) => item.id === moduleId);
+  if (!target) return { error: "Модуль олдсонгүй." };
+  if (target.builtin) return { error: "Үндсэн модулийг засах боломжгүй." };
+  const fields = parseModuleFields(formData);
+  if ("error" in fields) return fields;
+  const supabase = await createClient();
+  const { error } = await supabase.from("course_modules").update({ title: fields.title, description: fields.description }).eq("id", moduleId);
+  if (error) return { error: error.message || "Модуль шинэчилж чадсангүй." };
+  revalidateCatalog();
+  return { success: "Хадгалагдлаа." };
+}
+
 export async function deleteModule(moduleId: string): Promise<LessonActionResult> {
   if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
+  if ((await listAllModules()).some((item) => item.id === moduleId && item.builtin)) return { error: "Үндсэн модулийг устгах боломжгүй." };
   const supabase = await createClient();
   const [{ count: lessonCount }, { count: childCount }] = await Promise.all([
     supabase.from("course_lessons").select("id", { count: "exact", head: true }).eq("module_id", moduleId),
     supabase.from("course_modules").select("id", { count: "exact", head: true }).eq("parent_id", moduleId),
   ]);
-  if ((lessonCount ?? 0) > 0) return { error: "Энэ модульд сэдэв байна. Эхлээд тэдгээрийг устгана уу." };
+  if ((lessonCount ?? 0) > 0) return { error: "Энэ дэд модульд сэдэв байна. Эхлээд тэдгээрийг устгах эсвэл зөөнө үү." };
   if ((childCount ?? 0) > 0) return { error: "Энэ модульд дэд модуль байна. Эхлээд тэдгээрийг устгана уу." };
   const { error } = await supabase.from("course_modules").delete().eq("id", moduleId);
   if (error) return { error: error.message || "Модуль устгаж чадсангүй." };
-  revalidatePath("/admin/lessons");
-  revalidatePath("/lesson");
+  revalidateCatalog();
   return { success: true };
 }
 
 export async function createLesson(_: LessonFormState, formData: FormData): Promise<LessonFormState> {
   const admin = await getAdminIdentity();
   if (!admin || admin.id === "demo-admin") return { error: "Админ эрх болон Supabase холболт шаардлагатай." };
-  const validModuleIds = new Set((await listAllModules()).map((item) => item.id));
-  const parsed = parseLesson(formData, validModuleIds);
+  const parsed = parseLesson(formData, await submoduleIds());
   if ("error" in parsed) return parsed;
 
   const supabase = await createClient();
@@ -116,9 +151,7 @@ export async function createLesson(_: LessonFormState, formData: FormData): Prom
     }).select("id").single();
     if (error?.code === "23505") continue;
     if (error || !data) return { error: error?.message || "Хичээл хадгалж чадсангүй." };
-    revalidatePath("/admin/lessons");
-    revalidatePath("/lesson");
-    revalidatePath(`/lesson/${coreMathCourse.slug}`);
+    revalidateCatalog();
     return { id: data.id, success: parsed.status === "published" ? "Сэдэв нийтлэгдлээ." : "Draft сэдэв хадгалагдлаа." };
   }
   return { error: "Хичээл хадгалж чадсангүй. Дахин оролдоно уу." };
@@ -129,8 +162,7 @@ export async function updateLesson(_: LessonFormState, formData: FormData): Prom
   if (!admin || admin.id === "demo-admin") return { error: "Админ эрх болон Supabase холболт шаардлагатай." };
   const lessonId = String(formData.get("lessonId") ?? "");
   if (!lessonId) return { error: "Сэдэв олдсонгүй." };
-  const validModuleIds = new Set((await listAllModules()).map((item) => item.id));
-  const parsed = parseLesson(formData, validModuleIds);
+  const parsed = parseLesson(formData, await submoduleIds());
   if ("error" in parsed) return parsed;
 
   const supabase = await createClient();
@@ -145,9 +177,7 @@ export async function updateLesson(_: LessonFormState, formData: FormData): Prom
     sort_order: parsed.sortOrder,
   }).eq("id", lessonId);
   if (error) return { error: error.message || "Хичээл шинэчилж чадсангүй." };
-  revalidatePath("/admin/lessons");
-  revalidatePath("/lesson");
-  revalidatePath(`/lesson/${coreMathCourse.slug}`);
+  revalidateCatalog();
   return { success: "Сэдэв шинэчлэгдлээ." };
 }
 
@@ -156,8 +186,7 @@ export async function deleteLesson(lessonId: string): Promise<LessonActionResult
   const supabase = await createClient();
   const { error } = await supabase.from("course_lessons").delete().eq("id", lessonId);
   if (error) return { error: error.message || "Сэдэв устгаж чадсангүй." };
-  revalidatePath("/admin/lessons");
-  revalidatePath("/lesson");
+  revalidateCatalog();
   return { success: true };
 }
 
@@ -173,7 +202,6 @@ export async function setLessonStatus(lessonId: string, status: "draft" | "publi
   }
   const { error } = await supabase.from("course_lessons").update({ status }).eq("id", lessonId);
   if (error) return { error: error.message || "Төлөв шинэчилж чадсангүй." };
-  revalidatePath("/admin/lessons");
-  revalidatePath("/lesson");
+  revalidateCatalog();
   return { success: true };
 }

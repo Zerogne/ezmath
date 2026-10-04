@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { Check, ChevronRight, Clock3, Play } from "lucide-react";
-import type { Course, CourseModule } from "@/lib/learning/course-catalog";
+import { ArrowRight, Check, ChevronRight, Layers } from "lucide-react";
+import { moduleLessons, type Course, type CourseMainModule } from "@/lib/learning/course-catalog";
 import type { LessonProgress } from "@/lib/data/lesson-progress";
 
 export function CourseOverview({ progress, course }: { progress: LessonProgress[]; course: Course }) {
   const completed = new Set(progress.filter((item) => item.completed_at).map((item) => item.lesson_id));
-  const total = course.modules.reduce((sum, module) => sum + module.lessons.length, 0);
-  const percent = Math.round((completed.size / total) * 100);
+  const lessons = course.modules.flatMap(moduleLessons);
+  const total = lessons.length;
+  const percent = total ? Math.round((completed.size / total) * 100) : 0;
   const recentId = progress.find((item) => !item.completed_at)?.lesson_id;
-  const nextLesson = course.modules.flatMap((module) => module.lessons).find((item) => item.id === recentId)
-    ?? course.modules.flatMap((module) => module.lessons).find((item) => !completed.has(item.id));
+  const nextLesson = lessons.find((item) => item.id === recentId) ?? lessons.find((item) => !completed.has(item.id));
 
   return <main className="min-h-screen bg-[#f5f6fa] text-[#111735]">
     <section className="bg-[#0b102e] text-white">
@@ -20,7 +20,7 @@ export function CourseOverview({ progress, course }: { progress: LessonProgress[
           <h1 className="mt-7 max-w-3xl text-4xl font-semibold leading-[1.08] sm:text-5xl lg:text-[54px]">{course.title}</h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">{course.description}</p>
           <dl className="mt-7 flex flex-wrap gap-x-9 gap-y-4">
-            <Stat value={course.modules.length} label="Хичээл"/><Stat value={total} label="Сэдэв"/><Stat value={`${course.exerciseCount}+`} label="Дасгал"/><Stat value={course.estimate} label="Үргэлжлэх"/>
+            <Stat value={course.modules.length} label="Модуль"/><Stat value={total} label="Сэдэв"/><Stat value={`${course.exerciseCount}+`} label="Дасгал"/><Stat value={course.estimate} label="Үргэлжлэх"/>
           </dl>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href={nextLesson ? `/lesson/${course.slug}/${nextLesson.id}` : "#modules"} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#3151e8] px-6 text-sm font-semibold text-white hover:bg-[#2945cc]">{completed.size ? "Үргэлжлүүлэн сурах" : "Хөтөлбөр эхлүүлэх"}<ChevronRight size={17}/></Link>
@@ -33,9 +33,9 @@ export function CourseOverview({ progress, course }: { progress: LessonProgress[
 
     <section id="modules" className="container-page grid gap-8 py-12 lg:grid-cols-[minmax(0,1fr)_340px] lg:py-16">
       <div>
-        <div className="flex items-end justify-between gap-4"><h2 className="text-3xl font-semibold">Хичээлийн бүтэц</h2><p className="text-sm text-slate-500">{course.modules.length} хичээл · {total} сэдэв</p></div>
-        <div className="mt-7 space-y-4">
-          {course.modules.map((module, index) => <ModuleCard key={module.id} module={module} index={index} completed={completed} courseSlug={course.slug}/>) }
+        <div className="flex items-end justify-between gap-4"><h2 className="text-3xl font-semibold">Хичээлийн бүтэц</h2><p className="text-sm text-slate-500">{course.modules.length} модуль · {total} сэдэв</p></div>
+        <div className="mt-7 grid gap-4 md:grid-cols-2">
+          {course.modules.map((main, index) => <MainModuleCard key={main.id} main={main} index={index} completed={completed} courseSlug={course.slug}/>)}
         </div>
       </div>
       <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
@@ -48,15 +48,26 @@ export function CourseOverview({ progress, course }: { progress: LessonProgress[
 
 function Badge({ children }: { children: React.ReactNode }) { return <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 ring-1 ring-white/10">{children}</span>; }
 function Stat({ value, label }: { value: string | number; label: string }) { return <div><dt className="text-lg font-semibold">{value}</dt><dd className="mt-0.5 text-xs text-slate-500">{label}</dd></div>; }
-function ProgressCard({percent,completed,total,nextLesson,course}:{percent:number;completed:number;total:number;nextLesson?:{id:string;title:string};course:Course}) { return <div className="rounded-[24px] bg-white p-6 text-[#111735] shadow-2xl shadow-black/20 sm:p-7"><p className="text-lg font-semibold">Таны явц</p><div className="mt-5 flex items-baseline gap-2"><strong className="text-5xl font-semibold text-[#8057eb]">{percent}</strong><span className="text-sm text-slate-500">% дууссан</span></div><div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#8057eb]" style={{width:`${percent}%`}}/></div><dl className="mt-6 space-y-4 text-sm"><div className="flex justify-between"><dt className="text-slate-500">Дууссан сэдэв</dt><dd className="font-semibold">{completed} / {total}</dd></div><div className="flex justify-between"><dt className="text-slate-500">Нийт хичээл</dt><dd className="font-semibold">{course.modules.length}</dd></div></dl>{nextLesson ? <Link href={`/lesson/${course.slug}/${nextLesson.id}`} className="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-[#eee9ff] px-4 text-center text-sm font-semibold text-[#7045df] hover:bg-[#e5dcff]">{completed ? "Үргэлжлүүлэх" : "Эхлэх"}: {nextLesson.title}</Link> : <p className="mt-6 rounded-xl bg-emerald-50 p-3 text-center text-sm font-semibold text-emerald-700">Хөтөлбөр дууссан!</p>}</div>; }
+function ProgressCard({percent,completed,total,nextLesson,course}:{percent:number;completed:number;total:number;nextLesson?:{id:string;title:string};course:Course}) { return <div className="rounded-[24px] bg-white p-6 text-[#111735] shadow-2xl shadow-black/20 sm:p-7"><p className="text-lg font-semibold">Таны явц</p><div className="mt-5 flex items-baseline gap-2"><strong className="text-5xl font-semibold text-[#8057eb]">{percent}</strong><span className="text-sm text-slate-500">% дууссан</span></div><div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#8057eb]" style={{width:`${percent}%`}}/></div><dl className="mt-6 space-y-4 text-sm"><div className="flex justify-between"><dt className="text-slate-500">Дууссан сэдэв</dt><dd className="font-semibold">{completed} / {total}</dd></div><div className="flex justify-between"><dt className="text-slate-500">Нийт модуль</dt><dd className="font-semibold">{course.modules.length}</dd></div></dl>{nextLesson ? <Link href={`/lesson/${course.slug}/${nextLesson.id}`} className="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-[#eee9ff] px-4 text-center text-sm font-semibold text-[#7045df] hover:bg-[#e5dcff]">{completed ? "Үргэлжлүүлэх" : "Эхлэх"}: {nextLesson.title}</Link> : <p className="mt-6 rounded-xl bg-emerald-50 p-3 text-center text-sm font-semibold text-emerald-700">Хөтөлбөр дууссан!</p>}</div>; }
 
-function ModuleCard({ module, index, completed, courseSlug }: { module: CourseModule; index: number; completed: Set<string>; courseSlug: string }) {
-  const count = module.lessons.filter((item)=>completed.has(item.id)).length;
-  const done = count === module.lessons.length;
+function MainModuleCard({ main, index, completed, courseSlug }: { main: CourseMainModule; index: number; completed: Set<string>; courseSlug: string }) {
+  const lessons = moduleLessons(main);
+  const count = lessons.filter((item) => completed.has(item.id)).length;
+  const done = count === lessons.length;
   const started = count > 0;
-  return <section className={`overflow-hidden rounded-2xl border bg-white ${started && !done ? "border-[#8057eb] ring-1 ring-[#8057eb]" : "border-[#e1e4ec]"}`}>
-    <div className="flex items-center gap-4 p-5 sm:p-6"><span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-semibold ${done ? "bg-[#8057eb] text-white" : "bg-[#eee9ff] text-[#8057eb]"}`}>{done?<Check size={18}/>:String(index+1).padStart(2,"0")}</span><div className="min-w-0 flex-1"><h3 className="font-semibold sm:text-lg">{module.title}</h3><p className="mt-1 text-sm text-slate-500">{module.description}</p></div><div className="hidden text-right sm:block"><p className="text-xs text-slate-500">{module.lessons.length} сэдэв</p><p className={`mt-1 text-xs font-semibold ${done?"text-emerald-600":started?"text-[#8057eb]":"text-slate-400"}`}>{done?"Дууссан":started?`${count}/${module.lessons.length} дууссан`:"Эхлээгүй"}</p></div></div>
-    <div className="border-t px-4 py-2 sm:px-6">{module.lessons.map((item)=><Link key={item.id} href={`/lesson/${courseSlug}/${item.id}`} className="group flex min-h-12 items-center gap-3 rounded-xl px-2 py-2 text-sm hover:bg-slate-50"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${completed.has(item.id)?"bg-emerald-50 text-emerald-600":"bg-slate-100 text-slate-500 group-hover:bg-[#eee9ff] group-hover:text-[#8057eb]"}`}>{completed.has(item.id)?<Check size={14}/>:<Play size={13} fill="currentColor"/>}</span><span className="min-w-0 flex-1 font-medium">{item.title}</span><span className="flex items-center gap-1 text-xs text-slate-400"><Clock3 size={13}/>{item.duration}</span></Link>)}</div>
-  </section>;
+  const percent = Math.round((count / lessons.length) * 100);
+  return <Link href={`/lesson/${courseSlug}/module/${main.id}`} className={`group flex flex-col rounded-2xl border bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#8057eb]/10 sm:p-6 ${started && !done ? "border-[#8057eb] ring-1 ring-[#8057eb]" : "border-[#e1e4ec] hover:border-[#c9bdf5]"}`}>
+    <div className="flex items-start gap-4">
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-semibold ${done ? "bg-[#8057eb] text-white" : "bg-[#eee9ff] text-[#8057eb]"}`}>{done ? <Check size={18}/> : String(index + 1).padStart(2, "0")}</span>
+      <div className="min-w-0 flex-1"><h3 className="font-semibold sm:text-lg">{main.title}</h3>{main.description && <p className="mt-1 text-sm leading-6 text-slate-500">{main.description}</p>}</div>
+      <ChevronRight size={18} className="mt-1 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#8057eb]"/>
+    </div>
+    <ul className="mt-5 flex flex-wrap gap-2">{main.submodules.map((sub) => <li key={sub.id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{sub.title}</li>)}</ul>
+    <div className="mt-auto pt-5">
+      <div className="flex items-center justify-between text-xs"><span className="inline-flex items-center gap-1.5 text-slate-500"><Layers size={13}/>{main.submodules.length} дэд модуль · {lessons.length} сэдэв</span><span className={`font-semibold ${done ? "text-emerald-600" : started ? "text-[#8057eb]" : "text-slate-400"}`}>{done ? "Дууссан" : started ? `${count}/${lessons.length}` : "Эхлээгүй"}</span></div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${done ? "bg-emerald-500" : "bg-[#8057eb]"}`} style={{ width: `${percent}%` }}/></div>
+      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#3151e8]">{done ? "Дахин үзэх" : started ? "Үргэлжлүүлэх" : "Модуль нээх"}<ArrowRight size={15}/></span>
+    </div>
+  </Link>;
 }
 function InfoCard({ title, children }: { title: string; children: React.ReactNode }) { return <section className="rounded-2xl border border-[#e1e4ec] bg-white p-5"><h2 className="mb-4 text-lg font-semibold">{title}</h2>{children}</section>; }
