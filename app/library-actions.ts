@@ -72,9 +72,90 @@ export async function deleteLibraryMaterial(materialId: string): Promise<ActionR
   return { success: true, id: data.id };
 }
 
+export type LibraryCollectionProblemInput = Omit<LibraryMaterialInput, "title"> & { title?: string };
+export type LibraryCollectionInput = {
+  id?: string;
+  title: string;
+  subject: string;
+  year?: number | null;
+  variant?: string | null;
+  description: string;
+  problems: LibraryCollectionProblemInput[];
+};
+
+const MAX_COLLECTION_PROBLEMS = 200;
+
+export async function saveLibraryCollection(input: LibraryCollectionInput): Promise<ActionResult> {
+  const actor = await libraryActor();
+  if ("error" in actor) return { error: actor.error };
+  const title = String(input.title ?? "").trim();
+  const subject = String(input.subject ?? "").trim();
+  const description = String(input.description ?? "").trim();
+  const year = input.year ? Number(input.year) : null;
+  const variant = input.variant ? String(input.variant).toUpperCase() : null;
+  if (title.length < 2 || title.length > 160) return { error: "Материалын нэр 2–160 тэмдэгт байна." };
+  if (!subject || subject.length > 80) return { error: "Хичээл / сэдвийг оруулна уу." };
+  if (description.length > 2_000) return { error: "Тайлбар 2000 тэмдэгтээс хэтрэхгүй." };
+  if (year !== null && (!Number.isInteger(year) || year < 2000 || year > 2100)) return { error: "Он буруу байна." };
+  if (variant !== null && !["A", "B", "C", "D", "E"].includes(variant)) return { error: "Хувилбар A–E байна." };
+  if (!Array.isArray(input.problems) || !input.problems.length) return { error: "Дор хаяж нэг бодлого нэмнэ үү." };
+  if (input.problems.length > MAX_COLLECTION_PROBLEMS) return { error: `Нэг материалд ${MAX_COLLECTION_PROBLEMS} хүртэл бодлого байна.` };
+
+  // Only ids that already belong to this collection may be updated; anything else is inserted as new.
+  let knownIds = new Set<string>();
+  if (input.id) {
+    const { data } = await actor.supabase.from("school_library_materials").select("id").eq("collection_id", input.id);
+    knownIds = new Set((data ?? []).map((row) => row.id));
+  }
+
+  const problems = [];
+  for (const [index, problem] of input.problems.entries()) {
+    // Problems inside a material are identified by their number; the title is derived unless one was typed.
+    const validated = validateMaterial({
+      ...problem,
+      title: String(problem.title ?? "").trim() || `${title} — ${index + 1}`.slice(0, 160),
+      topic: String(problem.topic ?? "").trim() || subject,
+    });
+    if ("error" in validated) return { error: `${index + 1}-р бодлого: ${validated.error}` };
+    problems.push({
+      id: problem.id && knownIds.has(problem.id) ? problem.id : null,
+      title: validated.title,
+      topic: validated.topic,
+      question_latex: validated.questionLatex,
+      answer_type: validated.answerType,
+      answer_key: validated.answerKey,
+      choices: validated.choices,
+    });
+  }
+
+  const { data, error } = await actor.supabase.rpc("save_school_library_collection", {
+    p_collection_id: input.id ?? null,
+    p_title: title,
+    p_subject: subject,
+    p_year: year,
+    p_variant: variant,
+    p_description: description,
+    p_problems: problems as unknown as Json,
+  });
+  if (error || !data) return { error: input.id ? "Материалыг засах эрхгүй эсвэл материал олдсонгүй." : "Материал хадгалж чадсангүй." };
+  revalidateLibrary();
+  return { success: true, id: data };
+}
+
+export async function deleteLibraryCollection(collectionId: string): Promise<ActionResult> {
+  if (!collectionId) return { error: "Материалын дугаар буруу байна." };
+  const actor = await libraryActor();
+  if ("error" in actor) return { error: actor.error };
+  // Deleting cascades to its problems. Exams already given keep their own copies of the questions.
+  const { data, error } = await actor.supabase.from("school_library_collections").delete().eq("id", collectionId).select("id").maybeSingle();
+  if (error || !data) return { error: "Материалыг устгах эрхгүй эсвэл материал олдсонгүй." };
+  revalidateLibrary();
+  return { success: true, id: data.id };
+}
+
 function revalidateLibrary() {
-  revalidatePath("/teacher/library");
-  revalidatePath("/school/library");
+  revalidatePath("/teacher/library", "layout");
+  revalidatePath("/school/library", "layout");
 }
 
 function validateMaterial(input: LibraryMaterialInput) {

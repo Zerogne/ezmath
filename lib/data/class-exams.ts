@@ -46,26 +46,35 @@ export async function getClassExamBuilder(classroomId: string) {
   const { user, profile } = await requireApprovedTeacher(`/teacher/classes/${classroomId}/exams/new`);
   if (!profile.school_id) redirect("/teacher");
   const admin = createAdminClient();
-  const [{ data: classroom }, { data: school }, { data: materials, error }] = await Promise.all([
+  const [{ data: classroom }, { data: school }, { data: materials, error }, { data: collections, error: collectionError }] = await Promise.all([
     admin.from("classrooms").select("id, name, school_id, teacher_id").eq("id", classroomId).eq("teacher_id", user.id).eq("school_id", profile.school_id).maybeSingle(),
     admin.from("schools").select("name").eq("id", profile.school_id).maybeSingle(),
-    admin.from("school_library_materials").select("id, title, topic, question_latex, answer_type, answer_key, choices").eq("school_id", profile.school_id).order("updated_at", { ascending: false }),
+    admin.from("school_library_materials").select("id, title, topic, question_latex, answer_type, answer_key, choices, collection_id, position").eq("school_id", profile.school_id).order("updated_at", { ascending: false }),
+    admin.from("school_library_collections").select("id, title, subject, year, variant").eq("school_id", profile.school_id).order("updated_at", { ascending: false }),
   ]);
   if (!classroom) notFound();
-  if (error) throw new Error("Бодлогын санг ачаалж чадсангүй.");
+  if (error || collectionError) throw new Error("Бодлогын санг ачаалж чадсангүй.");
+  const problems = (materials ?? []).map((material) => ({
+    id: material.id,
+    title: material.title,
+    topic: material.topic,
+    questionLatex: material.question_latex,
+    answerType: material.answer_type,
+    answerKey: material.answer_key,
+    choices: parseChoices(material.choices),
+    collectionId: material.collection_id,
+    position: material.position,
+  }));
   return {
     teacherName: profile.full_name || "Багш",
     schoolName: school?.name || "Сургууль",
     classroom: { id: classroom.id, name: classroom.name },
-    materials: (materials ?? []).map((material) => ({
-      id: material.id,
-      title: material.title,
-      topic: material.topic,
-      questionLatex: material.question_latex,
-      answerType: material.answer_type,
-      answerKey: material.answer_key,
-      choices: parseChoices(material.choices),
-    })),
+    // Standalone problems and whole materials (with their problems in order) are offered separately in the builder.
+    materials: problems.filter((problem) => !problem.collectionId),
+    collections: (collections ?? []).map((collection) => ({
+      ...collection,
+      problems: problems.filter((problem) => problem.collectionId === collection.id).sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+    })).filter((collection) => collection.problems.length),
   };
 }
 

@@ -9,7 +9,8 @@ type Profile = { id: string; full_name: string | null; avatar_url: string | null
 type SchoolRow = { id: string; name: string; slug: string; is_active: boolean; registration_code_hash: string; teacher_registration_code: string | null; created_at: string };
 type ClassroomRow = { id: string; teacher_id: string; school_id: string; name: string; code: string; created_at: string; updated_at: string };
 type ClassroomStudentRow = { classroom_id: string; student_id: string; joined_at: string };
-type SchoolLibraryMaterialRow = { id: string; school_id: string; created_by: string | null; title: string; topic: string; question_latex: string; answer_type: SchoolLibraryAnswerType; answer_key: string; choices: Json; created_at: string; updated_at: string };
+type SchoolLibraryMaterialRow = { id: string; school_id: string; created_by: string | null; title: string; topic: string; question_latex: string; answer_type: SchoolLibraryAnswerType; answer_key: string; choices: Json; collection_id: string | null; position: number | null; created_at: string; updated_at: string };
+type SchoolLibraryCollectionRow = { id: string; school_id: string; created_by: string | null; title: string; subject: string; year: number | null; variant: string | null; description: string; created_at: string; updated_at: string };
 type ClassExamRow = { id: string; classroom_id: string; school_id: string; teacher_id: string; title: string; instructions: string; duration_minutes: number; starts_at: string | null; closes_at: string | null; status: ClassExamStatus; created_at: string; updated_at: string };
 type ClassExamQuestionRow = { id: string; exam_id: string; source_material_id: string | null; position: number; title: string; topic: string; question_latex: string; answer_type: SchoolLibraryAnswerType; answer_key: string; choices: Json; max_points: number; created_at: string };
 type ClassExamSubmissionRow = { id: string; exam_id: string; student_id: string; status: ClassExamSubmissionStatus; started_at: string; submitted_at: string | null; graded_at: string | null; auto_score: number; manual_score: number; total_score: number; max_score: number; needs_manual_grading: boolean; teacher_feedback: string; created_at: string; updated_at: string };
@@ -37,6 +38,7 @@ export type Database = {
       classrooms: Table<ClassroomRow, Pick<ClassroomRow, "teacher_id" | "school_id" | "name" | "code"> & Partial<ClassroomRow>>;
       classroom_students: Table<ClassroomStudentRow, ClassroomStudentRow>;
       school_library_materials: Table<SchoolLibraryMaterialRow, Pick<SchoolLibraryMaterialRow, "school_id" | "created_by" | "title" | "topic" | "question_latex" | "answer_type" | "answer_key" | "choices"> & Partial<SchoolLibraryMaterialRow>>;
+      school_library_collections: Table<SchoolLibraryCollectionRow, Pick<SchoolLibraryCollectionRow, "school_id" | "created_by" | "title" | "subject"> & Partial<SchoolLibraryCollectionRow>>;
       class_exams: Table<ClassExamRow, Pick<ClassExamRow, "classroom_id" | "school_id" | "teacher_id" | "title" | "duration_minutes" | "status"> & Partial<ClassExamRow>>;
       class_exam_questions: Table<ClassExamQuestionRow, Pick<ClassExamQuestionRow, "exam_id" | "position" | "title" | "topic" | "question_latex" | "answer_type" | "answer_key" | "choices" | "max_points"> & Partial<ClassExamQuestionRow>>;
       class_exam_submissions: Table<ClassExamSubmissionRow, Pick<ClassExamSubmissionRow, "exam_id" | "student_id" | "max_score"> & Partial<ClassExamSubmissionRow>>;
@@ -61,6 +63,18 @@ export type Database = {
       student_answer_choices: { Row: Pick<ChoiceRow, "id" | "question_id" | "label" | "text" | "image_url" | "sort_order">; Relationships: [] };
     };
     Functions: {
+      save_school_library_collection: {
+        Args: {
+          p_collection_id: string | null;
+          p_title: string;
+          p_subject: string;
+          p_year: number | null;
+          p_variant: string | null;
+          p_description: string;
+          p_problems: Json;
+        };
+        Returns: string;
+      };
       submit_class_exam: {
         Args: {
           p_exam_id: string;
