@@ -92,16 +92,33 @@ export async function setMaterialStatus(testId: string, status: "draft" | "publi
   return { success: true };
 }
 
-export async function deleteMaterial(testId: string): Promise<MaterialActionResult> {
+export async function getMaterialAttemptCount(testId: string): Promise<{ count?: number; error?: string }> {
+  if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
+  const { count, error } = await createAdminClient().from("test_attempts").select("id", { count: "exact", head: true }).eq("test_id", testId);
+  if (error) return { error: "Тестийн оролдлогыг шалгаж чадсангүй." };
+  return { count: count ?? 0 };
+}
+
+/**
+ * Deletes a test. If students have attempted it, `force` must be set: their attempts are removed first
+ * (attempt answers and integrity events cascade from the attempt), then the test and its questions.
+ */
+export async function deleteMaterial(testId: string, options: { force?: boolean } = {}): Promise<MaterialActionResult> {
   if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
   const admin = createAdminClient();
   const { count, error: countError } = await admin.from("test_attempts").select("id", { count: "exact", head: true }).eq("test_id", testId);
   if (countError) return { error: "Тестийн оролдлогыг шалгаж чадсангүй." };
-  if ((count ?? 0) > 0) return { error: `Энэ тестэд ${count} сурагчийн оролдлого байна. Түүхийг хадгалахын тулд устгахын оронд Archive хийнэ үү.` };
+  if ((count ?? 0) > 0) {
+    if (!options.force) return { error: `Энэ тестэд ${count} сурагчийн оролдлого байна. Устгахыг баталгаажуулна уу.` };
+    const { error: attemptsError } = await admin.from("test_attempts").delete().eq("test_id", testId);
+    if (attemptsError) return { error: attemptsError.message || "Сурагчдын оролдлогыг устгаж чадсангүй." };
+  }
   const { error } = await admin.from("tests").delete().eq("id", testId);
   if (error) return { error: error.message || "Тест устгаж чадсангүй." };
   revalidatePath("/tests");
   revalidatePath("/admin/materials/sat");
   revalidatePath("/admin/materials/eyesh");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/history");
   return { success: true };
 }

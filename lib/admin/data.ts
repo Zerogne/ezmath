@@ -55,13 +55,26 @@ async function request<T>(path: string): Promise<T> {
   return body as T;
 }
 
+/** Row count via PostgREST's Content-Range header, without downloading the rows. */
+async function count(path: string): Promise<number> {
+  const { url, headers } = adminConfig();
+  const response = await fetch(`${url}${path}`, { method: "HEAD", headers: { ...headers, Prefer: "count=exact" }, cache: "no-store" });
+  if (!response.ok) throw new Error("Supabase admin data could not be loaded.");
+  return Number(response.headers.get("content-range")?.split("/")[1]) || 0;
+}
+
+/** Starts the admin check alongside the data requests; the data is only returned once the check passes. */
+async function asAdmin<T>(load: Promise<T>): Promise<T> {
+  const [, data] = await Promise.all([requireAdmin(), load]);
+  return data;
+}
+
 async function loadAdminData() {
-  await requireAdmin();
-  const [profiles, attempts, authResult] = await Promise.all([
+  const [profiles, attempts, authResult] = await asAdmin(Promise.all([
     request<ProfileRow[]>("/rest/v1/profiles?select=id,full_name,role,created_at&order=created_at.desc"),
     request<AttemptRow[]>("/rest/v1/test_attempts?select=user_id,started_at,completed_at,tests(exam_type)"),
     request<{ users: AuthUser[] }>("/auth/v1/admin/users?page=1&per_page=1000"),
-  ]);
+  ]));
   return { profiles, attempts, authUsers: authResult.users ?? [] };
 }
 
@@ -111,42 +124,38 @@ export async function listAdminStudents() {
 }
 
 export async function getAdminStudent(studentId: string) {
-  await requireAdmin();
   const id = encodeURIComponent(studentId);
-  const [profiles, attempts, authUser] = await Promise.all([
+  const [profiles, attempts, authUser] = await asAdmin(Promise.all([
     request<ProfileRow[]>(`/rest/v1/profiles?select=id,full_name,role,created_at&id=eq.${id}&limit=1`),
     request<AttemptRow[]>(`/rest/v1/test_attempts?select=user_id,started_at,completed_at,tests(exam_type)&user_id=eq.${id}`),
     request<AuthUser>(`/auth/v1/admin/users/${id}`).catch(() => undefined),
-  ]);
+  ]));
   const profile = profiles[0];
   if (!profile || profile.role !== "student") return undefined;
   return toStudents([profile], authUser ? [authUser] : [], attempts)[0];
 }
 
 export async function getAdminDashboardData() {
-  const [{ profiles, attempts, authUsers }, tests, payments] = await Promise.all([
-    loadAdminData(),
-    (async () => {
-      await requireAdmin();
-      return request<{ exam_type: "SAT" | "EYESH" }[]>("/rest/v1/tests?select=exam_type");
-    })(),
-    (async () => {
-      await requireAdmin();
-      return request<{ amount_mnt: number; status: string }[]>("/rest/v1/payment_orders?select=amount_mnt,status");
-    })(),
-  ]);
-  const students = toStudents(profiles, authUsers, attempts);
   const monthStart = new Date();
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
+  const [studentCount, newThisMonth, satMaterials, eyeshMaterials, paidPayments, recentProfiles] = await asAdmin(Promise.all([
+    count("/rest/v1/profiles?role=eq.student"),
+    count(`/rest/v1/profiles?role=eq.student&created_at=gte.${encodeURIComponent(monthStart.toISOString())}`),
+    count("/rest/v1/tests?exam_type=eq.SAT"),
+    count("/rest/v1/tests?exam_type=eq.EYESH"),
+    request<{ amount_mnt: number }[]>("/rest/v1/payment_orders?select=amount_mnt&status=eq.paid"),
+    request<ProfileRow[]>("/rest/v1/profiles?select=id,full_name,role,created_at&role=eq.student&order=created_at.desc&limit=5"),
+  ]));
+  const recentAuthUsers = await Promise.all(recentProfiles.map((profile) => request<AuthUser>(`/auth/v1/admin/users/${profile.id}`).catch(() => undefined)));
   return {
-    studentCount: students.length,
-    newThisMonth: profiles.filter((profile) => profile.role === "student" && new Date(profile.created_at) >= monthStart).length,
-    satMaterials: tests.filter((test) => test.exam_type === "SAT").length,
-    eyeshMaterials: tests.filter((test) => test.exam_type === "EYESH").length,
-    paidRevenueMnt: payments.filter((payment) => payment.status === "paid").reduce((sum, payment) => sum + payment.amount_mnt, 0),
-    paidCount: payments.filter((payment) => payment.status === "paid").length,
-    recentStudents: students.slice(0, 5),
+    studentCount,
+    newThisMonth,
+    satMaterials,
+    eyeshMaterials,
+    paidRevenueMnt: paidPayments.reduce((sum, payment) => sum + payment.amount_mnt, 0),
+    paidCount: paidPayments.length,
+    recentStudents: toStudents(recentProfiles, recentAuthUsers.filter((user): user is AuthUser => Boolean(user)), []),
   };
 }
 
@@ -176,13 +185,12 @@ export type AdminPayment = {
 };
 
 export async function getAdminPaymentsData() {
-  await requireAdmin();
-  const [orders, profiles, authResult, subscriptions] = await Promise.all([
+  const [orders, profiles, authResult, subscriptions] = await asAdmin(Promise.all([
     request<PaymentOrderRow[]>("/rest/v1/payment_orders?select=id,user_id,plan_code,amount_mnt,status,provider_checkout_id,payment_method,paid_at,created_at&order=created_at.desc&limit=200"),
     request<ProfileRow[]>("/rest/v1/profiles?select=id,full_name,role,created_at"),
     request<{ users: AuthUser[] }>("/auth/v1/admin/users?page=1&per_page=1000"),
     request<{ id: string }[]>("/rest/v1/student_subscriptions?select=id&status=in.(trialing,active)"),
-  ]);
+  ]));
   const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
   const authById = new Map((authResult.users ?? []).map((user) => [user.id, user]));
   const payments: AdminPayment[] = orders.map((order) => ({
@@ -223,8 +231,7 @@ type MaterialRow = {
 export type AdminMaterialListItem = Test & { status: "draft" | "published" | "archived"; updated: string };
 
 export async function listAdminMaterials(examType: ExamType): Promise<AdminMaterialListItem[]> {
-  await requireAdmin();
-  const tests = await request<MaterialRow[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,duration_minutes,difficulty,test_type,status,instructions,updated_at&exam_type=eq.${examType}&order=updated_at.desc`);
+  const tests = await asAdmin(request<MaterialRow[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,duration_minutes,difficulty,test_type,status,instructions,updated_at&exam_type=eq.${examType}&order=updated_at.desc`));
   const testIds = tests.map((test) => test.id);
   const questions = testIds.length ? await request<{ test_id: string }[]>(`/rest/v1/questions?select=test_id&test_id=in.(${testIds.join(",")})`) : [];
   const counts = new Map<string, number>();
@@ -246,11 +253,10 @@ export async function listAdminMaterials(examType: ExamType): Promise<AdminMater
 }
 
 export async function getAdminMaterial(testId: string): Promise<MaterialEditorData | undefined> {
-  await requireAdmin();
-  const [tests, questions] = await Promise.all([
+  const [tests, questions] = await asAdmin(Promise.all([
     request<(MaterialRow & { variant: "A" | "B" | "C" | "D" | "E" | null })[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,variant,duration_minutes,difficulty,test_type,status,instructions,updated_at&id=eq.${encodeURIComponent(testId)}&limit=1`),
     request<{ id: string; test_id: string; question_number: number; question_text: string; question_type: string; response_fields: { id: string; label: string; acceptedAnswers: string[] }[]; image_url: string | null; topic: string | null; difficulty: "Easy" | "Medium" | "Hard" | null; explanation: string | null }[]>(`/rest/v1/questions?select=id,test_id,question_number,question_text,question_type,response_fields,image_url,topic,difficulty,explanation&test_id=eq.${encodeURIComponent(testId)}&order=question_number`),
-  ]);
+  ]));
   const test = tests[0];
   if (!test) return undefined;
   const questionIds = questions.map((question) => question.id);

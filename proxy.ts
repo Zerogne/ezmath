@@ -9,7 +9,10 @@ export async function proxy(request: NextRequest) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return NextResponse.next();
   let response = NextResponse.next({ request });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { cookies: { getAll: () => request.cookies.getAll(), setAll: (cookies: { name: string; value: string; options: CookieOptions }[]) => { cookies.forEach(({ name, value }) => request.cookies.set(name, value)); response = NextResponse.next({ request }); cookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options)); } } });
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims verifies the JWT locally (asymmetric signing keys), avoiding an Auth server round trip on every request.
+  // Pages still call getUser() for their own trusted identity checks.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims;
   const now = Math.floor(Date.now() / 1000);
   const lastActivity = Number(request.cookies.get(LAST_ACTIVITY_COOKIE)?.value);
 

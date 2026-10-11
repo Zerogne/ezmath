@@ -24,7 +24,7 @@ export function LibraryManager({ materials, collections, currentUserId, canManag
   const [tab, setTab] = useState<Tab>("collections");
   return <div className="mt-7 space-y-6">
     <div role="tablist" aria-label="Бодлогын сан" className="inline-flex rounded-xl border bg-white p-1">
-      {([["collections", "Материал", FileStack, collections.length], ["problems", "Ганц бодлого", FileText, materials.length]] as const).map(([value, label, Icon, count]) => <button key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition ${tab === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}><Icon size={15}/>{label}<span className={`rounded-full px-1.5 text-[11px] tabular-nums ${tab === value ? "bg-white/20" : "bg-muted"}`}>{count}</span></button>)}
+      {([["collections", "Материал", FileStack, collections.length], ["problems", "Бодлого", FileText, materials.length]] as const).map(([value, label, Icon, count]) => <button key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition ${tab === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}><Icon size={15}/>{label}<span className={`rounded-full px-1.5 text-[11px] tabular-nums ${tab === value ? "bg-white/20" : "bg-muted"}`}>{count}</span></button>)}
     </div>
     {tab === "collections"
       ? <CollectionsTab collections={collections} currentUserId={currentUserId} canManageAll={canManageAll} basePath={basePath}/>

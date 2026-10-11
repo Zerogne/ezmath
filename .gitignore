@@ -7,3 +7,6 @@ supabase/.temp/
 .vercel
 __pycache__/
 *.py[cod]
+
+# ЭЕШ source PDFs for import (not committed)
+/imports/

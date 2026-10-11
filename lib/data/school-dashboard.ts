@@ -27,17 +27,15 @@ export async function getSchoolDashboard() {
   const people = peopleResult.data ?? [];
   const classes = classesResult.data ?? [];
   const classIds = classes.map((item) => item.id);
-  const { data: memberships, error: membershipError } = classIds.length
-    ? await admin.from("classroom_students").select("classroom_id, student_id, joined_at").in("classroom_id", classIds)
-    : { data: [], error: null };
-  if (membershipError) throw new Error("Сургуулийн ангийн мэдээллийг ачаалж чадсангүй.");
   const students = people.filter((item) => item.role === "student");
   const teachers = people.filter((item) => item.role === "teacher");
   const studentIds = students.map((item) => item.id);
-  const [{ data: attempts }, { data: lessons }] = await Promise.all([
-    studentIds.length ? admin.from("test_attempts").select("id, user_id, status, completed_at").in("user_id", studentIds).eq("status", "submitted") : Promise.resolve({ data: [] }),
-    studentIds.length ? admin.from("student_lesson_progress").select("user_id, completed_at, last_opened_at").in("user_id", studentIds) : Promise.resolve({ data: [] }),
+  const [{ data: memberships, error: membershipError }, { count: completedAttempts }, { count: completedLessons }] = await Promise.all([
+    classIds.length ? admin.from("classroom_students").select("classroom_id, student_id, joined_at").in("classroom_id", classIds) : Promise.resolve({ data: [], error: null }),
+    studentIds.length ? admin.from("test_attempts").select("id", { count: "exact", head: true }).in("user_id", studentIds).eq("status", "submitted") : Promise.resolve({ count: 0 }),
+    studentIds.length ? admin.from("student_lesson_progress").select("user_id", { count: "exact", head: true }).in("user_id", studentIds).not("completed_at", "is", null) : Promise.resolve({ count: 0 }),
   ]);
+  if (membershipError) throw new Error("Сургуулийн ангийн мэдээллийг ачаалж чадсангүй.");
   const names = new Map(people.map((item) => [item.id, item.full_name || (item.role === "teacher" ? "Багш" : "Сурагч")]));
   return {
     accountName: profile.full_name || "Сургуулийн админ",
@@ -48,8 +46,8 @@ export async function getSchoolDashboard() {
     pendingTeacherCount: teachers.filter((teacher) => teacher.teacher_status === "pending").length,
     studentCount: students.length,
     classCount: classes.length,
-    completedAttempts: attempts?.length ?? 0,
-    completedLessons: (lessons ?? []).filter((item) => item.completed_at).length,
+    completedAttempts: completedAttempts ?? 0,
+    completedLessons: completedLessons ?? 0,
     classes: classes.map((item) => ({
       ...item,
       teacherName: names.get(item.teacher_id) || "Багш",

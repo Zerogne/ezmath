@@ -46,8 +46,11 @@ export async function getStudentClasses() {
 export async function getTeacherOverview(classroomId?: string) {
   const { user, profile } = await requireTeacher(classroomId ? `/teacher/classes/${classroomId}` : "/teacher");
   const admin = createAdminClient();
-  const { data: school } = profile?.school_id ? await admin.from("schools").select("name").eq("id", profile.school_id).maybeSingle() : { data: null };
   const verificationStatus = (profile.teacher_status ?? "pending") as TeacherVerificationStatus;
+  const [{ data: school }, { data: classes, error }] = await Promise.all([
+    profile?.school_id ? admin.from("schools").select("name").eq("id", profile.school_id).maybeSingle() : Promise.resolve({ data: null }),
+    verificationStatus === "approved" ? admin.from("classrooms").select("id, name, code, created_at").eq("teacher_id", user.id).order("created_at", { ascending: false }) : Promise.resolve({ data: [], error: null }),
+  ]);
   if (verificationStatus !== "approved") {
     return {
       teacherName: profile.full_name || "Багш",
@@ -58,7 +61,6 @@ export async function getTeacherOverview(classroomId?: string) {
       students: [],
     };
   }
-  const { data: classes, error } = await admin.from("classrooms").select("id, name, code, created_at").eq("teacher_id", user.id).order("created_at", { ascending: false });
   if (error) throw new Error("Ангиудыг ачаалж чадсангүй.");
   const selected = classroomId ? classes?.find((item) => item.id === classroomId) : undefined;
   if (classroomId && !selected) return { teacherName: profile?.full_name || "Багш", schoolName: school?.name || "Amjilt Cyber", verificationStatus, classes: classes ?? [], selected: null, students: [] };
