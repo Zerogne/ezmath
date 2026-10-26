@@ -1,8 +1,9 @@
 import Link from "next/link";
-import type { CSSProperties, ReactNode } from "react";
-import { ArrowRight, Check, Clock3, Plus, TrendingUp } from "lucide-react";
+import { Suspense, type CSSProperties, type ReactNode } from "react";
+import { ArrowRight, Check, Clock3, Menu, Plus, TrendingUp } from "lucide-react";
+import { getIdentity, ProfileMenu } from "@/components/layout/navbar";
 import { HeroCarousel } from "@/components/home/redesign/hero-carousel";
-import { Cloud, Mascot, mascotColors, SteppeScene, Squiggle, TileArt, type TileKind } from "@/components/home/redesign/illustrations";
+import { Art, castSize, Cloud, Ezi, ObjectArt, SteppeScene, Squiggle, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { CountUp, ScrollMotion } from "@/components/home/redesign/scroll-motion";
 import "@/components/home/redesign/redesign.css";
 
@@ -29,16 +30,7 @@ const weekPlan = [
 ];
 const topicChart = [["Алгебр", 86, "#22C55E"], ["Функц", 72, "#22C55E"], ["Тригонометр", 58, "#FFB020"], ["Геометр", 67, "#FFB020"], ["Магадлал", 41, "#FF5A5A"], ["Прогресс", 80, "#22C55E"], ["Лог", 49, "#FF5A5A"]] as const;
 const heat = ["#E8EEFF", "#B9C9FF", "#4C6FFF", "#2B4BE8", "#E8EEFF", "#7F98FF", "#2B4BE8"];
-const moreFeatures: [TileKind, string, string][] = [["formula", "#FFF6CC", "Томъёоны сан"], ["calc", "#E9FBF2", "Оноо тооцоолуур"], ["mistake", "#FFE4E4", "Алдааны дэвтэр"], ["stopwatch", "#FFF6CC", "Цагтай сорил"], ["school", "#E8EEFF", "Ангийн шалгалт"], ["pdf", "#F1F3F8", "PDF материал"], ["chart", "#FFE4EF", "Ахицын тайлан"], ["book", "#EFE6FF", "Онолын хичээл"], ["target", "#EFE6FF", "Зорилтот оноо"], ["flame", "#FFF0E6", "Өдрийн цуврал"], ["triangle", "#E9FBF2", "Геометрийн зураг"], ["notebook", "#E8EEFF", "Багшийн самбар"]];
-// Sample reviews for the design preview; replace with real student feedback before launch.
-const reviews = [
-  { from: 612, to: 768, name: "Тэмүүжин", grade: "12-р анги", text: "Алдаа бүрийн тайлбарыг уншаад яг хаана буруу бодсноо ойлгодог болсон. Тригонометр хамгийн их ахисан." },
-  { from: 1310, to: 1490, name: "Анужин", grade: "11-р анги · SAT", text: "SAT-ийн mock шалгалтууд бодит шалгалттай маш төстэй. Цагаа зөв хуваарилж сурсан." },
-  { from: 540, to: 702, name: "Билгүүн", grade: "12-р анги", text: "Өдөр бүр 20 минут. Төлөвлөгөө юу хийхийг хэлж өгдөг болохоор бодох л үлддэг." },
-  { from: 655, to: 790, name: "Номин", grade: "12-р анги", text: "Сүүлийн 20 жилийн бодлого нэг дор байгаа нь хамгийн том давуу тал." },
-  { from: 590, to: 731, name: "Хүслэн", grade: "11-р анги", text: "Эзигээс асуухад шууд хариуг биш санааг нь өгдөг нь их таалагдсан." },
-  { from: 1220, to: 1430, name: "Ганзориг", grade: "12-р анги · SAT", text: "Сэдэв тус бүрийн анализ сул талаа олоход тусалсан." },
-];
+const moreFeatures: [ObjectKind, string, string][] = [["bulb", "#FFF6CC", "Томъёоны сан"], ["calculator", "#E8EEFF", "Оноо тооцоолуур"], ["pencil", "#FFE4E4", "Алдааны дэвтэр"], ["timer", "#FFF0E6", "Цагтай сорил"], ["gradcap", "#E8EEFF", "Ангийн шалгалт"], ["books", "#F1F3F8", "PDF материал"], ["chart", "#FFE4EF", "Ахицын тайлан"], ["notebook", "#EFE6FF", "Онолын хичээл"], ["target", "#FFE4E4", "Зорилтот оноо"], ["flame", "#FFF0E6", "Өдрийн цуврал"], ["setsquare", "#EFE6FF", "Геометрийн зураг"], ["medal", "#FFF6CC", "Багшийн самбар"]];
 const faqs = ["EzMath үнэгүй юу?", "ЭЕШ-ийн аль онуудын бодлого багтсан бэ?", "SAT-д бэлдэхэд тохирох уу?", "Сургууль, багш нар хэрхэн ашиглах вэ?", "Гар утсан дээр ажилладаг уу?", "Төлбөрөө хэрхэн төлөх вэ?"];
 const footerGroups = [["Хөтөлбөр", [["ЭЕШ Математик", "/tests?exam=EYESH"], ["SAT Math", "/tests?exam=SAT"], ["Онолын хичээл", "/lesson"]]], ["Платформ", [["Шалгалтууд", "/tests"], ["Үнийн багц", "/pricing"]]], ["Бүртгэл", [["Нэвтрэх", "/login"], ["Бүртгүүлэх", "/register"], ["Сурагчийн хэсэг", "/dashboard"]]]] as const;
 
@@ -49,13 +41,11 @@ export function RedesignLanding() {
     <main>
       <Hero/>
       <Steps/>
-      <Testimonial/>
       <StatsBand/>
       <FeatureQuestionBank/>
       <FeaturePlanner/>
       <FeatureAnalytics/>
       <MoreFeatures/>
-      <Reviews/>
       <Faq/>
       <ClosingCta/>
     </main>
@@ -63,17 +53,31 @@ export function RedesignLanding() {
   </div>;
 }
 
-function Logo() { return <Link href="/" className="rd-display flex items-center gap-2.5 text-2xl font-bold"><Mascot size={40}/>EzMath</Link>; }
+function Logo() { return <Link href="/" className="rd-display flex items-center gap-2 text-2xl font-bold"><Ezi size={46}/>EzMath</Link>; }
+
+const navLinks = [["ЭЕШ", "/tests?exam=EYESH"], ["SAT", "/tests?exam=SAT"], ["Онолын хичээл", "/lesson"], ["Үнэ", "/pricing"]] as const;
+
+function NavLinks() {
+  return <>{navLinks.map(([label, href]) => <Link key={href} href={href} className="rounded-lg px-3 py-2 hover:bg-[#F1F3F8] lg:p-0 lg:hover:bg-transparent">{label}{href === "/lesson" && <span className="ml-1.5 rounded-full bg-[#2B4BE8] px-[7px] py-0.5 align-[2px] text-[10px] font-semibold text-white">Шинэ</span>}</Link>)}</>;
+}
+
+async function Account() {
+  const identity = await getIdentity();
+  if (identity) return <ProfileMenu identity={identity}/>;
+  return <div className="flex gap-2"><Link href="/login" className="rounded-[10px] bg-[#F1F3F8] px-3.5 py-2 text-sm font-medium text-[#5B6275]">Нэвтрэх</Link><Link href="/register" className="rounded-[10px] bg-[#0B1030] px-3.5 py-2 text-sm font-medium text-white">Бүртгүүлэх</Link></div>;
+}
+
+const accountFallback = <span className="block h-10 w-40 animate-pulse rounded-xl bg-[#F1F3F8]"/>;
 
 function Nav() {
   return <header className="sticky top-0 z-40 bg-white/95 backdrop-blur"><div className={`${container} flex h-[72px] items-center gap-10`}>
     <Logo/>
-    <nav className="ml-auto hidden items-center gap-8 text-[15px] font-medium text-[#333A4D] lg:flex" aria-label="Үндсэн цэс">
-      <Link href="/tests?exam=EYESH">ЭЕШ</Link><Link href="/tests?exam=SAT">SAT</Link>
-      <Link href="/lesson">Онолын хичээл<span className="ml-1.5 rounded-full bg-[#2B4BE8] px-[7px] py-0.5 align-[2px] text-[10px] font-semibold text-white">Шинэ</span></Link>
-      <Link href="/pricing">Үнэ</Link>
-    </nav>
-    <div className="ml-auto flex gap-2 lg:ml-0"><Link href="/login" className="rounded-[10px] bg-[#F1F3F8] px-3.5 py-2 text-sm font-medium text-[#5B6275]">Нэвтрэх</Link><Link href="/register" className="rounded-[10px] bg-[#0B1030] px-3.5 py-2 text-sm font-medium text-white">Бүртгүүлэх</Link></div>
+    <nav className="ml-auto hidden items-center gap-8 text-[15px] font-medium text-[#333A4D] lg:flex" aria-label="Үндсэн цэс"><NavLinks/></nav>
+    <div className="hidden lg:block"><Suspense fallback={accountFallback}><Account/></Suspense></div>
+    <details className="group ml-auto lg:hidden">
+      <summary className="list-none rounded-lg p-2 [&::-webkit-details-marker]:hidden" aria-label="Цэс нээх"><Menu/></summary>
+      <div className="absolute inset-x-0 top-[72px] border-t border-[#EEF0F6] bg-white shadow-lg"><nav className={`${container} grid gap-1 py-3 text-[15px] font-medium text-[#333A4D]`} aria-label="Гар утасны цэс"><NavLinks/><div className="mt-2 border-t border-[#EEF0F6] pt-3"><Suspense fallback={accountFallback}><Account/></Suspense></div></nav></div>
+    </details>
   </div></header>;
 }
 
@@ -120,25 +124,11 @@ function PlanMini() {
 }
 
 function PracticeMini() {
-  const cards: [string, string, string, TileKind, string][] = [["Бодлогын сан", "2006–2023 оны ЭЕШ-ийн бодлогыг бодолттой нь", "Үргэлжлүүлэх", "notebook", "8deg"], ["Цагтай сорил", "Бодит шалгалтын нөхцөлд хурдаа сорь", "Эхлэх", "stopwatch", "-8deg"]];
+  const cards: [string, string, string, ObjectKind, string][] = [["Бодлогын сан", "2006–2023 оны ЭЕШ-ийн бодлогыг бодолттой нь", "Үргэлжлүүлэх", "notebook", "8deg"], ["Цагтай сорил", "Бодит шалгалтын нөхцөлд хурдаа сорь", "Эхлэх", "timer", "-8deg"]];
   return <div className="flex flex-col gap-2.5">{cards.map(([title, text, cta, kind, rotate], i) => <div key={title} className="relative rounded-[18px] border-2 border-[#EEF0F6] bg-white px-4 py-3.5">
     <p className="text-sm font-semibold">{title}</p><p className={`mt-1.5 w-[170px] text-xs ${muted}`}>{text}</p><span className={`mt-3 inline-block rounded-full bg-[#F1F3F8] px-3 py-1 text-xs font-medium ${muted}`}>{cta}</span>
-    <div className="absolute right-2.5 top-4" style={{ rotate }}><div data-pop data-float style={delay(0.3 + i * 0.12)}><TileArt kind={kind}/></div></div>
+    <div className="absolute right-2.5 top-4" style={{ rotate }}><div data-pop data-float style={delay(0.3 + i * 0.12)}><ObjectArt kind={kind} size={76}/></div></div>
   </div>)}</div>;
-}
-
-function Testimonial() {
-  const clouds: [number, number, number, number][] = [[-4, 120, 320, 0.9], [82, 90, 300, 0.95], [8, 420, 260, 0.7], [75, 400, 340, 0.8], [39, 40, 200, 0.6]];
-  return <section className="relative overflow-hidden bg-[linear-gradient(180deg,#fff_0%,#E3EEFF_34%,#CFEFFF_70%,#BDE9FF_100%)] pb-[340px] pt-24 lg:pt-28" data-parallax>
-    {clouds.map(([left, top, width, opacity], i) => <Cloud key={i} className="rd-cloud" style={{ left: `${left}%`, top, width, opacity }}/>)}
-    <div className={`${container} relative z-[2] text-center`}>
-      <SectionTitle>Ирээдүйгээ <Squiggle>өөрчлөх</Squiggle> оноо</SectionTitle>
-      <p className="rd-display mx-auto mt-16 max-w-[820px] text-2xl leading-[1.3] lg:mt-[120px] lg:text-4xl" data-rv>“EzMath дээр өдөр бүр 30 бодлого бодож, алдаа бүрийнхээ тайлбарыг уншсан. <span className="text-[#2B4BE8]">ЭЕШ-ийн оноогоо 612-оос 768 болгосон.</span>”</p>
-      <div className="mt-7 inline-flex items-center gap-3.5 text-left" data-rv style={delay(0.1)}><div className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-full border-2 border-white bg-[#FFE4EF]"><Mascot {...mascotColors.pink} size={50}/></div><div><p className="text-[17px] font-semibold">Тэмүүжин</p><p className={`text-sm ${muted}`}>12-р анги · Жишээ сэтгэгдэл</p></div></div>
-      <div className="mt-9 flex justify-center gap-2" aria-hidden><i className="h-2 w-[30px] rounded-full bg-[#2B4BE8]"/><i className="h-2 w-2 rounded-full bg-[#9CC6F0]"/><i className="h-2 w-2 rounded-full bg-[#9CC6F0]"/><i className="h-2 w-2 rounded-full bg-[#9CC6F0]"/></div>
-    </div>
-    <SteppeScene/>
-  </section>;
 }
 
 function StatsBand() {
@@ -157,10 +147,16 @@ function FeatureHead({ chip, chipBg, chipIcon, title, text }: { chip: string; ch
   </div>;
 }
 
-function Mock({ children, mascot, mascotPos, tile, tilePos }: { children: ReactNode; mascot: keyof typeof mascotColors; mascotPos: CSSProperties; tile: [TileKind, string]; tilePos: CSSProperties }) {
+/** The character standing on top of each feature mockup: Эзи 120px, cast members 150px tall. */
+function Peek({ art }: { art: "ezi-point" | "cast-bat-wave" | "cast-anujin-think" }) {
+  const ezi = art === "ezi-point";
+  return <div className="absolute left-[470px] hidden lg:block" style={{ top: ezi ? -100 : -126 }}><div data-pop data-float style={delay(0.45)}>{ezi ? <Ezi pose="point" size={120}/> : <Art name={art} {...castSize(150)}/>}</div></div>;
+}
+
+function Mock({ children, peek, tile, tilePos }: { children: ReactNode; peek: ReactNode; tile: [ObjectKind, string]; tilePos: CSSProperties }) {
   return <div className="relative mt-16 rounded-[28px] border-2 border-[#EEF0F6] bg-[#F7F8FC] p-4 sm:p-6" data-rv>
-    <div className="absolute -top-[78px] hidden sm:block" style={mascotPos}><div data-pop data-float style={delay(0.45)}><Mascot {...mascotColors[mascot]} size={96} wave/></div></div>
-    <div className="absolute z-[3] hidden sm:block" style={tilePos}><div className="flex h-[104px] w-[104px] items-center justify-center rounded-[30px] border-2 border-[#0B1030]/[.06] shadow-[0_16px_34px_-14px_rgba(11,16,48,.28)]" style={{ background: tile[1] }} data-pop data-float><TileArt kind={tile[0]}/></div></div>
+    {peek}
+    <div className="absolute z-[3] hidden sm:block" style={tilePos}><div className="flex h-[104px] w-[104px] items-center justify-center rounded-[30px] border-2 border-[#0B1030]/[.06] shadow-[0_16px_34px_-14px_rgba(11,16,48,.28)]" style={{ background: tile[1] }} data-pop data-float><ObjectArt kind={tile[0]}/></div></div>
     {children}
   </div>;
 }
@@ -170,7 +166,7 @@ const panel = "rounded-[18px] border-2 border-[#EEF0F6] bg-white p-[22px]";
 function FeatureQuestionBank() {
   return <section className={`${container} pt-24 lg:pt-[120px]`}>
     <FeatureHead chip="Бодлогын сан" chipBg={BLUE} chipIcon="∑" title={<>Бодлого дээр<br/>гацахаа боль</>} text="ЭЕШ-ийн 20 жилийн бодлого бүрт алхам алхмаар бодолт. Гацсан үедээ Эзигээс асуугаад зөвхөн дараагийн алхмын санааг аваарай."/>
-    <Mock mascot="blue" mascotPos={{ right: 70 }} tile={["notebook", "#E8EEFF"]} tilePos={{ left: -34, top: -40, rotate: "-9deg" }}>
+    <Mock peek={<Peek art="ezi-point"/>} tile={["notebook", "#E8EEFF"]} tilePos={{ left: -34, top: -40, rotate: "-9deg" }}>
       <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
         <div className={panel}>
           <div className="flex items-center justify-between text-[13px]"><span className="flex items-center gap-2.5"><span className="rounded-md bg-[#E8EEFF] px-[7px] py-[3px] text-[11px] font-semibold text-[#2B4BE8]">ЭЕШ 2019 · B хувилбар</span><span className={muted}>Бодлого 21</span></span><span className={`font-medium ${muted}`}>⏱ 01:42</span></div>
@@ -179,7 +175,7 @@ function FeatureQuestionBank() {
           <div className="mt-[22px] flex items-center justify-between border-t-2 border-[#F0F1F6] pt-4"><span className={`text-[13px] ${muted}`}>21 / 36</span><span className="inline-flex items-center gap-1.5 rounded-full bg-[#0B1030] px-4 py-2.5 text-[13px] font-semibold text-white">Дараагийн бодлого <ArrowRight size={14}/></span></div>
         </div>
         <div className={`${panel} flex flex-col gap-3 text-sm leading-normal`}>
-          <div className="flex items-center justify-between"><span className="flex items-center gap-2.5 text-[15px] font-semibold"><Mascot size={36}/>Эзигээс асуух</span><span className="rounded-md bg-[#E9FBF2] px-[7px] py-[3px] text-[11px] font-semibold text-[#16A34A]">Бодолт</span></div>
+          <div className="flex items-center justify-between"><span className="flex items-center gap-2.5 text-[15px] font-semibold"><Ezi size={40}/>Эзигээс асуух</span><span className="rounded-md bg-[#E9FBF2] px-[7px] py-[3px] text-[11px] font-semibold text-[#16A34A]">Бодолт</span></div>
           <div className="w-4/5 self-end rounded-2xl bg-[#F4F5FA] px-3.5 py-3">Нийлбэрийн томъёогоо мартчихлаа 😅</div>
           <div className="w-[92%] rounded-2xl bg-[#E8EEFF] px-3.5 py-3">Сануулга: S<sub>n</sub> = n(2a<sub>1</sub> + (n−1)d) / 2. Эхлээд 2a<sub>1</sub> + 9d-г олоод үз.</div>
           <div className="w-3/5 self-end rounded-2xl bg-[#F4F5FA] px-3.5 py-3">6 + 36 = 42 ✔</div>
@@ -194,7 +190,7 @@ function FeatureQuestionBank() {
 function FeaturePlanner() {
   return <section className={`${container} pt-24 lg:pt-[120px]`}>
     <FeatureHead chip="Сорил төлөвлөгч" chipBg="#FFB020" chipIcon={<Clock3 size={16}/>} title={<>Юу давтахаа бодож<br/>цаг бүү үр</>} text="Шалгалтын өдөр, зорилтот оноогоо оруулахад долоо хоног бүрийн төлөвлөгөө гарна. Сорил бүрийн дараа төлөвлөгөө дахин тооцоологдоно."/>
-    <Mock mascot="yellow" mascotPos={{ left: 80 }} tile={["stopwatch", "#FFF6CC"]} tilePos={{ right: -30, top: -44, rotate: "8deg" }}>
+    <Mock peek={<Peek art="cast-bat-wave"/>} tile={["timer", "#FFF6CC"]} tilePos={{ right: -30, top: -44, rotate: "8deg" }}>
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <div className="flex flex-col gap-3"><p className="p-1 text-[15px] font-semibold">Энэ долоо хоног</p>{weekPlan.map((item) => <div key={item.day} className={`${panel} grid grid-cols-[56px_1fr_auto] items-center gap-4 !p-4`}>
           <div className="text-center"><p className="rd-display text-[28px]">{item.day}</p><p className={`text-xs ${muted}`}>{item.weekday}</p></div>
@@ -203,7 +199,7 @@ function FeaturePlanner() {
         </div>)}</div>
         <div className="flex flex-col gap-3">
           <div className="rounded-[18px] bg-[#0B1030] p-[22px] text-white"><p className="text-[13px] text-[#AEB4CC]">ЭЕШ хүртэл</p><p className="rd-display mt-1.5 text-[54px]"><CountUp value={48}/> <span className="text-xl text-[#AEB4CC]">өдөр</span></p><div className="mt-3.5 flex gap-1.5">{Array.from({ length: 14 }, (_, i) => <i key={i} className={`h-2 flex-1 rounded-full ${i < 9 ? "bg-[#4C6FFF]" : "bg-white/15"}`}/>)}</div><p className="mt-3 text-[13px] text-[#AEB4CC]">Төлөвлөгөөний 64% биелсэн</p></div>
-          <div className={`${panel} flex items-center gap-4`}><div className="flex h-[76px] w-[76px] items-center justify-center rounded-[22px] bg-[#FFF0E6]" data-pop><TileArt kind="flame"/></div><div><p className="rd-display text-[30px]"><CountUp value={12}/> өдөр</p><p className={`text-[13px] ${muted}`}>дараалан бодсон цуврал</p></div></div>
+          <div className={`${panel} flex items-center gap-4`}><div className="flex h-[76px] w-[76px] items-center justify-center rounded-[22px] bg-[#FFF0E6]" data-pop><ObjectArt kind="flame" size={64}/></div><div><p className="rd-display text-[30px]"><CountUp value={12}/> өдөр</p><p className={`text-[13px] ${muted}`}>дараалан бодсон цуврал</p></div></div>
         </div>
       </div>
     </Mock>
@@ -213,7 +209,7 @@ function FeaturePlanner() {
 function FeatureAnalytics() {
   return <section className={`${container} pt-24 lg:pt-[120px]`}>
     <FeatureHead chip="Ахицын анализ" chipBg="#FF6FA8" chipIcon={<TrendingUp size={16}/>} title={<>Сул сэдвээ шалгалтаас<br/>өмнө ол</>} text="Сэдэв тус бүрийн гүйцэтгэл, бодох хурд, алдааны давтамжаа хар. Аль сэдэв оноо хамгийн их алдуулж байгааг тодорхой харуулна."/>
-    <Mock mascot="pink" mascotPos={{ right: 90 }} tile={["chart", "#FFE4EF"]} tilePos={{ left: -30, bottom: -36, rotate: "-7deg" }}>
+    <Mock peek={<Peek art="cast-anujin-think"/>} tile={["chart", "#FFE4EF"]} tilePos={{ left: -30, bottom: -36, rotate: "-7deg" }}>
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
         <div className={panel}><div className="flex items-center justify-between"><p className="text-[15px] font-semibold">Сэдэв тус бүрийн гүйцэтгэл</p><span className={`rounded-md bg-[#F1F3F8] px-[7px] py-[3px] text-[11px] font-semibold ${muted}`}>Сүүлийн 30 хоног</span></div>
           <div className="mt-[22px] flex gap-2 sm:gap-3.5">{topicChart.map(([topic, value, color]) => <div key={topic} className="flex flex-1 flex-col items-center gap-2"><div className="flex h-[180px] w-full items-end"><i className="rd-grow-h block w-full rounded-t-lg rounded-b" style={{ "--v": `${value}%`, background: color } as CSSProperties}/></div><span className={`break-all text-center text-[11px] ${muted}`}>{topic}</span></div>)}</div>
@@ -231,20 +227,8 @@ function MoreFeatures() {
   return <section className={`${container} pt-28 text-center lg:pt-[130px]`}>
     <SectionTitle>Мөн 12+ <Squiggle>хэрэгтэй</Squiggle> боломж</SectionTitle>
     <div className="mt-14 grid grid-cols-2 gap-[18px] sm:grid-cols-3 lg:grid-cols-6">{moreFeatures.map(([kind, bg, label], i) => <div key={label} className="flex flex-col items-center gap-3 rounded-[22px] border-2 border-[#EEF0F6] px-3 pb-[18px] pt-[22px] text-sm font-medium" data-rv style={delay((i % 6) * 0.05)}>
-      <div className="flex h-[84px] w-[84px] items-center justify-center rounded-3xl" style={{ background: bg }} data-pop><TileArt kind={kind}/></div>{label}
+      <div className="flex h-[84px] w-[84px] items-center justify-center rounded-3xl" style={{ background: bg }} data-pop><ObjectArt kind={kind} size={72}/></div>{label}
     </div>)}</div>
-  </section>;
-}
-
-function Reviews() {
-  return <section className={`${container} pt-24 lg:pt-[110px]`}>
-    <SectionTitle>EzMath-аар бэлдсэн сурагчид</SectionTitle>
-    <p className={`mt-3.5 text-center text-lg ${muted}`}>Жишээ сэтгэгдлүүд, бодит сэтгэгдлээр солих</p>
-    <div className="mt-[52px] grid gap-5 md:grid-cols-2 lg:grid-cols-3">{reviews.map((review, i) => <article key={review.name} className="rounded-[22px] border-2 border-[#EEF0F6] p-6" data-rv style={delay((i % 3) * 0.09)}>
-      <div className="flex items-center gap-2 text-xs font-semibold"><span className="rounded-lg bg-[#FFF6CC] px-[9px] py-[5px] text-[#B98400]">{review.from} → {review.to}</span><span className="rounded-lg bg-[#DCFCE7] px-[9px] py-[5px] text-[#16A34A]">+{review.to - review.from} оноо</span></div>
-      <h4 className="mt-[18px] text-base font-semibold">{review.name} <span className={`text-[13px] font-normal ${muted}`}>· {review.grade}</span></h4>
-      <p className="mt-3 text-[15px] leading-relaxed text-[#3B4256]">{review.text}</p>
-    </article>)}</div>
   </section>;
 }
 
