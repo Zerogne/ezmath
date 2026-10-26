@@ -43,7 +43,6 @@
 .rd .rd-p-h1 { translate: 0 calc((1 - var(--p)) * 46px); }
 .rd .rd-p-h2 { translate: 0 calc((1 - var(--p)) * 26px); }
 .rd .rd-p-h3 { translate: 0 calc((1 - var(--p)) * 10px); }
-.rd .rd-p-ger { translate: 0 calc((1 - var(--p)) * 30px); }
 .rd .rd-cloud { position: absolute; translate: calc((var(--p) - .5) * var(--dx, 120px)) 0; }
 .rd .rd-cloud svg { animation: rd-drift 9s ease-in-out infinite alternate; }
 .rd .rd-cloud:nth-of-type(even) { --dx: -160px; }

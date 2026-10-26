@@ -3,7 +3,7 @@ import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { ArrowRight, Check, Clock3, Menu, Plus, TrendingUp } from "lucide-react";
 import { getIdentity, ProfileMenu } from "@/components/layout/navbar";
 import { HeroCarousel } from "@/components/home/redesign/hero-carousel";
-import { Art, castSize, Cloud, Ezi, ObjectArt, SteppeScene, Squiggle, type ObjectKind } from "@/components/home/redesign/illustrations";
+import { Cloud, Ezi, ObjectArt, ProductScene, Squiggle, type EziPose, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { CountUp, ScrollMotion } from "@/components/home/redesign/scroll-motion";
 import "@/components/home/redesign/redesign.css";
 
@@ -30,7 +30,7 @@ const weekPlan = [
 ];
 const topicChart = [["Алгебр", 86, "#22C55E"], ["Функц", 72, "#22C55E"], ["Тригонометр", 58, "#FFB020"], ["Геометр", 67, "#FFB020"], ["Магадлал", 41, "#FF5A5A"], ["Прогресс", 80, "#22C55E"], ["Лог", 49, "#FF5A5A"]] as const;
 const heat = ["#E8EEFF", "#B9C9FF", "#4C6FFF", "#2B4BE8", "#E8EEFF", "#7F98FF", "#2B4BE8"];
-const moreFeatures: [ObjectKind, string, string][] = [["bulb", "#FFF6CC", "Томъёоны сан"], ["calculator", "#E8EEFF", "Оноо тооцоолуур"], ["pencil", "#FFE4E4", "Алдааны дэвтэр"], ["timer", "#FFF0E6", "Цагтай сорил"], ["gradcap", "#E8EEFF", "Ангийн шалгалт"], ["books", "#F1F3F8", "PDF материал"], ["chart", "#FFE4EF", "Ахицын тайлан"], ["notebook", "#EFE6FF", "Онолын хичээл"], ["target", "#FFE4E4", "Зорилтот оноо"], ["flame", "#FFF0E6", "Өдрийн цуврал"], ["setsquare", "#EFE6FF", "Геометрийн зураг"], ["medal", "#FFF6CC", "Багшийн самбар"]];
+const moreFeatures: [ObjectKind, string, string][] = [["bulb", "#FFF6CC", "Томъёоны сан"], ["calculator", "#E8EEFF", "Оноо тооцоолуур"], ["pencil", "#FFE4E4", "Алдааны дэвтэр"], ["stopwatch", "#FFF0E6", "Цагтай сорил"], ["gradcap", "#E8EEFF", "Ангийн шалгалт"], ["laptop", "#F1F3F8", "PDF материал"], ["chart", "#FFE4EF", "Ахицын тайлан"], ["notebook", "#EFE6FF", "Онолын хичээл"], ["target", "#FFE4E4", "Зорилтот оноо"], ["flame", "#FFF0E6", "Өдрийн цуврал"], ["protractor", "#EFE6FF", "Геометрийн зураг"], ["scorecard", "#FFF6CC", "Багшийн самбар"]];
 const faqs = ["EzMath үнэгүй юу?", "ЭЕШ-ийн аль онуудын бодлого багтсан бэ?", "SAT-д бэлдэхэд тохирох уу?", "Сургууль, багш нар хэрхэн ашиглах вэ?", "Гар утсан дээр ажилладаг уу?", "Төлбөрөө хэрхэн төлөх вэ?"];
 const footerGroups = [["Хөтөлбөр", [["ЭЕШ Математик", "/tests?exam=EYESH"], ["SAT Math", "/tests?exam=SAT"], ["Онолын хичээл", "/lesson"]]], ["Платформ", [["Шалгалтууд", "/tests"], ["Үнийн багц", "/pricing"]]], ["Бүртгэл", [["Нэвтрэх", "/login"], ["Бүртгүүлэх", "/register"], ["Сурагчийн хэсэг", "/dashboard"]]]] as const;
 
@@ -124,7 +124,7 @@ function PlanMini() {
 }
 
 function PracticeMini() {
-  const cards: [string, string, string, ObjectKind, string][] = [["Бодлогын сан", "2006–2023 оны ЭЕШ-ийн бодлогыг бодолттой нь", "Үргэлжлүүлэх", "notebook", "8deg"], ["Цагтай сорил", "Бодит шалгалтын нөхцөлд хурдаа сорь", "Эхлэх", "timer", "-8deg"]];
+  const cards: [string, string, string, ObjectKind, string][] = [["Бодлогын сан", "2006–2023 оны ЭЕШ-ийн бодлогыг бодолттой нь", "Үргэлжлүүлэх", "notebook", "8deg"], ["Цагтай сорил", "Бодит шалгалтын нөхцөлд хурдаа сорь", "Эхлэх", "stopwatch", "-8deg"]];
   return <div className="flex flex-col gap-2.5">{cards.map(([title, text, cta, kind, rotate], i) => <div key={title} className="relative rounded-[18px] border-2 border-[#EEF0F6] bg-white px-4 py-3.5">
     <p className="text-sm font-semibold">{title}</p><p className={`mt-1.5 w-[170px] text-xs ${muted}`}>{text}</p><span className={`mt-3 inline-block rounded-full bg-[#F1F3F8] px-3 py-1 text-xs font-medium ${muted}`}>{cta}</span>
     <div className="absolute right-2.5 top-4" style={{ rotate }}><div data-pop data-float style={delay(0.3 + i * 0.12)}><ObjectArt kind={kind} size={76}/></div></div>
@@ -147,10 +147,9 @@ function FeatureHead({ chip, chipBg, chipIcon, title, text }: { chip: string; ch
   </div>;
 }
 
-/** The character standing on top of each feature mockup: Эзи 120px, cast members 150px tall. */
-function Peek({ art }: { art: "ezi-point" | "cast-bat-wave" | "cast-anujin-think" }) {
-  const ezi = art === "ezi-point";
-  return <div className="absolute left-[470px] hidden lg:block" style={{ top: ezi ? -100 : -126 }}><div data-pop data-float style={delay(0.45)}>{ezi ? <Ezi pose="point" size={120}/> : <Art name={art} {...castSize(150)}/>}</div></div>;
+/** Эзи standing on top of each feature mockup. */
+function Peek({ pose }: { pose: EziPose }) {
+  return <div className="absolute left-[470px] top-[-118px] hidden lg:block"><div data-pop data-float style={delay(0.45)}><Ezi pose={pose} size={134}/></div></div>;
 }
 
 function Mock({ children, peek, tile, tilePos }: { children: ReactNode; peek: ReactNode; tile: [ObjectKind, string]; tilePos: CSSProperties }) {
@@ -166,7 +165,7 @@ const panel = "rounded-[18px] border-2 border-[#EEF0F6] bg-white p-[22px]";
 function FeatureQuestionBank() {
   return <section className={`${container} pt-24 lg:pt-[120px]`}>
     <FeatureHead chip="Бодлогын сан" chipBg={BLUE} chipIcon="∑" title={<>Бодлого дээр<br/>гацахаа боль</>} text="ЭЕШ-ийн 20 жилийн бодлого бүрт алхам алхмаар бодолт. Гацсан үедээ Эзигээс асуугаад зөвхөн дараагийн алхмын санааг аваарай."/>
-    <Mock peek={<Peek art="ezi-point"/>} tile={["notebook", "#E8EEFF"]} tilePos={{ left: -34, top: -40, rotate: "-9deg" }}>
+    <Mock peek={<Peek pose="point"/>} tile={["notebook", "#E8EEFF"]} tilePos={{ left: -34, top: -40, rotate: "-9deg" }}>
       <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
         <div className={panel}>
           <div className="flex items-center justify-between text-[13px]"><span className="flex items-center gap-2.5"><span className="rounded-md bg-[#E8EEFF] px-[7px] py-[3px] text-[11px] font-semibold text-[#2B4BE8]">ЭЕШ 2019 · B хувилбар</span><span className={muted}>Бодлого 21</span></span><span className={`font-medium ${muted}`}>⏱ 01:42</span></div>
@@ -190,7 +189,7 @@ function FeatureQuestionBank() {
 function FeaturePlanner() {
   return <section className={`${container} pt-24 lg:pt-[120px]`}>
     <FeatureHead chip="Сорил төлөвлөгч" chipBg="#FFB020" chipIcon={<Clock3 size={16}/>} title={<>Юу давтахаа бодож<br/>цаг бүү үр</>} text="Шалгалтын өдөр, зорилтот оноогоо оруулахад долоо хоног бүрийн төлөвлөгөө гарна. Сорил бүрийн дараа төлөвлөгөө дахин тооцоологдоно."/>
-    <Mock peek={<Peek art="cast-bat-wave"/>} tile={["timer", "#FFF6CC"]} tilePos={{ right: -30, top: -44, rotate: "8deg" }}>
+    <Mock peek={<Peek pose="laptop"/>} tile={["stopwatch", "#FFF6CC"]} tilePos={{ right: -30, top: -44, rotate: "8deg" }}>
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <div className="flex flex-col gap-3"><p className="p-1 text-[15px] font-semibold">Энэ долоо хоног</p>{weekPlan.map((item) => <div key={item.day} className={`${panel} grid grid-cols-[56px_1fr_auto] items-center gap-4 !p-4`}>
           <div className="text-center"><p className="rd-display text-[28px]">{item.day}</p><p className={`text-xs ${muted}`}>{item.weekday}</p></div>
@@ -209,7 +208,7 @@ function FeaturePlanner() {
 function FeatureAnalytics() {
   return <section className={`${container} pt-24 lg:pt-[120px]`}>
     <FeatureHead chip="Ахицын анализ" chipBg="#FF6FA8" chipIcon={<TrendingUp size={16}/>} title={<>Сул сэдвээ шалгалтаас<br/>өмнө ол</>} text="Сэдэв тус бүрийн гүйцэтгэл, бодох хурд, алдааны давтамжаа хар. Аль сэдэв оноо хамгийн их алдуулж байгааг тодорхой харуулна."/>
-    <Mock peek={<Peek art="cast-anujin-think"/>} tile={["chart", "#FFE4EF"]} tilePos={{ left: -30, bottom: -36, rotate: "-7deg" }}>
+    <Mock peek={<Peek pose="think"/>} tile={["chart", "#FFE4EF"]} tilePos={{ left: -30, bottom: -36, rotate: "-7deg" }}>
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
         <div className={panel}><div className="flex items-center justify-between"><p className="text-[15px] font-semibold">Сэдэв тус бүрийн гүйцэтгэл</p><span className={`rounded-md bg-[#F1F3F8] px-[7px] py-[3px] text-[11px] font-semibold ${muted}`}>Сүүлийн 30 хоног</span></div>
           <div className="mt-[22px] flex gap-2 sm:gap-3.5">{topicChart.map(([topic, value, color]) => <div key={topic} className="flex flex-1 flex-col items-center gap-2"><div className="flex h-[180px] w-full items-end"><i className="rd-grow-h block w-full rounded-t-lg rounded-b" style={{ "--v": `${value}%`, background: color } as CSSProperties}/></div><span className={`break-all text-center text-[11px] ${muted}`}>{topic}</span></div>)}</div>
@@ -249,7 +248,7 @@ function ClosingCta() {
       <p className={`mt-[18px] text-lg lg:text-[19px] ${muted}`} data-rv style={delay(0.08)}>25 минутын сорил өгөөд өөртөө тохирсон төлөвлөгөөгөө аваарай.</p>
       <div className="mt-[30px] flex flex-wrap justify-center gap-2.5" data-rv style={delay(0.16)}><Link href="/tests" className={btnDark}>Үнэгүй сорил өгөх</Link><Link href="/pricing" className={btnOutline}>Үнийн багц харах</Link></div>
     </div>
-    <SteppeScene/>
+    <ProductScene/>
   </section>;
 }
 

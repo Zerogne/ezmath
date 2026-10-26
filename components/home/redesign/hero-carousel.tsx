@@ -2,26 +2,26 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { ArrowUp, Check } from "lucide-react";
-import { Art, ObjectArt, castSize, type ArtName, type ObjectKind } from "@/components/home/redesign/illustrations";
+import { Ezi, ObjectArt, type EziPose, type ObjectKind } from "@/components/home/redesign/illustrations";
 
 type Slide = {
   label: string; shape: "blob" | "squiggle" | "pill"; color: string;
   scoreLabel: string; score: string; delta: string; scorePos: CSSProperties;
   qno: string; prompt: React.ReactNode; options: [string, string][]; correct: string; count: string;
   tiles: { kind: ObjectKind; bg: string; pos: CSSProperties }[];
-  character: ArtName;
+  pose: EziPose;
 };
 
 const slides: Slide[] = [
   { label: "ЭЕШ Математик", shape: "blob", color: "#4C6FFF", scoreLabel: "Таамагласан оноо", score: "742", delta: "+86 оноо", scorePos: { top: 40, left: 14, rotate: "-6deg" },
     qno: "14", prompt: <>Хэрэв log<sub>2</sub>(x + 3) = 3 бол x-ийн утгыг ол.</>, options: [["A", "3"], ["B", "5"], ["C", "6"], ["D", "8"]], correct: "B", count: "14 / 36",
-    tiles: [{ kind: "notebook", bg: "#E8EEFF", pos: { top: 58, right: 6, rotate: "8deg" } }, { kind: "chart", bg: "#FFE4EF", pos: { bottom: 12, right: 26, rotate: "5deg" } }], character: "cast-temuulen-wave" },
+    tiles: [{ kind: "notebook", bg: "#E8EEFF", pos: { top: 58, right: 6, rotate: "8deg" } }, { kind: "chart", bg: "#FFE4EF", pos: { bottom: 12, right: 26, rotate: "5deg" } }], pose: "point" },
   { label: "Digital SAT Math", shape: "squiggle", color: "#FFD43B", scoreLabel: "Predicted SAT", score: "1490", delta: "+120 оноо", scorePos: { top: 196, right: -4, rotate: "5deg" },
     qno: "7", prompt: "If 3x + 7 = 2x + 15, what is the value of x?", options: [["A", "4"], ["B", "8"], ["C", "11"], ["D", "15"]], correct: "B", count: "7 / 22",
-    tiles: [{ kind: "calculator", bg: "#E9FBF2", pos: { top: 40, left: 26, rotate: "-6deg" } }, { kind: "target", bg: "#EFE6FF", pos: { bottom: 110, right: 6, rotate: "9deg" } }], character: "cast-saraa-cheer" },
+    tiles: [{ kind: "calculator", bg: "#E9FBF2", pos: { top: 40, left: 26, rotate: "-6deg" } }, { kind: "target", bg: "#EFE6FF", pos: { bottom: 110, right: 6, rotate: "9deg" } }], pose: "celebrate" },
   { label: "Онолын хичээл", shape: "pill", color: "#34D399", scoreLabel: "Дуусгасан сэдэв", score: "18/24", delta: "+3 энэ долоо хоног", scorePos: { top: 150, left: 0, rotate: "-5deg" },
     qno: "3", prompt: "sin 30° + cos 60° илэрхийллийн утгыг ол.", options: [["A", "½"], ["B", "1"], ["C", "√3⁄2"], ["D", "2"]], correct: "B", count: "3 / 12",
-    tiles: [{ kind: "books", bg: "#EFE6FF", pos: { top: 84, right: 0, rotate: "-7deg" } }, { kind: "bulb", bg: "#FFF6CC", pos: { top: 250, right: -6, rotate: "10deg" } }], character: "cast-anujin-book" },
+    tiles: [{ kind: "graph", bg: "#EFE6FF", pos: { top: 84, right: 0, rotate: "-7deg" } }, { kind: "bulb", bg: "#FFF6CC", pos: { top: 250, right: -6, rotate: "10deg" } }], pose: "read" },
 ];
 
 function Shape({ shape, color }: { shape: Slide["shape"]; color: string }) {
@@ -50,7 +50,7 @@ function HeroVisual({ slide, active, settled }: { slide: Slide; active: boolean;
       <p className="text-xs font-semibold text-[#16A34A]">{slide.delta}</p>
     </div>
     {slide.tiles.map((tile, i) => <div key={tile.kind} className="rd-tile absolute flex h-[104px] w-[104px] items-center justify-center rounded-[30px] border-2 border-[#0B1030]/[.06] shadow-[0_16px_34px_-14px_rgba(11,16,48,.28)]" style={{ background: tile.bg, ...tile.pos, ...d(4 + i) }}><ObjectArt kind={tile.kind}/></div>)}
-    <div className="rd-tile absolute bottom-[-6px] left-[-24px] z-[3]" style={d(6)}><Art name={slide.character} {...castSize(228)} priority={slide.character === "cast-temuulen-wave"}/></div>
+    <div className="rd-tile absolute bottom-[-10px] left-[-30px] z-[3]" style={d(6)}><Ezi pose={slide.pose} size={210} priority={slide.pose === "point"}/></div>
   </div>;
 }
 
