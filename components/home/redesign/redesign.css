@@ -17,7 +17,7 @@
 .rd [data-pop] { opacity: 0; scale: .55; translate: 0 26px; transition: opacity .4s ease var(--d, 0s), scale .75s cubic-bezier(.34, 1.56, .64, 1) var(--d, 0s), translate .75s cubic-bezier(.34, 1.56, .64, 1) var(--d, 0s); }
 .rd [data-pop][data-in] { opacity: 1; scale: 1; translate: 0 0; }
 .rd [data-pop][data-float][data-in] { animation: rd-float 5s ease-in-out infinite; animation-delay: calc(var(--d, 0s) + .9s); }
-.rd .rd-land .rd-p-mascot { transform-box: fill-box; transform-origin: 50% 100%; translate: 0 60px; scale: .4; }
+.rd .rd-land .rd-p-mascot { transform-origin: 50% 100%; translate: 0 60px; scale: .4; }
 .rd .rd-land .rd-p-mascot[data-in] { translate: 0 0; scale: 1; }
 .rd .rd-land .rd-p-mascot[data-float][data-in] { animation-name: rd-bob; animation-duration: 2.8s; }
 
@@ -36,7 +36,7 @@
 .rd .rd-hv[data-settled] .rd-tile:nth-child(7) { animation-duration: 5s; animation-delay: -2.6s; }
 .rd .rd-hv[data-settled] .rd-score { animation-duration: 6s; animation-delay: -1s; }
 
-/* steppe parallax: --p goes 0 → 1 while the scene scrolls through the viewport */
+/* closing-scene parallax: --p goes 0 → 1 while the scene scrolls through the viewport */
 .rd [data-parallax] { --p: .5; }
 .rd .rd-land { position: absolute; inset: auto 0 0 0; width: 100%; height: 360px; }
 .rd .rd-p-mtn { translate: 0 calc((1 - var(--p)) * 70px); }

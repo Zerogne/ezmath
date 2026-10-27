@@ -149,11 +149,11 @@ function FeatureHead({ chip, chipBg, chipIcon, title, text }: { chip: string; ch
 
 /** Эзи standing on top of each feature mockup. */
 function Peek({ pose }: { pose: EziPose }) {
-  return <div className="absolute left-[470px] top-[-118px] hidden lg:block"><div data-pop data-float style={delay(0.45)}><Ezi pose={pose} size={134}/></div></div>;
+  return <div className="absolute right-3 top-[-88px] z-[2] lg:left-[470px] lg:right-auto lg:top-[-118px]"><div data-pop data-float style={delay(0.45)}><Ezi pose={pose} size={134} className="h-auto w-[98px] lg:w-[134px]"/></div></div>;
 }
 
 function Mock({ children, peek, tile, tilePos }: { children: ReactNode; peek: ReactNode; tile: [ObjectKind, string]; tilePos: CSSProperties }) {
-  return <div className="relative mt-16 rounded-[28px] border-2 border-[#EEF0F6] bg-[#F7F8FC] p-4 sm:p-6" data-rv>
+  return <div className="relative mt-24 rounded-[28px] border-2 border-[#EEF0F6] bg-[#F7F8FC] p-4 sm:p-6 lg:mt-16" data-rv>
     {peek}
     <div className="absolute z-[3] hidden sm:block" style={tilePos}><div className="flex h-[104px] w-[104px] items-center justify-center rounded-[30px] border-2 border-[#0B1030]/[.06] shadow-[0_16px_34px_-14px_rgba(11,16,48,.28)]" style={{ background: tile[1] }} data-pop data-float><ObjectArt kind={tile[0]}/></div></div>
     {children}
