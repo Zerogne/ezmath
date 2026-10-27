@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { MaterialEditorData, MaterialQuestion } from "@/lib/admin/material-types";
 import type { ExamType, TestType } from "@/types/exam";
 import { QuestionEditor } from "./question-editor";
+import { LatexImportPanel } from "./latex-import-panel";
 
 export type EditorQuestion = MaterialQuestion;
 
@@ -134,6 +135,14 @@ export function MaterialForm({ examType, initial }: { examType: ExamType; initia
     }
   }
 
+  function importLatex(imported: EditorQuestion[]) {
+    const isBlank = (question: EditorQuestion) => !question.text.trim() && !question.imageUrl && question.choices.every((choice) => !choice.text.trim() && !choice.imageUrl);
+    setQuestions((items) => [...items.filter((item) => !isBlank(item)), ...imported]);
+    setDirty(true);
+    setErrors([]);
+    setMessage(`LaTeX-ээс ${imported.length} асуулт нэмэгдлээ. Шалгаад хадгална уу.`);
+  }
+
   function deleteQuestion() {
     if (!deleteQuestionId) return;
     setQuestions((items) => items.filter((item) => item.id !== deleteQuestionId));
@@ -159,6 +168,7 @@ export function MaterialForm({ examType, initial }: { examType: ExamType; initia
           </form>
         </CardContent>
       </Card>}
+      <LatexImportPanel examType={examType} onImport={importLatex} />
       <Card>
         <CardHeader><CardTitle>Үндсэн мэдээлэл</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -173,7 +183,7 @@ export function MaterialForm({ examType, initial }: { examType: ExamType; initia
       </Card>
       <section>
         <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Асуултууд</h2><p className="mt-1 text-xs text-muted-foreground">{questions.length} асуулт</p></div><Button type="button" size="sm" variant="secondary" onClick={() => { setQuestions((items) => [...items, emptyQuestion()]); setDirty(true); }}><Plus size={15} />Асуулт нэмэх</Button></div>
-        <div className="space-y-3">{questions.map((question, index) => <QuestionEditor key={question.id} question={question} index={index} total={questions.length} onChange={(value) => { setQuestions((items) => items.map((item) => item.id === question.id ? value : item)); setDirty(true); }} onDuplicate={() => { const duplicate = { ...question, id: crypto.randomUUID(), choices: question.choices.map((choice) => ({ ...choice, id: crypto.randomUUID() })), responseFields: question.responseFields.map((field) => ({ ...field, id: crypto.randomUUID() })) }; setQuestions((items) => [...items.slice(0, index + 1), duplicate, ...items.slice(index + 1)]); setDirty(true); }} onDelete={() => { if (questions.length > 1) setDeleteQuestionId(question.id); }} onMove={(direction) => { const target = index + direction; if (target < 0 || target >= questions.length) return; setQuestions((items) => { const copy = [...items]; [copy[index], copy[target]] = [copy[target], copy[index]]; return copy; }); setDirty(true); }} />)}</div>
+        <div className="space-y-3">{questions.map((question, index) => <QuestionEditor key={question.id} question={question} examType={examType} index={index} total={questions.length} onChange={(value) => { setQuestions((items) => items.map((item) => item.id === question.id ? value : item)); setDirty(true); }} onDuplicate={() => { const duplicate = { ...question, id: crypto.randomUUID(), choices: question.choices.map((choice) => ({ ...choice, id: crypto.randomUUID() })), responseFields: question.responseFields.map((field) => ({ ...field, id: crypto.randomUUID() })) }; setQuestions((items) => [...items.slice(0, index + 1), duplicate, ...items.slice(index + 1)]); setDirty(true); }} onDelete={() => { if (questions.length > 1) setDeleteQuestionId(question.id); }} onMove={(direction) => { const target = index + direction; if (target < 0 || target >= questions.length) return; setQuestions((items) => { const copy = [...items]; [copy[index], copy[target]] = [copy[target], copy[index]]; return copy; }); setDirty(true); }} />)}</div>
       </section>
     </div>
     <aside>
