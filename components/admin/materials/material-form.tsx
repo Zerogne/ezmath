@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { MaterialEditorData, MaterialQuestion } from "@/lib/admin/material-types";
 import type { ExamType, TestType } from "@/types/exam";
 import { QuestionEditor } from "./question-editor";
+import { LatexImportPanel } from "./latex-import-panel";
 
 export type EditorQuestion = MaterialQuestion;
 
@@ -134,6 +135,14 @@ export function MaterialForm({ examType, initial }: { examType: ExamType; initia
     }
   }
 
+  function importLatex(imported: EditorQuestion[]) {
+    const isBlank = (question: EditorQuestion) => !question.text.trim() && !question.imageUrl && question.choices.every((choice) => !choice.text.trim() && !choice.imageUrl);
+    setQuestions((items) => [...items.filter((item) => !isBlank(item)), ...imported]);
+    setDirty(true);
+    setErrors([]);
+    setMessage(`LaTeX-ээс ${imported.length} асуулт нэмэгдлээ. Шалгаад хадгална уу.`);
+  }
+
   function deleteQuestion() {
     if (!deleteQuestionId) return;
     setQuestions((items) => items.filter((item) => item.id !== deleteQuestionId));
@@ -159,6 +168,7 @@ export function MaterialForm({ examType, initial }: { examType: ExamType; initia
           </form>
         </CardContent>
       </Card>}
+      <LatexImportPanel examType={examType} onImport={importLatex} />
       <Card>
         <CardHeader><CardTitle>Үндсэн мэдээлэл</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
