@@ -32,6 +32,11 @@ const weekPlan = [
 const topicChart = [["Алгебр", 86, "#22C55E"], ["Функц", 72, "#22C55E"], ["Тригонометр", 58, "#FFB020"], ["Геометр", 67, "#FFB020"], ["Магадлал", 41, "#FF5A5A"], ["Прогресс", 80, "#22C55E"], ["Лог", 49, "#FF5A5A"]] as const;
 const heat = ["#E8EEFF", "#B9C9FF", "#4C6FFF", "#2B4BE8", "#E8EEFF", "#7F98FF", "#2B4BE8"];
 const moreFeatures: [ObjectKind, string, string][] = [["bulb", "#FFF6CC", "Томъёоны сан"], ["calculator", "#E8EEFF", "Оноо тооцоолуур"], ["pencil", "#FFE4E4", "Алдааны дэвтэр"], ["stopwatch", "#FFF0E6", "Цагтай сорил"], ["gradcap", "#E8EEFF", "Ангийн шалгалт"], ["laptop", "#F1F3F8", "PDF материал"], ["chart", "#FFE4EF", "Ахицын тайлан"], ["notebook", "#EFE6FF", "Онолын хичээл"], ["target", "#FFE4E4", "Зорилтот оноо"], ["flame", "#FFF0E6", "Өдрийн цуврал"], ["protractor", "#EFE6FF", "Геометрийн зураг"], ["scorecard", "#FFF6CC", "Багшийн самбар"]];
+const solutionSteps: [string, ReactNode][] = [
+  ["Томъёогоо сонго", <>S<sub>n</sub> = n(2a<sub>1</sub> + (n−1)d) / 2</>],
+  ["Утгаа орлуул", <>2a<sub>1</sub> + 9d = 6 + 36 = 42</>],
+  ["Нийлбэрээ ол", <>S<sub>10</sub> = 10 · 42 / 2 = <b>210</b></>],
+];
 const faqs = ["EzMath үнэгүй юу?", "ЭЕШ-ийн аль онуудын бодлого багтсан бэ?", "SAT-д бэлдэхэд тохирох уу?", "Сургууль, багш нар хэрхэн ашиглах вэ?", "Гар утсан дээр ажилладаг уу?", "Төлбөрөө хэрхэн төлөх вэ?"];
 
 export function RedesignLanding() {
@@ -136,7 +141,7 @@ const panel = "rounded-[18px] border-2 border-[#EEF0F6] bg-white p-[22px]";
 
 function FeatureQuestionBank() {
   return <section className={`${container} pt-24 lg:pt-[120px]`}>
-    <FeatureHead chip="Бодлогын сан" chipBg={BLUE} chipIcon="∑" title={<>Бодлого дээр<br/>гацахаа боль</>} text="ЭЕШ-ийн 20 жилийн бодлого бүрт алхам алхмаар бодолт. Гацсан үедээ Эзигээс асуугаад зөвхөн дараагийн алхмын санааг аваарай."/>
+    <FeatureHead chip="Бодлогын сан" chipBg={BLUE} chipIcon="∑" title={<>Бодлого дээр<br/>гацахаа боль</>} text="ЭЕШ-ийн 20 жилийн бодлого бүрт алхам алхмаар бодолт. Гацсан алхмаа нээж хараад, холбоотой онолын хичээлээ шууд үзээрэй."/>
     <Mock peek={<Peek pose="point"/>} tile={["notebook", "#E8EEFF"]} tilePos={{ left: -34, top: -40, rotate: "-9deg" }}>
       <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
         <div className={panel}>
@@ -146,12 +151,9 @@ function FeatureQuestionBank() {
           <div className="mt-[22px] flex items-center justify-between border-t-2 border-[#F0F1F6] pt-4"><span className={`text-[13px] ${muted}`}>21 / 36</span><span className="inline-flex items-center gap-1.5 rounded-full bg-[#0B1030] px-4 py-2.5 text-[13px] font-semibold text-white">Дараагийн бодлого <ArrowRight size={14}/></span></div>
         </div>
         <div className={`${panel} flex flex-col gap-3 text-sm leading-normal`}>
-          <div className="flex items-center justify-between"><span className="flex items-center gap-2.5 text-[15px] font-semibold"><Ezi size={40}/>Эзигээс асуух</span><span className="rounded-md bg-[#E9FBF2] px-[7px] py-[3px] text-[11px] font-semibold text-[#16A34A]">Бодолт</span></div>
-          <div className="w-4/5 self-end rounded-2xl bg-[#F4F5FA] px-3.5 py-3">Нийлбэрийн томъёогоо мартчихлаа 😅</div>
-          <div className="w-[92%] rounded-2xl bg-[#E8EEFF] px-3.5 py-3">Сануулга: S<sub>n</sub> = n(2a<sub>1</sub> + (n−1)d) / 2. Эхлээд 2a<sub>1</sub> + 9d-г олоод үз.</div>
-          <div className="w-3/5 self-end rounded-2xl bg-[#F4F5FA] px-3.5 py-3">6 + 36 = 42 ✔</div>
-          <div className="w-[92%] rounded-2xl bg-[#E8EEFF] px-3.5 py-3">Зөв! Одоо 10 · 42 / 2 = <b>210</b>. Хариулт C 🎉</div>
-          <div className="mt-auto rounded-xl border-2 border-[#EEF0F6] p-3 text-[#9AA0B4]">Асуултаа бич…</div>
+          <div className="flex items-center justify-between"><span className="text-[15px] font-semibold">Алхам алхмаар бодолт</span><span className="rounded-md bg-[#E9FBF2] px-[7px] py-[3px] text-[11px] font-semibold text-[#16A34A]">Хариулт C</span></div>
+          {solutionSteps.map(([title, math], i) => <div key={title} className="flex gap-3 rounded-2xl bg-[#F4F5FA] px-3.5 py-3"><span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#2B4BE8] text-[11px] font-semibold text-white">{i + 1}</span><div><p className="font-medium">{title}</p><p className="rd-serif mt-1 text-[15px]">{math}</p></div></div>)}
+          <div className="mt-auto flex items-center justify-between gap-3 rounded-xl border-2 border-[#EEF0F6] p-3 font-medium"><span className="flex items-center gap-2.5"><span className="rounded-md bg-[#EFE6FF] px-[7px] py-[3px] text-[11px] font-semibold text-[#7C4DEB]">Онол</span>Арифметик прогресс</span><ArrowRight size={14} className="shrink-0"/></div>
         </div>
       </div>
     </Mock>
