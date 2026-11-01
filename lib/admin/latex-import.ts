@@ -2,6 +2,7 @@ import katex from "katex";
 import type { MaterialQuestion } from "@/lib/admin/material-types";
 import { isValidSatResponse } from "@/lib/exam/sat-answer";
 import type { Difficulty, ExamType } from "@/types/exam";
+import { placeSatQuestion, resolveSatSkill } from "@/lib/sat/taxonomy";
 
 /**
  * Parses questions written with the LaTeX `exam` document class into editor questions.
@@ -162,6 +163,22 @@ function pickImage(found: ImageSource[], where: string, issues: LatexImportIssue
   return found[0];
 }
 
+const sameName = (a: string, b: string) => a.trim().toLowerCase().replace(/\s+/g, " ") === b.trim().toLowerCase().replace(/\s+/g, " ");
+
+/** SAT topics are the official College Board skill names, which the question bank filters on. */
+function satTopic(raw: string, issues: LatexImportIssue[]) {
+  if (!raw) { issues.push({ level: "warning", message: "\\topic алга — бодлогын санд “Ангилаагүй” болно. SAT ур чадварын нэр бичнэ үү (жишээ: Linear functions)." }); return ""; }
+  const skill = resolveSatSkill(raw);
+  if (skill) {
+    if (!sameName(raw, skill.skill)) issues.push({ level: "warning", message: `Сэдэв “${raw}” → “${skill.skill}” гэж ангиллаа.` });
+    return skill.skill;
+  }
+  const { domain } = placeSatQuestion(raw, "");
+  if (domain) { issues.push({ level: "warning", message: `“${raw}” нь домэйн (${domain}). Нарийн ур чадвар бичвэл бодлогын санд илүү сайн шүүгдэнэ.` }); return domain; }
+  issues.push({ level: "warning", message: `SAT ур чадвар “${raw}” танигдсангүй — бодлогын санд “Ангилаагүй” болно.` });
+  return raw;
+}
+
 const splitAlternatives = (value: string) => value.split(/[;|]/).map((answer) => answer.trim()).filter(Boolean);
 
 function parseQuestion(block: string, number: number, keyAnswer: string | undefined, examType: ExamType): ParsedLatexQuestion {
@@ -262,7 +279,7 @@ function parseQuestion(block: string, number: number, keyAnswer: string | undefi
       choices,
       correctAnswer: questionType === "multiple-choice" ? correctAnswer : "",
       explanation,
-      topic: tidy(topicCommand.found.at(-1)?.argument ?? ""),
+      topic: examType === "SAT" ? satTopic(tidy(topicCommand.found.at(-1)?.argument ?? ""), issues) : tidy(topicCommand.found.at(-1)?.argument ?? ""),
       difficulty: difficulty ?? "Medium",
     },
   };
@@ -297,7 +314,7 @@ export function parseLatexQuestions(input: string, examType: ExamType): LatexImp
 export const latexImportExample = String.raw`\begin{questions}
 
 \question If $3x + 7 = 2x + 15$, what is the value of $x$?
-\topic{Algebra} \difficulty{Easy}
+\topic{Linear equations in one variable} \difficulty{Easy}
 \begin{choices}
   \choice $4$
   \CorrectChoice $8$

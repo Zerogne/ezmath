@@ -29,6 +29,7 @@ type StudentSubscriptionRow = { id: string; user_id: string; provider: "byl"; pl
 type StudentLessonProgressRow = { id: string; user_id: string; lesson_id: string; completed_at: string | null; last_opened_at: string; created_at: string; updated_at: string };
 type CourseLessonRow = { id: string; slug: string; course_slug: string; module_id: string; title: string; duration_minutes: number; summary: string; objectives: string[]; sections: Json; status: "draft" | "published" | "archived"; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
 type CourseModuleRow = { id: string; course_slug: string; title: string; description: string; parent_id: string | null; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
+type QuestionBankProgressRow = { user_id: string; question_id: string; attempts: number; correct_count: number; last_correct: boolean | null; marked: boolean; last_answered_at: string | null; updated_at: string };
 
 export type Database = {
   public: {
@@ -57,6 +58,7 @@ export type Database = {
       student_lesson_progress: Table<StudentLessonProgressRow, Pick<StudentLessonProgressRow, "user_id" | "lesson_id"> & Partial<StudentLessonProgressRow>>;
       course_lessons: Table<CourseLessonRow, Pick<CourseLessonRow, "slug" | "course_slug" | "module_id" | "title" | "duration_minutes" | "summary" | "objectives" | "sections" | "status" | "sort_order"> & Partial<CourseLessonRow>>;
       course_modules: Table<CourseModuleRow, Pick<CourseModuleRow, "id" | "course_slug" | "title"> & Partial<CourseModuleRow>>;
+      question_bank_progress: Table<QuestionBankProgressRow, Pick<QuestionBankProgressRow, "user_id" | "question_id"> & Partial<QuestionBankProgressRow>>;
     };
     Views: {
       student_questions: { Row: Pick<QuestionRow, "id" | "test_id" | "question_number" | "question_text" | "question_type" | "response_fields" | "topic" | "image_url">; Relationships: [] };

@@ -13,7 +13,7 @@ type SortOrder = "newest" | "oldest";
 const exams: { value: ExamFilter; label: string }[] = [{ value: "ALL", label: "Бүгд" }, { value: "SAT", label: "SAT" }, { value: "EYESH", label: "ЭЕШ" }];
 const types: { value: "ALL" | TestType; label: string }[] = [{ value: "ALL", label: "Бүх төрөл" }, { value: "full", label: "Full test" }, { value: "practice", label: "Practice" }];
 
-export function TestFilter({ tests, initialExam = "ALL" }: { tests: Test[]; initialExam?: ExamFilter }) {
+export function TestFilter({ tests, initialExam = "ALL", showExamFilter = true }: { tests: Test[]; initialExam?: ExamFilter; showExamFilter?: boolean }) {
   const [exam, setExam] = useState<ExamFilter>(initialExam);
   const [type, setType] = useState<"ALL" | TestType>("ALL");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
@@ -30,7 +30,7 @@ export function TestFilter({ tests, initialExam = "ALL" }: { tests: Test[]; init
     });
   }, [tests, exam, type, sortOrder]);
 
-  const hasActiveFilters = exam !== "ALL" || type !== "ALL" || sortOrder !== "newest";
+  const hasActiveFilters = (showExamFilter && exam !== "ALL") || type !== "ALL" || sortOrder !== "newest";
 
   return <>
     <div className="flex items-center justify-between border-b pb-6">
@@ -40,11 +40,13 @@ export function TestFilter({ tests, initialExam = "ALL" }: { tests: Test[]; init
           <Button type="button" variant="secondary"><SlidersHorizontal size={16}/>Шүүлтүүр{hasActiveFilters && <span className="h-2 w-2 rounded-full bg-primary" aria-label="Идэвхтэй шүүлтүүртэй"/>}</Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="text-xs text-muted-foreground">Ангилал</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={exam} onValueChange={(value) => selectExam(value as ExamFilter)}>
-            {exams.map((item) => <DropdownMenuRadioItem key={item.value} value={item.value}>{item.label}</DropdownMenuRadioItem>)}
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator/>
+          {showExamFilter && <>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">Ангилал</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={exam} onValueChange={(value) => selectExam(value as ExamFilter)}>
+              {exams.map((item) => <DropdownMenuRadioItem key={item.value} value={item.value}>{item.label}</DropdownMenuRadioItem>)}
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator/>
+          </>}
           <DropdownMenuLabel className="flex items-center gap-2 text-xs text-muted-foreground"><ArrowDownAZ size={14}/>Эрэмбэлэх</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
             <DropdownMenuRadioItem value="newest">Шинэ эхэндээ</DropdownMenuRadioItem>

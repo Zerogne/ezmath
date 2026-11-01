@@ -13,9 +13,14 @@ const listFromDatabase = unstable_cache(async () => {
   const { data, error } = await supabase.from("tests").select(TEST_COLUMNS).eq("status", "published").order("created_at", { ascending: false }).limit(100);
   if (error) throw new Error("Published tests could not be loaded.");
   const testIds = data.map((row) => row.id);
-  const { data: questionRows } = testIds.length ? await supabase.from("student_questions").select("test_id").in("test_id", testIds) : { data: [] };
+  // PostgREST returns at most 1000 rows per request, so question rows are read page by page.
   const counts = new Map<string, number>();
-  for (const question of questionRows ?? []) counts.set(question.test_id, (counts.get(question.test_id) ?? 0) + 1);
+  for (let from = 0; testIds.length; from += 1000) {
+    const { data: questionRows, error: countError } = await supabase.from("student_questions").select("test_id").in("test_id", testIds).order("id").range(from, from + 999);
+    if (countError) break;
+    for (const question of questionRows) counts.set(question.test_id, (counts.get(question.test_id) ?? 0) + 1);
+    if (questionRows.length < 1000) break;
+  }
   return data.map((row) => mapTest(row, counts.get(row.id) ?? 0));
 }, ["published-tests"], { revalidate: 300, tags: ["tests"] });
 

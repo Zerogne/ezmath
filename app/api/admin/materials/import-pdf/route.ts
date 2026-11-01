@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAdminIdentity } from "@/lib/admin/auth";
 import type { MaterialEditorData, MaterialQuestion } from "@/lib/admin/material-types";
 import { ensureImageBucket } from "@/lib/admin/question-images";
+import { SAT_DOMAINS, resolveSatSkill } from "@/lib/sat/taxonomy";
 import type { ExamType, TestType } from "@/types/exam";
 
 export const runtime = "nodejs";
@@ -30,7 +31,7 @@ EYESH PART II HIERARCHY (CRITICAL): Part II contains exactly FOUR parent problem
 
 Return ONLY valid JSON:
 {"title":"string","subject":"string","year":2026,"durationMinutes":35,"type":"practice","description":"string","questions":[{"sourceQuestionNumber":"1","section":"I","parentProblemNumber":"","subpartLabel":"","questionType":"multiple-choice","text":"string","pageNumber":1,"imageBox":null,"choices":[{"label":"A","text":"string","imageBox":null}],"responseFields":[],"explanation":"","topic":"string","difficulty":"Medium"}]}
-Allowed type: full, practice, previous-year. Allowed difficulty: Easy, Medium, Hard. A multiple-choice question needs at least two choices whose text or imageBox is present. A multi-blank question needs at least one responseFields item shaped {"label":"af"}.
+Allowed type: full, practice, previous-year. Allowed difficulty: Easy, Medium, Hard.${examType === "SAT" ? ` For SAT, topic must be exactly one of these official College Board skill names (pick the closest; use "" if none fits): ${SAT_DOMAINS.flatMap((domain) => domain.skills).join("; ")}.` : ""} A multiple-choice question needs at least two choices whose text or imageBox is present. A multi-blank question needs at least one responseFields item shaped {"label":"af"}.
 
 COMPLETENESS IS REQUIRED: transcribe every numbered question in the supplied pages, including incomplete-looking questions and every EYESH II хэсэг / задгай даалгавар. Never omit a question because its choices, diagram, formula, or response-field labels are difficult to read. Preserve its sourceQuestionNumber separately while removing that number from text. Never promote nested numbering such as a), б), 1), 2), or an individual answer blank into a separate parent problem.
 
@@ -223,7 +224,7 @@ function normalize(raw: Record<string, unknown>, examType: ExamType, filename: s
     }
     if (questionType === "multi-blank" && !responseFields.length) responseFields.push({ id: randomUUID(), label: "answer", acceptedAnswers: [] });
     const difficulty = ["Easy", "Medium", "Hard"].includes(stringValue(question.difficulty)) ? stringValue(question.difficulty) as MaterialQuestion["difficulty"] : "Medium";
-    return [{ id: randomUUID(), text, imageUrl: assets[`q-${questionIndex}`] ?? "", questionType, responseFields, choices: questionType === "multiple-choice" ? choices : [], correctAnswer: "", explanation: stringValue(question.explanation), topic: stringValue(question.topic), difficulty }];
+    return [{ id: randomUUID(), text, imageUrl: assets[`q-${questionIndex}`] ?? "", questionType, responseFields, choices: questionType === "multiple-choice" ? choices : [], correctAnswer: "", explanation: stringValue(question.explanation), topic: examType === "SAT" ? resolveSatSkill(stringValue(question.topic))?.skill ?? stringValue(question.topic) : stringValue(question.topic), difficulty }];
   });
   if (!questions.length) throw new Error("PDF-ээс хүчинтэй асуулт олдсонгүй.");
   const type = ["full", "practice", "previous-year"].includes(stringValue(raw.type)) ? stringValue(raw.type) as TestType : examType === "SAT" ? "practice" : "previous-year";

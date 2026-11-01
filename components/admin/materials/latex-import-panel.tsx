@@ -206,7 +206,9 @@ function FormatGuide({ examType }: { examType: ExamType }) {
         <li>Асуулт, сонголт бүрт нэг зураг — олон байвал эхнийхийг авна.</li>
       </GuideSection>
       <GuideSection title="Нэмэлт ба хязгаарлалт">
-        <li><C>{String.raw`\topic{Algebra}`}</C>, <C>{String.raw`\difficulty{Easy|Medium|Hard}`}</C>, <C>{String.raw`\explanation{...}`}</C> эсвэл <C>solution</C> орчин.</li>
+        {sat ? <li><C>{String.raw`\topic{Linear functions}`}</C> — SAT-ийн албан ёсны ур чадварын нэр; бодлогын сан үүгээр шүүнэ. “Systems of equations” гэх мэт түгээмэл нэрийг автоматаар хөрвүүлнэ, танигдаагүй бол “Ангилаагүй”.</li>
+          : <li><C>{String.raw`\topic{Алгебр}`}</C> — сэдэв.</li>}
+        <li><C>{String.raw`\difficulty{Easy|Medium|Hard}`}</C>, <C>{String.raw`\explanation{...}`}</C> эсвэл <C>solution</C> орчин.</li>
         <li className="text-amber-800">Дэмжихгүй: <C>tabular</C> (оронд нь <C>array</C>), өөрийн макро <C>{String.raw`\newcommand`}</C>, <C>{String.raw`\input`}</C>. Ийм команд анхааруулга эсвэл алдаа өгнө.</li>
         <li>“Жишээ” товчоор бүтэн жишээ ачаална.</li>
       </GuideSection>

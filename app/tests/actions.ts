@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { SubmissionPayload, SubmissionResult } from "@/lib/exam/test-types";
-import { satAnswerMatches } from "@/lib/exam/sat-answer";
+import { gradeWritten } from "@/lib/exam/grade-question";
 
 export type StartAttemptResult = { attemptId: string; error?: undefined } | { attemptId: null; error?: "auth_required" | "limit_reached" | "failed" };
 
@@ -96,8 +96,6 @@ async function submitDatabaseAttempt(payload: SubmissionPayload): Promise<Submis
   const written = new Map(payload.writtenAnswers.map((answer) => [answer.questionId, answer.responses]));
   const choiceMap = new Map((choices ?? []).map((choice) => [choice.id, choice]));
   const acceptedByField = new Map<string, string[]>((responseAnswers ?? []).map((answer) => [`${answer.question_id}:${answer.field_id}`, answer.accepted_answers]));
-  const normalize = (value: string) => value.trim().toLocaleLowerCase("mn").replace(/,/g, ".").replace(/\s+/g, " ");
-  const matches = (value: string, answer: string) => test.exam_type === "SAT" ? satAnswerMatches(value, answer) : normalize(answer) === normalize(value);
   const answerResults: SubmissionResult["answerResults"] = {};
   const topics = new Map<string, { correct: number; total: number }>();
   let correct = 0;
@@ -106,14 +104,7 @@ async function submitDatabaseAttempt(payload: SubmissionPayload): Promise<Submis
     let state: "correct" | "incorrect" | "unanswered";
     if (question.question_type === "multi-blank") {
       const fields = Array.isArray(question.response_fields) ? question.response_fields as { id?: string }[] : [];
-      const responses = written.get(question.id) ?? {};
-      const hasResponse = fields.some((field) => field.id && normalize(responses[field.id] ?? ""));
-      const allCorrect = fields.length > 0 && fields.every((field) => {
-        if (!field.id) return false;
-        const response = responses[field.id] ?? "";
-        return normalize(response).length > 0 && (acceptedByField.get(`${question.id}:${field.id}`) ?? []).some((answer) => matches(response, answer));
-      });
-      state = !hasResponse ? "unanswered" : allCorrect ? "correct" : "incorrect";
+      state = gradeWritten(fields, written.get(question.id) ?? {}, (fieldId) => acceptedByField.get(`${question.id}:${fieldId}`) ?? [], test.exam_type === "SAT");
     } else {
       const choice = choiceMap.get(selected.get(question.id) ?? "");
       state = !choice || choice.question_id !== question.id ? "unanswered" : choice.is_correct ? "correct" : "incorrect";
