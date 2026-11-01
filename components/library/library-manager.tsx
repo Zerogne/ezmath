@@ -2,13 +2,14 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { BookOpen, Check, Edit3, FileStack, FileText, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, Edit3, FileStack, FileText, Plus, Search, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { deleteLibraryMaterial, saveLibraryMaterial, type LibraryMaterialInput } from "@/app/library-actions";
 import { MathText } from "@/components/math/math-text";
 import { Button, ButtonLink } from "@/components/ui/button";
 import type { LibraryCollectionSummary, LibraryMaterial } from "@/lib/data/school-library";
 import { answerTypeLabels, blankChoices, Field, ProblemFields } from "./problem-fields";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Tab = "collections" | "problems";
 
@@ -58,7 +59,7 @@ function CollectionsTab({ collections, currentUserId, canManageAll, basePath }: 
           </div>
         </Link>;
       })}
-    </div> : <Empty icon={FileStack} title={collections.length ? "Материал олдсонгүй" : "Одоогоор материал алга"} text={collections.length ? "Шүүлтүүрээ өөрчилнө үү." : "ЭЕШ-ийн хувилбар шиг бүтэн материалаа бодлого бүрээр нь оруулаад шалгалтад ашиглана."}/>}
+    </div> : <Empty title={collections.length ? "Материал олдсонгүй" : "Одоогоор материал алга"} text={collections.length ? "Шүүлтүүрээ өөрчилнө үү." : "ЭЕШ-ийн хувилбар шиг бүтэн материалаа бодлого бүрээр нь оруулаад шалгалтад ашиглана."}/>}
   </div>;
 }
 
@@ -142,7 +143,7 @@ function ProblemsTab({ materials, currentUserId, canManageAll }: { materials: Li
           </div>
         </article>;
       })}
-    </section> : <Empty icon={BookOpen} title={materials.length ? "Бодлого олдсонгүй" : "Одоогоор ганц бодлого алга"} text={materials.length ? "Шүүлтүүрээ өөрчилнө үү." : "Материалд хамааралгүй бие даасан бодлогуудаа энд нэг нэгээр нэмнэ."}/>}
+    </section> : <Empty title={materials.length ? "Бодлого олдсонгүй" : "Одоогоор ганц бодлого алга"} text={materials.length ? "Шүүлтүүрээ өөрчилнө үү." : "Материалд хамааралгүй бие даасан бодлогуудаа энд нэг нэгээр нэмнэ."}/>}
   </div>;
 }
 
@@ -156,6 +157,6 @@ function Toolbar({ search, onSearch, filter, onFilter, filterLabel, options, pla
   </div>;
 }
 
-function Empty({ icon: Icon, title, text }: { icon: typeof BookOpen; title: string; text: string }) {
-  return <div className="rounded-2xl border border-dashed bg-white px-6 py-14 text-center"><Icon className="mx-auto text-muted-foreground"/><h3 className="mt-4 font-semibold">{title}</h3><p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{text}</p></div>;
+function Empty({ title, text }: { title: string; text: string }) {
+  return <EmptyState pose="sleep" title={title} text={text}/>;
 }

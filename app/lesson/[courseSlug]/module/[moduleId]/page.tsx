@@ -5,6 +5,7 @@ import { ModuleOverview } from "@/components/lesson/module-overview";
 import { coreMathCourse } from "@/lib/learning/course-catalog";
 import { getLessonProgress } from "@/lib/data/lesson-progress";
 import { getCourseCatalog } from "@/lib/data/course-catalog";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 type ModulePageProps = { params: Promise<{ courseSlug: string; moduleId: string }> };
 
@@ -21,5 +22,5 @@ export default async function ModulePage({ params }: ModulePageProps) {
   const [{ progress }, course] = await Promise.all([getLessonProgress(`/lesson/${courseSlug}/module/${moduleId}`), getCourseCatalog()]);
   const main = course.modules.find((item) => item.id === moduleId);
   if (!main) notFound();
-  return <><Navbar/><ModuleOverview progress={progress} course={course} main={main}/></>;
+  return <><Navbar/><ModuleOverview progress={progress} course={course} main={main}/><SiteFooter/></>;
 }

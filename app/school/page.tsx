@@ -57,12 +57,12 @@ export default async function SchoolPage({ searchParams }: { searchParams: Promi
                   <form action={reviewTeacher}>
                     <input type="hidden" name="teacherId" value={teacher.id}/>
                     <input type="hidden" name="status" value="approved"/>
-                    <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white"><Check size={16} aria-hidden="true"/>Зөвшөөрөх</button>
+                    <button className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-white"><Check size={16} aria-hidden="true"/>Зөвшөөрөх</button>
                   </form>
                   <form action={reviewTeacher}>
                     <input type="hidden" name="teacherId" value={teacher.id}/>
                     <input type="hidden" name="status" value="rejected"/>
-                    <button className="inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold text-red-700 hover:bg-red-50"><X size={16} aria-hidden="true"/>Татгалзах</button>
+                    <button className="inline-flex h-10 items-center gap-2 rounded-full border-2 px-4 text-sm font-semibold text-red-700 hover:bg-red-50"><X size={16} aria-hidden="true"/>Татгалзах</button>
                   </form>
                 </div>
               </div>

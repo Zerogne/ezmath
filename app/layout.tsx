@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter, Noto_Serif, Onest } from "next/font/google";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
@@ -24,6 +25,10 @@ export const metadata: Metadata = {
   },
 };
 
+const onest = Onest({ subsets: ["latin", "cyrillic"], weight: ["300", "400", "500", "600", "700"], variable: "--font-onest", display: "swap" });
+const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-inter", display: "swap" });
+const notoSerif = Noto_Serif({ subsets: ["latin", "cyrillic"], weight: ["400"], variable: "--font-noto-serif", display: "swap" });
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="mn"><body>{children}</body></html>;
+  return <html lang="mn" className={`${onest.variable} ${inter.variable} ${notoSerif.variable}`}><body>{children}</body></html>;
 }

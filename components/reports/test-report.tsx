@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { loadCompletedAttempt } from "@/lib/exam/session-storage";
 import type { CompletedAttempt, StudentQuestion, Test } from "@/types/exam";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function TestReport({ test, questions }: { test: Test; questions: StudentQuestion[] }) {
   const [attempt, setAttempt] = useState<CompletedAttempt | null | undefined>(undefined);
@@ -15,7 +16,7 @@ export function TestReport({ test, questions }: { test: Test; questions: Student
     setAttempt(loadCompletedAttempt(test.id));
   }, [test.id]);
   if (attempt === undefined) return <div className="h-80 animate-pulse rounded-2xl bg-muted"/>;
-  if (!attempt) return <div className="rounded-2xl border bg-white p-10 text-center"><h1 className="text-xl font-bold">Тайлан олдсонгүй</h1><p className="mt-2 text-sm text-muted-foreground">Энэ шалгалтыг дуусгасны дараа дэлгэрэнгүй тайлан үүснэ.</p><ButtonLink href={`/tests/${test.id}`} className="mt-6">Шалгалт руу очих</ButtonLink></div>;
+  if (!attempt) return <EmptyState heading="h1" pose="read" title="Тайлан олдсонгүй" text="Энэ шалгалтыг дуусгасны дараа дэлгэрэнгүй тайлан үүснэ." action={<ButtonLink href={`/tests/${test.id}`}>Шалгалт руу очих</ButtonLink>}/>;
   const result = attempt.result;
   return <>
     <Link href={`/tests/${test.id}/result`} className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft size={16}/>Үр дүн рүү буцах</Link>

@@ -6,6 +6,7 @@ import { TestCard } from "@/components/home/test-card";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { ExamType, Test, TestType } from "@/types/exam";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type ExamFilter = "ALL" | ExamType;
 type SortOrder = "newest" | "oldest";
@@ -59,6 +60,6 @@ export function TestFilter({ tests, initialExam = "ALL" }: { tests: Test[]; init
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-    {filtered.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((test) => <TestCard key={test.id} test={test}/>)}</div> : <div className="mt-5 rounded-xl border border-dashed bg-white py-16 text-center"><p className="font-semibold">Шалгалт олдсонгүй</p><p className="mt-1 text-sm text-muted-foreground">Шүүлтүүрээ өөрчилж дахин оролдоно уу.</p></div>}
+    {filtered.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((test) => <TestCard key={test.id} test={test}/>)}</div> : <EmptyState className="mt-5" pose="think" title="Шалгалт олдсонгүй" text="Шүүлтүүрээ өөрчилж дахин оролдоно уу."/>}
   </>;
 }

@@ -13,7 +13,7 @@ export function ModuleOverview({ progress, course, main }: { progress: LessonPro
   const nextLesson = lessons.find((item) => item.id === recentId) ?? lessons.find((item) => !completed.has(item.id));
   const mainIndex = course.modules.findIndex((item) => item.id === main.id);
 
-  return <main className="min-h-screen bg-[#f5f6fa] text-[#111735]">
+  return <main className="min-h-screen bg-[#F7F8FC] text-[#0B1030]">
     <section className="bg-[#0b102e] text-white">
       <div className="container-page py-10 md:py-14">
         <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-sm text-slate-400">
@@ -58,7 +58,7 @@ function SubmoduleCard({ sub, label, completed, courseSlug }: { sub: CourseModul
   const empty = sub.lessons.length === 0;
   const done = !empty && count === sub.lessons.length;
   const started = count > 0;
-  return <section id={sub.id} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-white ${started && !done ? "border-[#8057eb] ring-1 ring-[#8057eb]" : "border-[#e1e4ec]"}`}>
+  return <section id={sub.id} className={`scroll-mt-24 overflow-hidden rounded-[22px] border-2 bg-white ${started && !done ? "border-[#8057eb] ring-1 ring-[#8057eb]" : "border-[#e1e4ec]"}`}>
     <div className="flex items-center gap-4 p-5 sm:p-6">
       <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-semibold ${done ? "bg-[#8057eb] text-white" : "bg-[#eee9ff] text-[#8057eb]"}`}>{done ? <Check size={18}/> : label}</span>
       <div className="min-w-0 flex-1"><h2 className="font-semibold sm:text-lg">{sub.title}</h2>{sub.description && <p className="mt-1 text-sm text-slate-500">{sub.description}</p>}</div>

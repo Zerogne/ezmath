@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, BookOpen, CreditCard, GraduationCap, LayoutDashboard, LibraryBig, School, Users } from "lucide-react";
+import { Logo } from "@/components/layout/logo";
 import {
   Sidebar,
   SidebarContent,
@@ -29,9 +30,8 @@ export function AdminSidebar() {
   const closeOnNavigate = () => { if (isMobile) setOpenMobile(false); };
   return (
     <Sidebar collapsible="offcanvas" className="border-r">
-      <SidebarHeader className="border-b px-5 py-[18px]">
-        <Link href="/admin" className="text-base font-bold"><span className="text-primary">Ez</span>Math</Link>
-        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[.18em] text-muted-foreground">Admin</p>
+      <SidebarHeader className="border-b px-4 py-3.5">
+        <div className="flex items-center gap-2"><Logo href="/admin" size={34} className="text-lg"/><span className="rounded-md bg-[#F1F3F8] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[.14em] text-[#5B6275]">Admin</span></div>
       </SidebarHeader>
       <SidebarContent>
         {groups.map((group) => (
@@ -43,7 +43,7 @@ export function AdminSidebar() {
                   const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
                   return (
                     <SidebarMenuItem key={href}>
-                      <SidebarMenuButton asChild isActive={active} className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold">
+                      <SidebarMenuButton asChild isActive={active} className="rounded-xl data-[active=true]:bg-[#E8EEFF] data-[active=true]:font-semibold data-[active=true]:text-[#2B4BE8]">
                         <Link href={href} onClick={closeOnNavigate}><Icon size={17} />{label}</Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

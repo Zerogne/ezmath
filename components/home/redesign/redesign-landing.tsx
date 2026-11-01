@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Suspense, type CSSProperties, type ReactNode } from "react";
-import { ArrowRight, Check, Clock3, Menu, Plus, TrendingUp } from "lucide-react";
-import { getIdentity, ProfileMenu } from "@/components/layout/navbar";
+import type { CSSProperties, ReactNode } from "react";
+import { ArrowRight, Check, Clock3, Plus, TrendingUp } from "lucide-react";
+import { Navbar } from "@/components/layout/navbar";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { HeroCarousel } from "@/components/home/redesign/hero-carousel";
 import { Cloud, Ezi, ObjectArt, ProductScene, Squiggle, type EziPose, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { CountUp, ScrollMotion } from "@/components/home/redesign/scroll-motion";
@@ -10,9 +11,9 @@ import "@/components/home/redesign/redesign.css";
 const INK = "#0B1030";
 const BLUE = "#2B4BE8";
 const delay = (seconds: number) => ({ "--d": `${seconds}s` }) as CSSProperties;
-const container = "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-[112px]";
-const btnDark = "inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#0B1030] px-[26px] text-[17px] font-medium text-white transition hover:-translate-y-0.5 hover:bg-[#1A2150]";
-const btnOutline = "inline-flex h-[52px] items-center justify-center gap-2 rounded-full border-2 border-[#E3E6EF] bg-white px-[26px] text-[17px] font-medium text-[#5B6275] transition hover:border-[#C9CDDA] hover:text-[#0B1030]";
+const container = "container-page";
+const btnDark = "btn-dark";
+const btnOutline = "btn-outline";
 const muted = "text-[#5B6275]";
 
 const steps = [
@@ -32,12 +33,11 @@ const topicChart = [["Алгебр", 86, "#22C55E"], ["Функц", 72, "#22C55E
 const heat = ["#E8EEFF", "#B9C9FF", "#4C6FFF", "#2B4BE8", "#E8EEFF", "#7F98FF", "#2B4BE8"];
 const moreFeatures: [ObjectKind, string, string][] = [["bulb", "#FFF6CC", "Томъёоны сан"], ["calculator", "#E8EEFF", "Оноо тооцоолуур"], ["pencil", "#FFE4E4", "Алдааны дэвтэр"], ["stopwatch", "#FFF0E6", "Цагтай сорил"], ["gradcap", "#E8EEFF", "Ангийн шалгалт"], ["laptop", "#F1F3F8", "PDF материал"], ["chart", "#FFE4EF", "Ахицын тайлан"], ["notebook", "#EFE6FF", "Онолын хичээл"], ["target", "#FFE4E4", "Зорилтот оноо"], ["flame", "#FFF0E6", "Өдрийн цуврал"], ["protractor", "#EFE6FF", "Геометрийн зураг"], ["scorecard", "#FFF6CC", "Багшийн самбар"]];
 const faqs = ["EzMath үнэгүй юу?", "ЭЕШ-ийн аль онуудын бодлого багтсан бэ?", "SAT-д бэлдэхэд тохирох уу?", "Сургууль, багш нар хэрхэн ашиглах вэ?", "Гар утсан дээр ажилладаг уу?", "Төлбөрөө хэрхэн төлөх вэ?"];
-const footerGroups = [["Хөтөлбөр", [["ЭЕШ Математик", "/tests?exam=EYESH"], ["SAT Math", "/tests?exam=SAT"], ["Онолын хичээл", "/lesson"]]], ["Платформ", [["Шалгалтууд", "/tests"], ["Үнийн багц", "/pricing"]]], ["Бүртгэл", [["Нэвтрэх", "/login"], ["Бүртгүүлэх", "/register"], ["Сурагчийн хэсэг", "/dashboard"]]]] as const;
 
 export function RedesignLanding() {
   return <div className="rd">
     <ScrollMotion/>
-    <Nav/>
+    <Navbar bordered={false}/>
     <main>
       <Hero/>
       <Steps/>
@@ -49,36 +49,8 @@ export function RedesignLanding() {
       <Faq/>
       <ClosingCta/>
     </main>
-    <Footer/>
+    <SiteFooter/>
   </div>;
-}
-
-function Logo() { return <Link href="/" className="rd-display flex items-center gap-2 text-2xl font-bold"><Ezi size={46}/>EzMath</Link>; }
-
-const navLinks = [["ЭЕШ", "/tests?exam=EYESH"], ["SAT", "/tests?exam=SAT"], ["Онолын хичээл", "/lesson"], ["Үнэ", "/pricing"]] as const;
-
-function NavLinks() {
-  return <>{navLinks.map(([label, href]) => <Link key={href} href={href} className="rounded-lg px-3 py-2 hover:bg-[#F1F3F8] lg:p-0 lg:hover:bg-transparent">{label}{href === "/lesson" && <span className="ml-1.5 rounded-full bg-[#2B4BE8] px-[7px] py-0.5 align-[2px] text-[10px] font-semibold text-white">Шинэ</span>}</Link>)}</>;
-}
-
-async function Account() {
-  const identity = await getIdentity();
-  if (identity) return <ProfileMenu identity={identity}/>;
-  return <div className="flex gap-2"><Link href="/login" className="rounded-[10px] bg-[#F1F3F8] px-3.5 py-2 text-sm font-medium text-[#5B6275]">Нэвтрэх</Link><Link href="/register" className="rounded-[10px] bg-[#0B1030] px-3.5 py-2 text-sm font-medium text-white">Бүртгүүлэх</Link></div>;
-}
-
-const accountFallback = <span className="block h-10 w-40 animate-pulse rounded-xl bg-[#F1F3F8]"/>;
-
-function Nav() {
-  return <header className="sticky top-0 z-40 bg-white/95 backdrop-blur"><div className={`${container} flex h-[72px] items-center gap-10`}>
-    <Logo/>
-    <nav className="ml-auto hidden items-center gap-8 text-[15px] font-medium text-[#333A4D] lg:flex" aria-label="Үндсэн цэс"><NavLinks/></nav>
-    <div className="hidden lg:block"><Suspense fallback={accountFallback}><Account/></Suspense></div>
-    <details className="group ml-auto lg:hidden">
-      <summary className="list-none rounded-lg p-2 [&::-webkit-details-marker]:hidden" aria-label="Цэс нээх"><Menu/></summary>
-      <div className="absolute inset-x-0 top-[72px] border-t border-[#EEF0F6] bg-white shadow-lg"><nav className={`${container} grid gap-1 py-3 text-[15px] font-medium text-[#333A4D]`} aria-label="Гар утасны цэс"><NavLinks/><div className="mt-2 border-t border-[#EEF0F6] pt-3"><Suspense fallback={accountFallback}><Account/></Suspense></div></nav></div>
-    </details>
-  </div></header>;
 }
 
 function Hero() {
@@ -250,14 +222,4 @@ function ClosingCta() {
     </div>
     <ProductScene/>
   </section>;
-}
-
-function Footer() {
-  return <footer className={`${container} border-t-2 border-[#EEF0F6] pb-10 pt-[72px]`}>
-    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.6fr_repeat(3,1fr)]">
-      <div><Logo/><p className={`mt-4 max-w-[280px] text-sm leading-relaxed ${muted}`}>Монгол сурагчдад зориулсан математикийн бэлтгэлийн платформ. Улаанбаатар, Монгол.</p></div>
-      {footerGroups.map(([heading, links]) => <nav key={heading} aria-label={heading}><p className="text-sm font-semibold">{heading}</p>{links.map(([label, href]) => <Link key={label} href={href} className={`mt-3.5 block text-sm ${muted} hover:text-[#0B1030]`}>{label}</Link>)}</nav>)}
-    </div>
-    <p className={`mt-14 border-t-2 border-[#EEF0F6] pt-6 text-[13px] ${muted}`}>© 2026 EzMath LLC. Бүх эрх хуулиар хамгаалагдсан.</p>
-  </footer>;
 }

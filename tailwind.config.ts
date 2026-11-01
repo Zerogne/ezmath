@@ -6,6 +6,11 @@ const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: ['var(--font-inter)', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			display: ['var(--font-onest)', 'var(--font-inter)', 'ui-sans-serif', 'sans-serif'],
+  			serif: ['var(--font-noto-serif)', 'Georgia', 'serif']
+  		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
@@ -38,13 +43,15 @@ const config: Config = {
   			}
   		},
   		borderRadius: {
+  			'3xl': '1.75rem',
+  			'2xl': '1.375rem',
   			xl: '0.875rem',
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		boxShadow: {
-  			soft: '0 8px 30px rgba(28, 36, 31, 0.06)'
+  			soft: '0 18px 40px -20px rgba(11, 16, 48, 0.22)'
   		},
   		keyframes: {
   			'accordion-down': {
