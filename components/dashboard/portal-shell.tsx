@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { BarChart3, BookOpen, CircleHelp, ClipboardCheck, Home, Settings, Target, Users } from "lucide-react";
+import { BarChart3, BookOpen, ClipboardCheck, Home, Settings, Target, Users } from "lucide-react";
 import { AppPortalShell } from "@/components/dashboard/app-portal-shell";
 import { StudentMobileNav } from "@/components/dashboard/student-mobile-nav";
 
 const items = [
   ["Хяналтын самбар", "/dashboard", Home], ["Миний хичээлүүд", "/dashboard/courses", BookOpen],
   ["Дасгал", "/dashboard/exercises", Target], ["Сорил & шалгалт", "/dashboard/exams", ClipboardCheck],
-  ["Явцын тайлан", "/dashboard/progress", BarChart3], ["Багшаас асуух", "/dashboard/ask", CircleHelp],
+  ["Явцын тайлан", "/dashboard/progress", BarChart3],
   ["Миний анги", "/dashboard/classes", Users],
   ["Тохиргоо", "/dashboard/settings", Settings],
 ] as const;
