@@ -20,7 +20,7 @@ const steps: { title: string; text: string; art: ObjectKind; bg: string; tilt: n
   { title: "Өөрийгөө шалгах", text: "Өөр утга, эсрэг нөхцөл дээр туршиж, хариугаа нягтална.", art: "target", bg: "#E9FBF2", tilt: -4 },
 ];
 
-type Ctx = { completed: Set<string>; nextId?: string; slug: string; href: (lesson: Lesson) => string };
+export type Ctx = { completed: Set<string>; nextId?: string; slug: string; href: (lesson: Lesson) => string };
 
 export function CourseOverview({ progress, course }: { progress: LessonProgress[]; course: Course }) {
   const completed = new Set(progress.filter((item) => item.completed_at).map((item) => item.lesson_id));
@@ -186,12 +186,12 @@ function MainModuleSection({ main, index, ctx }: { main: CourseMainModule; index
   </section>;
 }
 
-function Ring({ value }: { value: number }) {
+export function Ring({ value }: { value: number }) {
   const r = 18, c = 2 * Math.PI * r;
   return <svg width="44" height="44" viewBox="0 0 44 44" className="shrink-0 -rotate-90" aria-hidden><circle cx="22" cy="22" r={r} fill="none" stroke="#EEF0F6" strokeWidth="5"/><circle cx="22" cy="22" r={r} fill="none" stroke="#7C4DEB" strokeWidth="5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - value)}/></svg>;
 }
 
-function SubmoduleCard({ sub, index, ctx }: { sub: CourseModule; index: number; ctx: Ctx }) {
+export function SubmoduleCard({ sub, index, ctx }: { sub: CourseModule; index: number; ctx: Ctx }) {
   const [art, bg] = submoduleArt[index % submoduleArt.length];
   const count = sub.lessons.filter((item) => ctx.completed.has(item.id)).length;
   const empty = sub.lessons.length === 0;
