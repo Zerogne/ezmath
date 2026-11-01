@@ -10,10 +10,14 @@ import type { Difficulty, ExamType } from "@/types/exam";
  * `\answer{...}` or `\answer[label]{...}` for written answers (alternatives separated by `;` or `|`),
  * `\topic{}`, `\difficulty{}`, `\explanation{}` or a `solution` environment.
  * A separate key can be given anywhere as `\answers{1-B, 2-D, 3-0,75|3/4}`.
+ * `\includegraphics{...}` in the question or inside a `\choice` becomes that question's or choice's image:
+ * an https URL is used as is, a file name is returned in `images` so the uploaded file can be attached.
  */
 
 export type LatexImportIssue = { level: "error" | "warning"; message: string };
-export type ParsedLatexQuestion = { number: number; question: MaterialQuestion; issues: LatexImportIssue[] };
+/** An image referenced by file name; `target` is "question" or the choice label it belongs to. */
+export type LatexImageRef = { target: string; source: string };
+export type ParsedLatexQuestion = { number: number; question: MaterialQuestion; issues: LatexImportIssue[]; images: LatexImageRef[] };
 export type LatexImportResult = { questions: ParsedLatexQuestion[]; issues: LatexImportIssue[] };
 
 const labels = ["A", "B", "C", "D", "E"];
@@ -136,6 +140,14 @@ function parseAnswerKey(raw: string) {
   return key;
 }
 
+const isImageUrl = (value: string) => /^https:\/\/\S+$/i.test(value);
+
+/** One image per question or choice: keeps the first `\includegraphics` and warns about the rest. */
+function pickImage(found: { argument: string }[], where: string, issues: LatexImportIssue[]) {
+  if (found.length > 1) issues.push({ level: "warning", message: `${where}: нэгээс олон зураг байна — эхнийхийг авлаа.` });
+  return found[0]?.argument;
+}
+
 const splitAlternatives = (value: string) => value.split(/[;|]/).map((answer) => answer.trim()).filter(Boolean);
 
 function parseQuestion(block: string, number: number, keyAnswer: string | undefined, examType: ExamType): ParsedLatexQuestion {
@@ -153,12 +165,13 @@ function parseQuestion(block: string, number: number, keyAnswer: string | undefi
   const answerCommand = takeCommand(source, "answer");
   source = answerCommand.source;
 
-  const graphics = takeCommand(source, "includegraphics");
-  source = graphics.source;
-  if (graphics.found.length) issues.push({ level: "warning", message: "Зураг (\\includegraphics) хуулагдахгүй — editor дотор зургаа оруулна уу." });
-
   const environment = source.match(choiceEnvironments);
   source = source.replace(choiceEnvironments, "");
+  const images: LatexImageRef[] = [];
+  const graphics = takeCommand(source, "includegraphics");
+  source = graphics.source;
+  const questionImage = pickImage(graphics.found, "Асуулт", issues);
+  if (questionImage && !isImageUrl(questionImage)) images.push({ target: "question", source: questionImage });
   if (choiceEnvironments.test(source)) issues.push({ level: "warning", message: "Нэгээс олон choices орчин байна — эхнийхийг л авлаа." });
 
   const maxChoices = examType === "SAT" ? 4 : 5;
@@ -174,9 +187,12 @@ function parseQuestion(block: string, number: number, keyAnswer: string | undefi
         if (correctAnswer) issues.push({ level: "warning", message: `Хэд хэдэн \\CorrectChoice байна — ${correctAnswer}-г авлаа.` });
         else correctAnswer = label;
       }
-      const text = tidy(items[index + 1]);
+      const choiceGraphics = takeCommand(items[index + 1], "includegraphics");
+      const choiceImage = pickImage(choiceGraphics.found, `${label} сонголт`, issues);
+      if (choiceImage && !isImageUrl(choiceImage)) images.push({ target: label, source: choiceImage });
+      const text = tidy(choiceGraphics.source);
       checkLatex(text, `${label} сонголт`, issues);
-      choices.push({ id: crypto.randomUUID(), label, text, imageUrl: "" });
+      choices.push({ id: crypto.randomUUID(), label, text, imageUrl: choiceImage && isImageUrl(choiceImage) ? choiceImage : "" });
     }
   }
 
@@ -222,10 +238,11 @@ function parseQuestion(block: string, number: number, keyAnswer: string | undefi
   return {
     number,
     issues,
+    images,
     question: {
       id: crypto.randomUUID(),
       text,
-      imageUrl: "",
+      imageUrl: questionImage && isImageUrl(questionImage) ? questionImage : "",
       questionType,
       responseFields,
       choices,

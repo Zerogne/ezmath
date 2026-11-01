@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getAdminIdentity } from "@/lib/admin/auth";
 import type { MaterialEditorData, MaterialQuestion } from "@/lib/admin/material-types";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { ensureImageBucket } from "@/lib/admin/question-images";
 import type { ExamType, TestType } from "@/types/exam";
 
 export const runtime = "nodejs";
@@ -261,22 +261,6 @@ function imageRegions(raw: Record<string, unknown>) {
 
 function validBox(value: unknown): value is number[] {
   return Array.isArray(value) && value.length === 4 && value.every((item) => typeof item === "number" && item >= 0 && item <= 1) && value[0] < value[2] && value[1] < value[3];
-}
-
-async function ensureImageBucket() {
-  const admin = createAdminClient();
-  const { data } = await admin.storage.getBucket("exam-question-images");
-  if (data) {
-    await admin.storage.updateBucket("exam-question-images", { public: true, allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"], fileSizeLimit: 10 * 1024 * 1024 });
-    return admin;
-  }
-  const { error } = await admin.storage.createBucket("exam-question-images", {
-    public: true,
-    allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"],
-    fileSizeLimit: 10 * 1024 * 1024,
-  });
-  if (error && !error.message.toLowerCase().includes("already")) throw new Error("Асуултын зургийн санг үүсгэж чадсангүй.");
-  return admin;
 }
 
 async function extractAndUploadImages(request: Request, file: File, raw: Record<string, unknown>) {
