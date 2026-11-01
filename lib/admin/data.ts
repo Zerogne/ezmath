@@ -135,27 +135,84 @@ export async function getAdminStudent(studentId: string) {
   return toStudents([profile], authUser ? [authUser] : [], attempts)[0];
 }
 
+/** Payments still waiting on the provider, for the sidebar badge. */
+export async function countPendingPayments() {
+  return asAdmin(count("/rest/v1/payment_orders?status=in.(pending,checkout_created)")).catch(() => 0);
+}
+
+const DAY = 86_400_000;
+const dayKey = (value: string | Date) => new Date(value).toISOString().slice(0, 10);
+const shortDate = (value: string) => { const date = new Date(value); return `${String(date.getUTCMonth() + 1).padStart(2, "0")}.${String(date.getUTCDate()).padStart(2, "0")}`; };
+const planName = (code: string) => code === "mentor_monthly" ? "Ментор+" : code === "standard_monthly" ? "Стандарт" : code;
+/** t***n@gmail.com: enough to recognise an account without showing the address. */
+const maskEmail = (email: string) => { const [user, domain] = email.split("@"); return domain && user ? `${user[0]}***${user.length > 1 ? user.at(-1) : ""}@${domain}` : email; };
+
 export async function getAdminDashboardData() {
+  const now = Date.now();
   const monthStart = new Date();
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
-  const [studentCount, newThisMonth, satMaterials, eyeshMaterials, paidPayments, recentProfiles] = await asAdmin(Promise.all([
+  const sixtyDaysAgo = new Date(now - 60 * DAY).toISOString();
+  const sixMonthsAgo = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - 5, 1)).toISOString();
+  const [studentCount, newThisMonth, satMaterials, satFullMocks, eyeshMaterials, eyeshYears, paidPayments, recentProfiles, signups, recentOrders, subscriptions, schools, pendingPayments] = await asAdmin(Promise.all([
     count("/rest/v1/profiles?role=eq.student"),
     count(`/rest/v1/profiles?role=eq.student&created_at=gte.${encodeURIComponent(monthStart.toISOString())}`),
     count("/rest/v1/tests?exam_type=eq.SAT"),
+    count("/rest/v1/tests?exam_type=eq.SAT&test_type=eq.full"),
     count("/rest/v1/tests?exam_type=eq.EYESH"),
-    request<{ amount_mnt: number }[]>("/rest/v1/payment_orders?select=amount_mnt&status=eq.paid"),
-    request<ProfileRow[]>("/rest/v1/profiles?select=id,full_name,role,created_at&role=eq.student&order=created_at.desc&limit=5"),
+    request<{ year: number | null }[]>("/rest/v1/tests?select=year&exam_type=eq.EYESH&year=not.is.null&order=year.asc"),
+    request<{ amount_mnt: number; plan_code: string; paid_at: string | null; created_at: string }[]>(`/rest/v1/payment_orders?select=amount_mnt,plan_code,paid_at,created_at&status=eq.paid`),
+    request<(ProfileRow & { school_id: string | null })[]>("/rest/v1/profiles?select=id,full_name,role,created_at,school_id&role=eq.student&order=created_at.desc&limit=5"),
+    request<{ created_at: string }[]>(`/rest/v1/profiles?select=created_at&role=eq.student&created_at=gte.${encodeURIComponent(sixtyDaysAgo)}`),
+    request<PaymentOrderRow[]>("/rest/v1/payment_orders?select=id,user_id,plan_code,amount_mnt,status,provider_checkout_id,payment_method,paid_at,created_at&order=created_at.desc&limit=4"),
+    request<{ user_id: string; plan_code: string }[]>("/rest/v1/student_subscriptions?select=user_id,plan_code&status=in.(trialing,active)"),
+    request<{ id: string; name: string }[]>("/rest/v1/schools?select=id,name"),
+    count("/rest/v1/payment_orders?status=in.(pending,checkout_created)"),
   ]));
-  const recentAuthUsers = await Promise.all(recentProfiles.map((profile) => request<AuthUser>(`/auth/v1/admin/users/${profile.id}`).catch(() => undefined)));
+  const people = [...new Set([...recentProfiles.map((profile) => profile.id), ...recentOrders.map((order) => order.user_id)])];
+  const [authUsers, orderProfiles] = await Promise.all([
+    Promise.all(people.map((id) => request<AuthUser>(`/auth/v1/admin/users/${id}`).catch(() => undefined))),
+    recentOrders.length ? request<ProfileRow[]>(`/rest/v1/profiles?select=id,full_name,role,created_at&id=in.(${recentOrders.map((order) => order.user_id).join(",")})`) : Promise.resolve([] as ProfileRow[]),
+  ]);
+  const emailById = new Map(authUsers.filter((user): user is AuthUser => Boolean(user)).map((user) => [user.id, user.email ?? "—"]));
+  const schoolById = new Map(schools.map((school) => [school.id, school.name]));
+  const planByUser = new Map(subscriptions.map((subscription) => [subscription.user_id, subscription.plan_code]));
+  const nameById = new Map([...recentProfiles, ...orderProfiles].map((profile) => [profile.id, profile.full_name ?? "Нэргүй сурагч"]));
+
+  // Daily signups for the last 30 days, and the 30 days before for the trend.
+  const daily = Array.from({ length: 30 }, (_, index) => ({ day: dayKey(new Date(now - (29 - index) * DAY)), count: 0 }));
+  const dailyIndex = new Map(daily.map((item, index) => [item.day, index]));
+  let previous = 0;
+  for (const signup of signups) {
+    const index = dailyIndex.get(dayKey(signup.created_at));
+    if (index !== undefined) daily[index].count += 1;
+    else if (new Date(signup.created_at).getTime() < now - 29 * DAY) previous += 1;
+  }
+  const lastThirty = daily.reduce((sum, item) => sum + item.count, 0);
+
+  // Paid revenue per month for the last six months, split by plan.
+  const months = Array.from({ length: 6 }, (_, index) => { const date = new Date(sixMonthsAgo); date.setUTCMonth(date.getUTCMonth() + index); return { key: date.toISOString().slice(0, 7), label: `${date.getUTCMonth() + 1}-р`, standard: 0, mentor: 0 }; });
+  const monthIndex = new Map(months.map((month, index) => [month.key, index]));
+  for (const payment of paidPayments) {
+    const index = monthIndex.get((payment.paid_at ?? payment.created_at).slice(0, 7));
+    if (index === undefined) continue;
+    if (payment.plan_code === "mentor_monthly") months[index].mentor += payment.amount_mnt; else months[index].standard += payment.amount_mnt;
+  }
+
   return {
     studentCount,
     newThisMonth,
     satMaterials,
+    satFullMocks,
     eyeshMaterials,
+    eyeshYearRange: eyeshYears.length ? `${eyeshYears[0].year}–${eyeshYears.at(-1)!.year} он` : "",
     paidRevenueMnt: paidPayments.reduce((sum, payment) => sum + payment.amount_mnt, 0),
     paidCount: paidPayments.length,
-    recentStudents: toStudents(recentProfiles, recentAuthUsers.filter((user): user is AuthUser => Boolean(user)), []),
+    pendingPayments,
+    signups: { daily, total: lastThirty, change: previous ? Math.round((lastThirty - previous) / previous * 100) : null },
+    revenueByMonth: months,
+    recentStudents: recentProfiles.map((profile) => ({ id: profile.id, name: profile.full_name ?? "Нэргүй сурагч", email: maskEmail(emailById.get(profile.id) ?? "—"), school: profile.school_id ? schoolById.get(profile.school_id) ?? "—" : "—", plan: planByUser.get(profile.id) ?? "free", joined: shortDate(profile.created_at) })),
+    recentPayments: recentOrders.map((order) => ({ id: order.id, name: nameById.get(order.user_id) ?? "Нэргүй сурагч", plan: planName(order.plan_code), amountMnt: order.amount_mnt, status: order.status, at: order.paid_at ?? order.created_at })),
   };
 }
 

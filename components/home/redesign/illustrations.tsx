@@ -20,8 +20,8 @@ export function ObjectArt({ kind, size = 84 }: { kind: ObjectKind; size?: number
 }
 
 /** Hand-drawn underline that draws itself in when its heading scrolls into view. */
-export function Squiggle({ children }: { children: ReactNode }) {
-  return <span className="rd-sq" data-rv-sq>{children}<svg className="rd-sq-line" viewBox="0 0 240 14" preserveAspectRatio="none" fill="none" aria-hidden><path d="M3 9 C 40 3, 70 12, 110 7 S 180 3, 237 8" stroke="#2B4BE8" strokeWidth="5" strokeLinecap="round" pathLength={1}/></svg></span>;
+export function Squiggle({ children, color = "#2B4BE8" }: { children: ReactNode; color?: string }) {
+  return <span className="rd-sq" data-rv-sq>{children}<svg className="rd-sq-line" viewBox="0 0 240 14" preserveAspectRatio="none" fill="none" aria-hidden><path d="M3 9 C 40 3, 70 12, 110 7 S 180 3, 237 8" stroke={color} strokeWidth="5" strokeLinecap="round" pathLength={1}/></svg></span>;
 }
 
 export function Cloud({ className, style }: { className?: string; style?: CSSProperties }) {

@@ -1,8 +1,8 @@
-import Link from "next/link";
-import { BookOpen, CreditCard, GraduationCap, Users } from "lucide-react";
-import { AdminPageHeader } from "@/components/admin/page-header";
-import { AdminStatCard } from "@/components/admin/stat-card";
-import { AdminTable } from "@/components/admin/data-table";
+import { AdminDashboard } from "@/components/admin/admin-dashboard";
 import { getAdminDashboardData } from "@/lib/admin/data";
-export default async function AdminDashboardPage() { const data = await getAdminDashboardData(); return <><AdminPageHeader title="Dashboard" description="EzMath платформын бодит мэдээлэл"/><div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><AdminStatCard label="Нийт сурагч" value={`${data.studentCount}`} icon={Users} note={`+${data.newThisMonth} энэ сард`}/><AdminStatCard label="SAT материал" value={`${data.satMaterials}`} icon={BookOpen}/><AdminStatCard label="ЭЕШ материал" value={`${data.eyeshMaterials}`} icon={GraduationCap}/><AdminStatCard label="Төлбөрийн орлого" value={money(data.paidRevenueMnt)} icon={CreditCard} note={`${data.paidCount} амжилттай төлбөр`}/></div><section className="mt-8"><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Шинэ сурагчид</h2><Link href="/admin/students" className="text-sm font-semibold text-primary">Бүх сурагчийг харах</Link></div><AdminTable headers={["Сурагч", "Имэйл", "Бүртгүүлсэн"]}>{data.recentStudents.length ? data.recentStudents.map((student) => <tr key={student.id}><td className="px-4 py-3 font-medium">{student.name}</td><td className="px-4 py-3 text-muted-foreground">{student.email}</td><td className="px-4 py-3 text-muted-foreground">{student.joined}</td></tr>) : <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">Одоогоор сурагч бүртгэгдээгүй байна.</td></tr>}</AdminTable></section></>; }
-function money(value: number) { return new Intl.NumberFormat("mn-MN", { style: "currency", currency: "MNT", maximumFractionDigits: 0 }).format(value); }
+import { listAdminSchools } from "@/lib/admin/schools";
+
+export default async function AdminDashboardPage() {
+  const [data, schools] = await Promise.all([getAdminDashboardData(), listAdminSchools()]);
+  return <AdminDashboard data={data} schools={schools}/>;
+}
