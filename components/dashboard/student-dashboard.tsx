@@ -1,20 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, BookOpen, ClipboardCheck, Clock3, Home, Settings, Target, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, Clock3 } from "lucide-react";
 import type { StudentDashboardData } from "@/lib/data/student-dashboard";
-import { StudentMobileNav } from "@/components/dashboard/student-mobile-nav";
-import { Logo } from "@/components/layout/logo";
+import { PlanBadge, PortalShell } from "@/components/dashboard/portal-shell";
 import { Art, Ezi, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { joinClass } from "@/app/dashboard/classes/actions";
-
-const nav: { label: string; href: string; icon: LucideIcon; active?: boolean }[] = [
-  { label: "Хяналтын самбар", href: "/dashboard", icon: Home, active: true },
-  { label: "Миний хичээлүүд", href: "/dashboard/courses", icon: BookOpen },
-  { label: "Дасгал", href: "/dashboard/exercises", icon: Target },
-  { label: "Сорил & шалгалт", href: "/dashboard/exams", icon: ClipboardCheck },
-  { label: "Явцын тайлан", href: "/dashboard/progress", icon: BarChart3 },
-  { label: "Миний анги", href: "/dashboard/classes", icon: Users },
-  { label: "Тохиргоо", href: "/dashboard/settings", icon: Settings },
-] as const;
 
 const DAILY_GOAL = 20;
 const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
@@ -34,20 +23,12 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
   const nextTest = data.tests.find((test) => !attemptedIds.has(test.id)) ?? data.tests[0];
   const solvedToday = solvedTodayCount(attempts);
 
-  return <div className="min-h-screen bg-[#F6F7FB] pb-[calc(4rem+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[256px_minmax(0,1fr)] lg:pb-0">
-    <div className="hidden border-r-2 border-[#EEF0F6] bg-white lg:block"><aside className="sticky top-0 flex h-screen flex-col gap-1 px-4 py-[22px]">
-      <Logo size={40} className="px-2 pb-[18px] text-[22px] !font-bold"/>
-      <nav aria-label="Сурагчийн цэс" className="space-y-1">{nav.map(({ label, href, icon: Icon, active }) => <Link key={href} href={href} aria-current={active ? "page" : undefined} className={`flex items-center gap-3 rounded-xl px-3 py-[11px] text-sm ${active ? "bg-[#E8EEFF] font-semibold text-[#2B4BE8]" : "font-medium text-[#5B6275] hover:bg-[#F7F8FC] hover:text-[#0B1030]"}`}><Icon size={18}/>{label}</Link>)}</nav>
-      <SidebarPlanCard data={data}/>
-    </aside></div>
-    <div className="min-w-0">
-      <MobileHeader data={data}/>
-      <main className="mx-auto max-w-[1184px] p-4 sm:p-6 lg:px-9 lg:pb-10 lg:pt-7">
+  return <PortalShell active="/dashboard" plan={{ code: data.planCode, periodEnd: data.planExpiresAt }}>
         <header className="flex flex-wrap items-center gap-4">
           <div><h1 className="text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">Сайн уу, {firstName(data.name)} 👋</h1><p className="mt-1 text-[15px] text-[#5B6275]">Өнөөдрийн зорилт: {DAILY_GOAL} бодлого. Бэлтгэлээ үргэлжлүүлээрэй.</p></div>
           <div className="ml-auto hidden items-center gap-3 sm:flex">
             <div className="flex items-center gap-3 rounded-full border-2 border-[#EEF0F6] bg-white px-4 py-2.5"><GoalRing value={Math.min(1, solvedToday / DAILY_GOAL)}/><div><p className="text-sm font-semibold">{Math.min(solvedToday, 999)} / {DAILY_GOAL} бодлого</p><p className="text-xs text-[#5B6275]">Өнөөдрийн зорилт</p></div></div>
-            <Link href="/dashboard/settings" aria-label="Профайл болон тохиргоо" className="flex items-center gap-2.5 rounded-2xl border-2 border-[#EEF0F6] bg-white py-1.5 pl-1.5 pr-3.5 hover:border-[#C9CDDA]"><Avatar data={data}/><div><p className="max-w-32 truncate text-[13px] font-semibold">{firstName(data.name)}</p><PlanBadge planCode={data.planCode}/></div></Link>
+            <Link href="/dashboard/settings" aria-label="Профайл болон тохиргоо" className="flex items-center gap-2.5 rounded-2xl border-2 border-[#EEF0F6] bg-white py-1.5 pl-1.5 pr-3.5 hover:border-[#C9CDDA]"><Avatar data={data}/><div><p className="max-w-32 truncate text-[13px] font-semibold">{firstName(data.name)}</p><PlanBadge code={data.planCode}/></div></Link>
           </div>
         </header>
 
@@ -62,15 +43,10 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
           <div className="min-w-0 space-y-4"><NextExam test={nextTest}/><RecentTests attempts={recent}/><ActivityCard values={weekly}/></div>
           <div className="space-y-4"><WeakTopics attempts={attempts}/><JoinClassCard/><QuestionBankCard/></div>
         </div>
-      </main>
-    </div>
-    <StudentMobileNav active="/dashboard"/>
-  </div>;
+  </PortalShell>;
 }
 
-function MobileHeader({ data }: { data: StudentDashboardData }) { return <header className="flex h-16 items-center border-b-2 border-[#EEF0F6] bg-white px-4 lg:hidden"><Logo size={34} className="text-xl"/><Link href="/dashboard/settings" aria-label="Профайл болон тохиргоо" className="ml-auto flex min-h-11 items-center gap-2 rounded-xl px-2 hover:bg-[#F7F8FC]"><PlanBadge planCode={data.planCode}/><Settings aria-hidden="true" size={20} className="text-[#5B6275]"/></Link></header>; }
 function Avatar({ data }: { data: StudentDashboardData }) { return data.avatarUrl ? <span role="img" aria-label={`${data.name} профайл зураг`} className="h-10 w-10 rounded-[20px] bg-cover bg-center" style={{backgroundImage:`url(${JSON.stringify(data.avatarUrl)})`}}/> : <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-[20px] bg-[#FFE4EF]" aria-label={initials(data.name)}><Art name="friend-coral" size={40}/></span>; }
-function PlanBadge({ planCode }: { planCode: StudentDashboardData["planCode"] }) { const paid = planCode !== "free"; return <span className={`inline-flex items-center rounded-full px-2 py-px text-[10px] font-semibold ${paid ? "bg-[#DCFCE7] text-[#16A34A]" : "bg-[#F1F3F8] text-[#5B6275]"}`}>{planCode === "mentor_monthly" ? "Ментор+" : planCode === "standard_monthly" ? "Стандарт" : "Үнэгүй"}</span>; }
 
 function GoalRing({ value }: { value: number }) {
   const length = 2 * Math.PI * 14;
@@ -78,18 +54,6 @@ function GoalRing({ value }: { value: number }) {
 }
 
 /** Plan card with Эзи peeking over it, at the bottom of the sidebar. */
-function SidebarPlanCard({ data }: { data: StudentDashboardData }) {
-  const paid = data.planCode !== "free";
-  return <div className="relative mt-auto pt-14">
-    <Ezi pose="wave" size={76} className="absolute left-[132px] top-0"/>
-    <div className="rounded-[20px] bg-[#0B1030] p-[18px] text-white">
-      <div className="flex items-center justify-between"><p className="text-[13px] font-medium text-[#AEB4CC]">Таны багц</p>{paid && <span className="rounded-full bg-[rgba(52,211,153,0.18)] px-2.5 py-1 text-xs font-semibold text-[#6EE7B7]">● Идэвхтэй</span>}</div>
-      <p className="mt-1.5 font-display text-2xl font-medium tracking-[-0.03em]">{data.planCode === "mentor_monthly" ? "Ментор+" : paid ? "Стандарт" : "Үнэгүй"}</p>
-      <p className="mt-0.5 text-xs text-[#AEB4CC]">{paid ? data.planExpiresAt ? `${formatPlanDate(data.planExpiresAt)} хүртэл` : "Идэвхтэй эрх" : "Бүх сорил, тайлангаа нээгээрэй"}</p>
-      {data.planCode !== "mentor_monthly" && <Link href="/pricing" className="mt-3.5 flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-[#0B1030] hover:bg-[#EEF1FF]">{paid ? "Ментор+ болгох" : "Багц сонгох"}</Link>}
-    </div>
-  </div>;
-}
 
 function Kpi({ art, tile, label, value, note, positive = false }: { art: ObjectKind; tile: string; label: string; value: string; note: string; positive?: boolean }) {
   return <article className={`${card} flex items-center gap-3.5 p-4 sm:p-[22px]`}>
@@ -178,4 +142,3 @@ function currentStreak(attempts: StudentDashboardData["attempts"]) { const activ
 function localDateKey(date: Date) { return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`; }
 function firstName(name: string) { return name.trim().split(/\s+/)[0]; }
 function initials(name: string) { return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()).join("") || "С"; }
-function formatPlanDate(value: string) { return new Intl.DateTimeFormat("mn-MN", { year: "numeric", month: "short", day: "numeric", timeZone: "Asia/Ulaanbaatar" }).format(new Date(value)); }

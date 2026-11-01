@@ -1,8 +1,8 @@
 type Variant = "home" | "grid" | "course" | "progress" | "form" | "ask";
 
 export function PortalSkeleton({ variant = "home" }: { variant?: Variant }) {
-  return <div className="min-h-screen animate-pulse bg-[#f6f7fb] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
-    <aside className="hidden h-screen flex-col border-r bg-white px-4 py-5 lg:sticky lg:top-0 lg:flex"><div className="flex items-center gap-2.5 px-2 pb-4 pt-1"><Bone className="h-8 w-8 rounded-lg"/><Bone className="h-5 w-20"/></div><div className="mt-2 space-y-1">{Array.from({length:7},(_,i)=><div key={i} className="flex items-center gap-3 px-3 py-2.5"><Bone className="h-[17px] w-[17px] rounded"/><Bone className={`h-4 ${i%2?"w-28":"w-32"}`}/></div>)}</div><div className="mt-auto rounded-[14px] bg-[#0b1030] p-4"><Bone dark className="h-4 w-20"/><Bone dark className="mt-3 h-3 w-full"/><Bone dark className="mt-2 h-3 w-3/4"/><Bone dark className="mt-4 h-8 w-full rounded-lg"/></div></aside>
+  return <div className="min-h-screen animate-pulse bg-[#f6f7fb] lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
+    <aside className="hidden h-screen flex-col border-r-2 border-[#EEF0F6] bg-white px-4 py-5 lg:sticky lg:top-0 lg:flex"><div className="flex items-center gap-2.5 px-2 pb-4 pt-1"><Bone className="h-8 w-8 rounded-lg"/><Bone className="h-5 w-20"/></div><div className="mt-2 space-y-1">{Array.from({length:7},(_,i)=><div key={i} className="flex items-center gap-3 px-3 py-2.5"><Bone className="h-[17px] w-[17px] rounded"/><Bone className={`h-4 ${i%2?"w-28":"w-32"}`}/></div>)}</div><div className="mt-auto rounded-[14px] bg-[#0b1030] p-4"><Bone dark className="h-4 w-20"/><Bone dark className="mt-3 h-3 w-full"/><Bone dark className="mt-2 h-3 w-3/4"/><Bone dark className="mt-4 h-8 w-full rounded-lg"/></div></aside>
     <div className="min-w-0"><div className="flex h-16 items-center border-b bg-white px-4 lg:hidden"><Bone className="h-8 w-8 rounded-lg"/><Bone className="ml-2.5 h-5 w-20"/><Bone className="ml-auto h-9 w-9 rounded-lg"/></div><main className="mx-auto max-w-[1192px] p-4 sm:p-6 lg:p-8">{variant === "home" ? <HomeSkeleton/> : <SubpageSkeleton variant={variant}/>}</main></div>
   </div>;
 }
