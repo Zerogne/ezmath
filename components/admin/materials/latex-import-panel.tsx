@@ -123,19 +123,7 @@ export function LatexImportPanel({ examType, onImport, defaultOpen = false }: { 
       <Button type="button" variant="ghost" size="sm" onClick={() => setOpen((value) => !value)} aria-expanded={open}>{open ? "Хаах" : "Нээх"}<ChevronDown size={15} className={`transition ${open ? "rotate-180" : ""}`} /></Button>
     </CardHeader>
     {open && <CardContent className="space-y-4">
-      <details className="rounded-xl border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
-        <summary className="cursor-pointer font-semibold text-foreground">Формат</summary>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>Асуулт бүр <code className="font-mono">\question</code>-оор эхэлнэ. Математикийг <code className="font-mono">$...$</code> эсвэл <code className="font-mono">$$...$$</code> дотор бичнэ.</li>
-          <li>Сонголт: <code className="font-mono">\begin{"{choices}"}</code> дотор <code className="font-mono">\choice</code>, зөв хариулт нь <code className="font-mono">\CorrectChoice</code>. A, B, C… дарааллаар ({examType === "SAT" ? "SAT: 4" : "ЭЕШ: 5"} хүртэл).</li>
-          {examType === "SAT" ? <li>Бичих хариулт (grid-in): <code className="font-mono">\answer{"{3/4}"}</code>. Тэнцүү бутархай/аравтыг (<code className="font-mono">.75</code>, <code className="font-mono">0.75</code>, <code className="font-mono">6/8</code>) болон SAT-ийн дүрмээр тайрсан/бөөрөнхийлсөн аравтыг автоматаар зөвд тооцно.</li>
-            : <li>Бичих хариулт: <code className="font-mono">\answer{"{9}"}</code>, хэд хэдэн зөв хувилбар <code className="font-mono">\answer{"{0,75|3/4}"}</code>, ЭЕШ II талбар <code className="font-mono">\answer[ab]{"{12}"}</code>.</li>}
-          <li>Нэмэлт: <code className="font-mono">\topic{"{...}"}</code>, <code className="font-mono">\difficulty{"{Easy|Medium|Hard}"}</code>, <code className="font-mono">\explanation{"{...}"}</code> эсвэл <code className="font-mono">solution</code> орчин.</li>
-          <li>График, дүрс: <code className="font-mono">\begin{"{tikzpicture}"}…\end{"{tikzpicture}"}</code> (TikZ, pgfplots <code className="font-mono">axis</code>) асуулт эсвэл <code className="font-mono">\choice</code> дотор — автоматаар зурагдана. <code className="font-mono">\usetikzlibrary</code>, <code className="font-mono">\pgfplotsset</code> бүх зурагт хэрэглэгдэнэ.</li>
-          <li>Зураг: <code className="font-mono">\includegraphics{"{graph.png}"}</code> асуулт эсвэл <code className="font-mono">\choice</code> дотор. Файлаа “Зураг” товчоор хавсаргана (нэрээр нь таарна, PNG/JPG/WebP/SVG), эсвэл <code className="font-mono">https://</code> холбоос шууд бичнэ.</li>
-          <li>Тусдаа түлхүүр: <code className="font-mono">\answers{"{1-B, 2-D, 3-0,75|3/4}"}</code>. Бүтэн <code className="font-mono">.tex</code> файлыг ч шууд оруулж болно.</li>
-        </ul>
-      </details>
+      <FormatGuide examType={examType} />
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="grid content-start gap-2">
           <div className="flex flex-wrap gap-2">
@@ -186,6 +174,52 @@ function PreviewItem({ item, imageState }: { item: ParsedLatexQuestion; imageSta
       </div>
     </div>
   </article>;
+}
+
+/** The LaTeX format and its limits; answer rules depend on the exam type. Everything listed here is what the parser does. */
+function FormatGuide({ examType }: { examType: ExamType }) {
+  const sat = examType === "SAT";
+  return <details className="rounded-xl border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
+    <summary className="cursor-pointer font-semibold text-foreground">Формат ба дүрэм{sat ? " (SAT)" : " (ЭЕШ)"}</summary>
+    <div className="mt-3 grid gap-4 sm:grid-cols-2">
+      <GuideSection title="Асуулт">
+        <li>Асуулт бүр <C>{String.raw`\question`}</C>-оор эхэлнэ. Бүтэн <C>.tex</C> файл оруулж болно — преамбулаас зөвхөн TikZ тохиргоог авна.</li>
+        <li>Математик: <C>{"$...$"}</C>, <C>{"$$...$$"}</C>, <C>{String.raw`\[...\]`}</C>. Хүснэгт: <C>{String.raw`$$\begin{array}{c|c} x & y \\ \hline 1 & 2 \end{array}$$`}</C>.</li>
+        <li>Хоосон мөр шинэ догол мөр, <C>{String.raw`\\`}</C> мөр шилжүүлнэ. <C>{String.raw`\textbf`}</C>, <C>{String.raw`\emph`}</C> энгийн текст болно; <C>%</C> тайлбар орохгүй.</li>
+      </GuideSection>
+      <GuideSection title="Хариулт">
+        <li>Сонголттой: <C>{String.raw`\begin{choices}`}</C> дотор <C>{String.raw`\choice`}</C>, зөвийг нь <C>{String.raw`\CorrectChoice`}</C>. {sat ? "SAT: A–D, 4 хүртэл сонголт." : "ЭЕШ: A–E, 5 хүртэл сонголт."}</li>
+        {sat ? <>
+          <li>Бичих хариулт (grid-in): <C>{String.raw`\answer{3/4|.75}`}</C> — нэг талбар, олон зөв хувилбарыг <C>|</C>-ээр. Эерэг хариу 5, сөрөг 6 тэмдэгт хүртэл.</li>
+          <li>Тэнцүү бутархай/аравтыг (<C>3/4</C> = <C>.75</C>) болон SAT-ийн дүрмээр тайрсан, бөөрөнхийлсөн аравтыг (<C>2/3</C> → <C>.6666</C>, <C>.6667</C>) автоматаар зөвд тооцно.</li>
+          <li className="text-amber-800">Холимог бутархай бичихгүй: <C>1 1/2</C> нь <C>11/2</C> гэж уншигдана — <C>3/2</C> эсвэл <C>1.5</C> гэж бичнэ.</li>
+        </> : <>
+          <li>Бичих хариулт: <C>{String.raw`\answer{9}`}</C>, олон зөв хувилбар <C>{String.raw`\answer{0,75|3/4}`}</C>, II хэсгийн талбар <C>{String.raw`\answer[ab]{12}`}</C>.</li>
+          <li>Түлхүүрт кирилл үсэг ч болно: <C>3-В</C> = <C>3-C</C>.</li>
+        </>}
+        <li>Тусдаа түлхүүр (<C>{String.raw`\CorrectChoice`}</C>-гүй асуултад): <C>{String.raw`\answers{1-B, 2-3/4}`}</C>.</li>
+      </GuideSection>
+      <GuideSection title="График ба зураг">
+        <li><C>{String.raw`\begin{tikzpicture}…\end{tikzpicture}`}</C> (TikZ, pgfplots <C>axis</C>) автоматаар зурагдаж асуултын зураг болно. <C>{String.raw`\choice`}</C> дотор бичвэл сонголт өөрөө график болно.</li>
+        <li><C>{String.raw`\usetikzlibrary`}</C>, <C>{String.raw`\pgfplotsset`}</C>, <C>{String.raw`\tikzset`}</C> бүх зурагт хэрэглэгдэнэ; <C>compat=1.18</C> гэх мэтийг автоматаар тааруулна. TikZ алдаатай бол тухайн асуулт дээр шалтгааныг харуулна.</li>
+        <li>Файл: <C>{String.raw`\includegraphics{graph.png}`}</C> + “Зураг” товчоор файлаа хавсаргана (нэрээр таарна; PNG, JPG, WebP, SVG, 10MB хүртэл). <C>https://</C> холбоос шууд ажиллана.</li>
+        <li>Асуулт, сонголт бүрт нэг зураг — олон байвал эхнийхийг авна.</li>
+      </GuideSection>
+      <GuideSection title="Нэмэлт ба хязгаарлалт">
+        <li><C>{String.raw`\topic{Algebra}`}</C>, <C>{String.raw`\difficulty{Easy|Medium|Hard}`}</C>, <C>{String.raw`\explanation{...}`}</C> эсвэл <C>solution</C> орчин.</li>
+        <li className="text-amber-800">Дэмжихгүй: <C>tabular</C> (оронд нь <C>array</C>), өөрийн макро <C>{String.raw`\newcommand`}</C>, <C>{String.raw`\input`}</C>. Ийм команд анхааруулга эсвэл алдаа өгнө.</li>
+        <li>“Жишээ” товчоор бүтэн жишээ ачаална.</li>
+      </GuideSection>
+    </div>
+  </details>;
+}
+
+function GuideSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section><h4 className="font-semibold text-foreground">{title}</h4><ul className="mt-1 list-disc space-y-1 pl-4">{children}</ul></section>;
+}
+
+function C({ children }: { children: React.ReactNode }) {
+  return <code className="rounded bg-background px-1 py-px font-mono text-[11px] text-foreground">{children}</code>;
 }
 
 function IssueLine({ level, message }: { level: "error" | "warning"; message: string }) {
