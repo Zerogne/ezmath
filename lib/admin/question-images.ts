@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const QUESTION_IMAGE_BUCKET = "exam-question-images";
-export const QUESTION_IMAGE_TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+export const QUESTION_IMAGE_TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/svg+xml": "svg" };
 export const QUESTION_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 
 /** Makes sure the public question-image bucket exists with the expected limits and returns an admin client. */
@@ -18,6 +18,13 @@ export async function ensureImageBucket() {
   const { error } = await admin.storage.createBucket(QUESTION_IMAGE_BUCKET, settings);
   if (error && !error.message.toLowerCase().includes("already")) throw new Error("Асуултын зургийн санг үүсгэж чадсангүй.");
   return admin;
+}
+
+/** SVG may carry scripts; question images are shown through <img>, but the public file can also be opened directly. */
+export async function isSafeImage(file: File) {
+  if (file.type !== "image/svg+xml") return true;
+  const text = await file.text();
+  return !/<script|<foreignObject|<iframe|<embed|<object|javascript:|<[^>]*\son[a-z]+\s*=/i.test(text);
 }
 
 /** Uploads question images (already validated) and returns their public URLs in the same order. */

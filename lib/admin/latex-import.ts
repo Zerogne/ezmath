@@ -10,15 +10,16 @@ import type { Difficulty, ExamType } from "@/types/exam";
  * `\answer{...}` or `\answer[label]{...}` for written answers (alternatives separated by `;` or `|`),
  * `\topic{}`, `\difficulty{}`, `\explanation{}` or a `solution` environment.
  * A separate key can be given anywhere as `\answers{1-B, 2-D, 3-0,75|3/4}`.
- * `\includegraphics{...}` in the question or inside a `\choice` becomes that question's or choice's image:
- * an https URL is used as is, a file name is returned in `images` so the uploaded file can be attached.
+ * `\includegraphics{...}` or a `tikzpicture` (TikZ / pgfplots) in the question or inside a `\choice` becomes that
+ * question's or choice's image: an https URL is used as is; a file name or TikZ code is returned in `images` so the
+ * importer can attach the uploaded file or the rendered picture. TikZ set-up lines are returned as `tikzPreamble`.
  */
 
 export type LatexImportIssue = { level: "error" | "warning"; message: string };
-/** An image referenced by file name; `target` is "question" or the choice label it belongs to. */
-export type LatexImageRef = { target: string; source: string };
+/** An image still to be resolved: a file name to match an attached file, or TikZ code to render. `target` is "question" or a choice label. */
+export type LatexImageRef = { target: string; kind: "file" | "tikz"; source: string };
 export type ParsedLatexQuestion = { number: number; question: MaterialQuestion; issues: LatexImportIssue[]; images: LatexImageRef[] };
-export type LatexImportResult = { questions: ParsedLatexQuestion[]; issues: LatexImportIssue[] };
+export type LatexImportResult = { questions: ParsedLatexQuestion[]; issues: LatexImportIssue[]; tikzPreamble: string };
 
 const labels = ["A", "B", "C", "D", "E"];
 const cyrillicLabels: Record<string, string> = { А: "A", Б: "B", В: "C", Г: "D", Д: "E" };
@@ -140,12 +141,25 @@ function parseAnswerKey(raw: string) {
   return key;
 }
 
-const isImageUrl = (value: string) => /^https:\/\/\S+$/i.test(value);
+type ImageSource = Omit<LatexImageRef, "target">;
+const tikzPattern = /\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/g;
+const tikzSetup = ["usetikzlibrary", "usepgfplotslibrary", "pgfplotsset", "tikzset"];
 
-/** One image per question or choice: keeps the first `\includegraphics` and warns about the rest. */
-function pickImage(found: { argument: string }[], where: string, issues: LatexImportIssue[]) {
+/** Takes the pictures out of a piece of text: `tikzpicture` blocks first (they may contain `\includegraphics`), then `\includegraphics`. */
+function takeImages(source: string) {
+  const pictures = source.match(tikzPattern) ?? [];
+  const graphics = takeCommand(source.replace(tikzPattern, ""), "includegraphics");
+  const found: ImageSource[] = [...pictures.map((code) => ({ kind: "tikz" as const, source: code })), ...graphics.found.map((item) => ({ kind: "file" as const, source: item.argument }))];
+  return { source: graphics.source, found };
+}
+
+/** An https `\includegraphics` target needs no upload and becomes the image URL directly. */
+const directUrl = (image?: ImageSource) => image?.kind === "file" && /^https:\/\/\S+$/i.test(image.source) ? image.source : "";
+
+/** One image per question or choice: keeps the first one and warns about the rest. */
+function pickImage(found: ImageSource[], where: string, issues: LatexImportIssue[]) {
   if (found.length > 1) issues.push({ level: "warning", message: `${where}: нэгээс олон зураг байна — эхнийхийг авлаа.` });
-  return found[0]?.argument;
+  return found[0];
 }
 
 const splitAlternatives = (value: string) => value.split(/[;|]/).map((answer) => answer.trim()).filter(Boolean);
@@ -168,10 +182,10 @@ function parseQuestion(block: string, number: number, keyAnswer: string | undefi
   const environment = source.match(choiceEnvironments);
   source = source.replace(choiceEnvironments, "");
   const images: LatexImageRef[] = [];
-  const graphics = takeCommand(source, "includegraphics");
-  source = graphics.source;
-  const questionImage = pickImage(graphics.found, "Асуулт", issues);
-  if (questionImage && !isImageUrl(questionImage)) images.push({ target: "question", source: questionImage });
+  const media = takeImages(source);
+  source = media.source;
+  const questionImage = pickImage(media.found, "Асуулт", issues);
+  if (questionImage && !directUrl(questionImage)) images.push({ target: "question", ...questionImage });
   if (choiceEnvironments.test(source)) issues.push({ level: "warning", message: "Нэгээс олон choices орчин байна — эхнийхийг л авлаа." });
 
   const maxChoices = examType === "SAT" ? 4 : 5;
@@ -187,12 +201,12 @@ function parseQuestion(block: string, number: number, keyAnswer: string | undefi
         if (correctAnswer) issues.push({ level: "warning", message: `Хэд хэдэн \\CorrectChoice байна — ${correctAnswer}-г авлаа.` });
         else correctAnswer = label;
       }
-      const choiceGraphics = takeCommand(items[index + 1], "includegraphics");
-      const choiceImage = pickImage(choiceGraphics.found, `${label} сонголт`, issues);
-      if (choiceImage && !isImageUrl(choiceImage)) images.push({ target: label, source: choiceImage });
-      const text = tidy(choiceGraphics.source);
+      const choiceMedia = takeImages(items[index + 1]);
+      const choiceImage = pickImage(choiceMedia.found, `${label} сонголт`, issues);
+      if (choiceImage && !directUrl(choiceImage)) images.push({ target: label, ...choiceImage });
+      const text = tidy(choiceMedia.source);
       checkLatex(text, `${label} сонголт`, issues);
-      choices.push({ id: crypto.randomUUID(), label, text, imageUrl: choiceImage && isImageUrl(choiceImage) ? choiceImage : "" });
+      choices.push({ id: crypto.randomUUID(), label, text, imageUrl: directUrl(choiceImage) });
     }
   }
 
@@ -242,7 +256,7 @@ function parseQuestion(block: string, number: number, keyAnswer: string | undefi
     question: {
       id: crypto.randomUUID(),
       text,
-      imageUrl: questionImage && isImageUrl(questionImage) ? questionImage : "",
+      imageUrl: directUrl(questionImage),
       questionType,
       responseFields,
       choices,
@@ -257,6 +271,9 @@ function parseQuestion(block: string, number: number, keyAnswer: string | undefi
 export function parseLatexQuestions(input: string, examType: ExamType): LatexImportResult {
   const issues: LatexImportIssue[] = [];
   let source = stripComments(input.replace(/\r\n?/g, "\n"));
+  // TikZ/pgfplots set-up applies to every picture, whether it sits in the preamble or in the body.
+  const setup = tikzSetup.flatMap((name) => { const taken = takeCommand(source, name); source = taken.source; return taken.found.map((item) => `\\${name}${item.option ? `[${item.option}]` : ""}{${item.argument}}`); });
+  const tikzPreamble = setup.join("\n");
   const body = source.match(/\\begin\{document\}([\s\S]*?)(?:\\end\{document\}|$)/);
   if (body) source = body[1];
 
@@ -269,12 +286,12 @@ export function parseLatexQuestions(input: string, examType: ExamType): LatexImp
   const blocks = source.split(/\\question(?![a-zA-Z])/).slice(1);
   if (!blocks.length) {
     if (input.trim()) issues.push({ level: "error", message: "\\question олдсонгүй. Асуулт бүрийг \\question-оор эхлүүлнэ үү." });
-    return { questions: [], issues };
+    return { questions: [], issues, tikzPreamble };
   }
   const questions = blocks.map((block, index) => parseQuestion(block, index + 1, key.get(index + 1), examType));
   const extraKeys = [...key.keys()].filter((number) => number > questions.length);
   if (extraKeys.length) issues.push({ level: "warning", message: `Түлхүүрт асуултгүй дугаар байна: ${extraKeys.join(", ")}.` });
-  return { questions, issues };
+  return { questions, issues, tikzPreamble };
 }
 
 export const latexImportExample = String.raw`\begin{questions}
@@ -295,6 +312,14 @@ export const latexImportExample = String.raw`\begin{questions}
 \question What is the value of $2 \div 3$?
 \answer{2/3}   % .6666, .6667, 0.666, 0.667 are also accepted on SAT
 
+\question The graph of the linear function $f$ is shown. What is the value of $f(2)$?
+\begin{tikzpicture}   % TikZ / pgfplots is drawn automatically
+  \begin{axis}[axis lines=middle, grid=both, xmin=-1, xmax=4, ymin=-1, ymax=5, width=7cm, height=5cm]
+    \addplot[domain=-0.5:3.5, thick, blue] {x + 1};
+  \end{axis}
+\end{tikzpicture}
+\answer{3}
+
 \question The value of $\sqrt{49} + 2^3$ is
 \begin{choices}
   \choice $13$
@@ -306,4 +331,4 @@ export const latexImportExample = String.raw`\begin{questions}
 \end{questions}
 
 % Answer key (optional): question number - letter or value; alternatives with |
-\answers{4-C}`;
+\answers{5-C}`;

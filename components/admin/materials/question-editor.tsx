@@ -37,6 +37,6 @@ function ImageUpload({ label, onUploaded, className = "" }: { label: string; onU
     catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : "Зургийг хадгалж чадсангүй."); }
     finally { setPending(false); if (input.current) input.current.value = ""; }
   }
-  return <div className={`flex flex-wrap items-center gap-2 ${className}`}><Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => input.current?.click()}><ImageIcon size={14} />{pending ? "Хуулж байна…" : label}</Button><input ref={input} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => void upload(event.target.files?.[0])} />{error && <p role="alert" className="text-xs text-destructive">{error}</p>}</div>;
+  return <div className={`flex flex-wrap items-center gap-2 ${className}`}><Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => input.current?.click()}><ImageIcon size={14} />{pending ? "Хуулж байна…" : label}</Button><input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(event) => void upload(event.target.files?.[0])} />{error && <p role="alert" className="text-xs text-destructive">{error}</p>}</div>;
 }
 function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) { return <div className={`grid gap-1.5 ${className}`}><Label>{label}</Label>{children}</div>; }

@@ -29,6 +29,11 @@ const nextConfig: NextConfig = {
     },
   },
   images: { remotePatterns: questionImagePattern ? [questionImagePattern] : [] },
+  // node-tikzjax runs TeX as WebAssembly and reads its engine dump and fonts from its own folder at runtime.
+  serverExternalPackages: ["node-tikzjax"],
+  outputFileTracingIncludes: {
+    "/api/admin/materials/tikz": ["./node_modules/node-tikzjax/tex/**/*", "./node_modules/node-tikzjax/css/bakoma/ttf/**/*"],
+  },
   async headers() {
     return [{
       source: "/:path*",

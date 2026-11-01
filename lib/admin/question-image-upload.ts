@@ -12,3 +12,13 @@ export async function uploadQuestionImageFiles(files: File[]) {
 export function imageKey(name: string) {
   return (name.split(/[\\/]/).pop() ?? name).replace(/\.[a-z0-9]+$/i, "").trim().toLowerCase();
 }
+
+export type TikzRender = { svg: string } | { error: string };
+
+/** Renders the importer's `tikzpicture` blocks on the server; results come back in the order given. */
+export async function renderTikzPictures(pictures: string[], preamble: string) {
+  const response = await fetch("/api/admin/materials/tikz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pictures, preamble }) });
+  const body = await response.json().catch(() => ({})) as { results?: TikzRender[]; error?: string };
+  if (!response.ok || !body.results) throw new Error(body.error ?? "TikZ зургийг зурж чадсангүй.");
+  return body.results;
+}

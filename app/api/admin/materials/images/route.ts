@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminIdentity } from "@/lib/admin/auth";
-import { QUESTION_IMAGE_MAX_BYTES, QUESTION_IMAGE_TYPES, uploadQuestionImages } from "@/lib/admin/question-images";
+import { isSafeImage, QUESTION_IMAGE_MAX_BYTES, QUESTION_IMAGE_TYPES, uploadQuestionImages } from "@/lib/admin/question-images";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
   if (!files.length) return NextResponse.json({ error: "Зураг сонгоогүй байна." }, { status: 400 });
   if (files.length > MAX_FILES) return NextResponse.json({ error: `Нэг удаад ${MAX_FILES} хүртэл зураг оруулна.` }, { status: 400 });
   const invalid = files.find((file) => !QUESTION_IMAGE_TYPES[file.type] || file.size > QUESTION_IMAGE_MAX_BYTES);
-  if (invalid) return NextResponse.json({ error: `${invalid.name}: зөвхөн PNG, JPG, WebP, 10MB хүртэл.` }, { status: 400 });
+  if (invalid) return NextResponse.json({ error: `${invalid.name}: зөвхөн PNG, JPG, WebP, SVG, 10MB хүртэл.` }, { status: 400 });
+  for (const file of files) if (!await isSafeImage(file)) return NextResponse.json({ error: `${file.name}: SVG дотор script эсвэл үйлдэл агуулсан байна.` }, { status: 400 });
   try {
     return NextResponse.json({ urls: await uploadQuestionImages(files) });
   } catch (error) {
