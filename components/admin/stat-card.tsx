@@ -1,17 +1,17 @@
 import type { LucideIcon } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-export function AdminStatCard({ label, value, icon: Icon, note }: { label: string; value: string; icon: LucideIcon; note?: string }) {
+const TONES = ["#E8EEFF", "#E9FBF2", "#FFF0E6", "#EFE6FF", "#FFF6CC", "#FFE8EF"] as const;
+
+/** KPI card matching the Figma admin dashboard: tinted icon tile, label, display-font value and note. */
+export function AdminStatCard({ label, value, icon: Icon, note, tone = 0 }: { label: string; value: string; icon: LucideIcon; note?: string; tone?: number }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <Icon size={17} className="text-primary" />
-      </CardHeader>
-      <CardContent className="pt-4">
-        <p className="text-2xl font-bold">{value}</p>
-        {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
-      </CardContent>
-    </Card>
+    <article className="flex items-center gap-4 rounded-[22px] border-2 border-[#EEF0F6] bg-white p-5">
+      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[18px] text-[#0B1030]" style={{ background: TONES[tone % TONES.length] }}><Icon size={22}/></span>
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-[#5B6275]">{label}</p>
+        <p className="mt-0.5 truncate font-display text-[26px] font-medium leading-tight tracking-[-0.03em]">{value}</p>
+        {note && <p className="mt-0.5 text-xs font-medium text-[#5B6275]">{note}</p>}
+      </div>
+    </article>
   );
 }
