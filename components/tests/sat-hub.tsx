@@ -1,13 +1,39 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { TestCard } from "@/components/home/test-card";
-import { Ezi } from "@/components/home/redesign/illustrations";
+import { ArrowRight, Clock3, ListChecks } from "lucide-react";
+import { getIdentity } from "@/components/layout/navbar";
+import { BankBrowser, type BankBrowserQuestion, type BankBrowserSection } from "@/components/question-bank/bank-browser";
+import { ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { EmptyState } from "@/components/ui/empty-state";
-import { sectionForSubject } from "@/lib/sat/taxonomy";
+import { loadBankIndex, loadBankStatus } from "@/lib/data/question-bank";
+import { SAT_DOMAINS, satSkillKey, sectionForSubject, type SatSection } from "@/lib/sat/taxonomy";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createClient } from "@/lib/supabase/server";
+import { formatDuration } from "@/lib/utils";
 import type { Test } from "@/types/exam";
 
-/** SAT the OnePrep way: the filterable question bank first, then numbered full-length mocks, then section tests. */
-export function SatHub({ tests, bankCounts }: { tests: Test[]; bankCounts: { math: number; readingWriting: number } }) {
+const SECTIONS: SatSection[] = ["Math", "Reading and Writing"];
+
+/** The whole SAT area on one page, OnePrep style: the filterable question bank first, then numbered full mocks, then section tests. */
+export async function SatHub({ tests }: { tests: Test[] }) {
+  const [{ questions, unplaced }, identity] = await Promise.all([loadBankIndex(), getIdentity()]);
+  let status: Awaited<ReturnType<typeof loadBankStatus>> = new Map();
+  if (identity && isSupabaseConfigured()) {
+    const { data: { user } } = await (await createClient()).auth.getUser();
+    if (user) status = await loadBankStatus(user.id);
+  }
+  const sections: BankBrowserSection[] = SECTIONS.map((section) => ({
+    section,
+    unclassifiedKey: `unclassified-${satSkillKey(section)}`,
+    domains: SAT_DOMAINS.filter((domain) => domain.section === section).map((domain) => ({
+      name: domain.name,
+      groups: [...domain.skills.map((skill) => ({ key: satSkillKey(skill), label: skill })), { key: `other-${satSkillKey(domain.name)}`, label: "Бусад" }],
+    })),
+  }));
+  const compact: BankBrowserQuestion[] = questions.map((question) => {
+    const state = status.get(question.id);
+    return { section: question.section, group: question.group, difficulty: question.difficulty, result: !state?.answered ? "new" : state.lastCorrect ? "correct" : "incorrect", marked: state?.marked ?? false };
+  });
+
   // Tests arrive newest first; mocks are numbered in the order they were published.
   const ordered = [...tests].reverse();
   const mocks = ordered.filter((test) => test.type === "full");
@@ -17,30 +43,48 @@ export function SatHub({ tests, bankCounts }: { tests: Test[]; bankCounts: { mat
     { title: "Reading & Writing", tests: sectionTests.filter((test) => sectionForSubject(test.subject) === "Reading and Writing") },
     { title: "Бусад", tests: sectionTests.filter((test) => !sectionForSubject(test.subject)) },
   ].filter((group) => group.tests.length);
+  const jumps = [["#bank", "Бодлогын сан", questions.length], ["#mocks", "Бүтэн mock", mocks.length], ["#sections", "Хэсгийн сорил", sectionTests.length]] as const;
 
-  return <div className="mt-10 space-y-14">
-    <Link href="/question-bank" className="group relative flex flex-col gap-6 overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#E8EEFF_0%,#D4E7FF_60%,#C3F0E2_100%)] p-7 sm:flex-row sm:items-center sm:p-10">
-      <div className="flex-1">
-        <span className="rounded-md bg-white/80 px-[7px] py-[3px] text-[11px] font-semibold text-[#2B4BE8]">Бодлогын сан</span>
-        <h2 className="mt-4 text-3xl font-medium sm:text-4xl">Ур чадвар бүрээр дасгал хий</h2>
-        <p className="mt-3 max-w-xl text-[#5B6275]">Хэсэг, домэйн, ур чадвар, түвшингээр шүүж бод. Буруу хариулсан, тэмдэглэсэн асуултаа дахин давт.</p>
-        <div className="mt-5 flex flex-wrap gap-2 text-sm font-semibold"><span className="rounded-full bg-white px-3.5 py-1.5">Math · {bankCounts.math}</span><span className="rounded-full bg-white px-3.5 py-1.5">Reading & Writing · {bankCounts.readingWriting}</span></div>
-        <span className="btn-dark mt-6 group-hover:-translate-y-0.5">Бодлогын сан нээх<ArrowRight size={17}/></span>
-      </div>
-      <Ezi pose="think" size={170} className="hidden shrink-0 self-end sm:block"/>
-    </Link>
+  return <div className="mt-8">
+    <nav aria-label="SAT хэсгүүд" className="flex flex-wrap gap-2">{jumps.map(([href, label, count]) => <a key={href} href={href} className="inline-flex items-center gap-2 rounded-full border-2 border-[#EEF0F6] bg-white px-4 py-2 text-sm font-semibold transition hover:border-[#2B4BE8] hover:text-[#2B4BE8]">{label}<span className="rounded-full bg-[#F1F3F8] px-2 py-px text-xs text-[#5B6275]">{count}</span></a>)}</nav>
 
-    <section>
-      <h2 className="text-2xl font-medium sm:text-3xl">Бүтэн mock шалгалт</h2>
-      <p className="mt-2 text-[#5B6275]">Бодит шалгалтын хугацаа, бүтэцтэй. Дугаараар нь дарааллаар өгөөрэй.</p>
-      {mocks.length ? <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{mocks.map((test, index) => <li key={test.id} className="relative"><span className="absolute -left-2 -top-2 z-[1] grid h-8 w-8 place-items-center rounded-full bg-[#0B1030] font-display text-sm font-medium text-white">{index + 1}</span><TestCard test={test}/></li>)}</ol>
+    <section id="bank" className="mt-10 scroll-mt-24">
+      <SectionHead art="target" tile="#E8EEFF" title="Бодлогын сан" text="Хэсэг, домэйн, ур чадвар, түвшингээр шүүгээд бод. Бодлого бүрийн дараа зөв хариу, тайлбар шууд гарна. Буруу хариулсан, тэмдэглэсэн асуултаа дахин давт."/>
+      <div className="mt-6"><BankBrowser sections={sections} questions={compact} signedIn={Boolean(identity)}/></div>
+      {unplaced > 0 && <p className="mt-4 text-xs text-[#5B6275]">{unplaced} асуултын хэсэг тодорхойгүй тул санд ороогүй байна.</p>}
+    </section>
+
+    <section id="mocks" className="mt-20 scroll-mt-24">
+      <SectionHead art="calculator" tile="#E9FBF2" title="Бүтэн mock шалгалт" text="Бодит шалгалтын хугацаа, бүтэцтэй. Дугаараар нь дарааллаар өгөөрэй."/>
+      {mocks.length ? <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{mocks.map((test, index) => <li key={test.id}><SatTestCard test={test} number={index + 1}/></li>)}</ol>
         : <EmptyState className="mt-6" pose="sleep" title="Mock шалгалт удахгүй нэмэгдэнэ"/>}
     </section>
 
-    {groups.length > 0 && <section>
-      <h2 className="text-2xl font-medium sm:text-3xl">Хэсгийн сорил</h2>
-      <p className="mt-2 text-[#5B6275]">Нэг хэсгийг тусад нь, бодит хугацаагаар дадлага хий.</p>
-      {groups.map((group) => <div key={group.title} className="mt-6"><h3 className="text-sm font-semibold uppercase tracking-[.14em] text-[#5B6275]">{group.title}</h3><div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.tests.map((test) => <TestCard key={test.id} test={test}/>)}</div></div>)}
-    </section>}
+    <section id="sections" className="mt-20 scroll-mt-24">
+      <SectionHead art="stopwatch" tile="#FFF0E6" title="Хэсгийн сорил" text="Нэг хэсгийг тусад нь, бодит хугацаагаар дадлага хий."/>
+      {groups.length ? groups.map((group) => <div key={group.title} className="mt-6"><h3 className="text-xs font-semibold uppercase tracking-[.14em] text-[#9AA0B4]">{group.title}</h3><div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.tests.map((test) => <SatTestCard key={test.id} test={test}/>)}</div></div>)
+        : <EmptyState className="mt-6" pose="sleep" title="Хэсгийн сорил удахгүй нэмэгдэнэ"/>}
+    </section>
   </div>;
+}
+
+function SectionHead({ art, tile, title, text }: { art: ObjectKind; tile: string; title: string; text: string }) {
+  return <div className="flex items-center gap-4"><span className="grid h-16 w-16 shrink-0 place-items-center rounded-[20px]" style={{ background: tile }}><ObjectArt kind={art} size={52}/></span><div><h2 className="text-[28px] font-medium leading-tight tracking-[-0.03em] sm:text-[34px]">{title}</h2><p className="mt-1 max-w-[720px] text-[15px] text-[#5B6275]">{text}</p></div></div>;
+}
+
+function SatTestCard({ test, number }: { test: Test; number?: number }) {
+  const math = sectionForSubject(test.subject) === "Math";
+  return <Link href={`/tests/${test.id}`} className="group flex h-full flex-col rounded-[22px] border-2 border-[#EEF0F6] bg-white p-5 transition hover:border-[#DCE5FF] hover:shadow-[0_18px_40px_-28px_rgba(11,16,48,.35)]">
+    <div className="flex items-start justify-between gap-3">
+      {number ? <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-[#0B1030] font-display text-2xl font-medium text-white">{number}</span>
+        : <span className="grid h-14 w-14 place-items-center rounded-[18px]" style={{ background: math ? "#E9FBF2" : "#EFE6FF" }}><ObjectArt kind={math ? "calculator" : "notebook"} size={44}/></span>}
+      <span className="rounded-full bg-[#FFF6CC] px-3 py-1 text-xs font-semibold text-[#B45309]">{number ? "Бүтэн mock" : test.subject}</span>
+    </div>
+    <h3 className="mt-4 font-sans text-[17px] font-semibold leading-snug tracking-normal">{test.title}</h3>
+    {test.description && <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-[#5B6275]">{test.description}</p>}
+    <div className="mt-auto flex items-center justify-between pt-5">
+      <span className="flex gap-4 text-xs font-medium text-[#5B6275]"><span className="inline-flex items-center gap-1"><ListChecks size={14}/>{test.questionCount} асуулт</span><span className="inline-flex items-center gap-1"><Clock3 size={14}/>{formatDuration(test.durationMinutes)}</span></span>
+      <ArrowRight size={17} className="text-[#2B4BE8] transition group-hover:translate-x-0.5"/>
+    </div>
+  </Link>;
 }

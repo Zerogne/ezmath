@@ -74,14 +74,14 @@ export function PracticeSession({ items }: { items: Item[] }) {
       })}</ol>
       <div className="mt-8 flex flex-wrap justify-center gap-2.5">
         <button type="button" onClick={() => startRestart(() => router.refresh())} disabled={restarting} className="btn-dark"><RotateCcw size={17}/>{restarting ? "Ачаалж байна…" : "Шинэ багц"}</button>
-        <Link href="/question-bank" className="btn-outline">Бодлогын сан руу</Link>
+        <Link href="/tests?exam=SAT#bank" className="btn-outline">Бодлогын сан руу</Link>
       </div>
     </section>;
   }
 
   return <div>
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <Link href="/question-bank" className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5B6275] hover:text-[#0B1030]"><ArrowLeft size={16}/>Бодлогын сан</Link>
+      <Link href="/tests?exam=SAT#bank" className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5B6275] hover:text-[#0B1030]"><ArrowLeft size={16}/>Бодлогын сан</Link>
       <p className="text-sm text-[#5B6275]">{correctCount} зөв · {Object.keys(results).length} / {items.length} шалгасан</p>
     </div>
     <nav aria-label="Асуултууд" className="mt-4 flex flex-wrap gap-1.5">{items.map((entry, position) => {

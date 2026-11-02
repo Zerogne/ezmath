@@ -21,7 +21,7 @@ export function ResultSummary({ test }: { test: Test }) {
   const weakest = [...result.topicBreakdown].sort((a, b) => a.accuracy - b.accuracy).slice(0, 3);
   const steps = [
     { href: `/tests/${test.id}/report`, icon: BarChart3, title: "Дэлгэрэнгүй тайлан", text: "Асуулт бүрийн зөв, буруу, сэдвийн анализ", bg: "#E8EEFF" },
-    { href: test.examType === "SAT" ? "/question-bank" : "/dashboard/exercises", icon: BookOpenCheck, title: "Сул сэдвээ давтах", text: test.examType === "SAT" ? "Бодлогын сангаас ур чадвараар шүүж бод" : "Сэдэвчилсэн дасгал хий", bg: "#FFF6CC" },
+    { href: test.examType === "SAT" ? "/tests?exam=SAT#bank" : "/dashboard/exercises", icon: BookOpenCheck, title: "Сул сэдвээ давтах", text: test.examType === "SAT" ? "Бодлогын сангаас ур чадвараар шүүж бод" : "Сэдэвчилсэн дасгал хий", bg: "#FFF6CC" },
     { href: `/tests/${test.id}`, icon: RotateCcw, title: "Дахин өгөх", text: "Ахицаа хэмжиж, оноогоо ахиул", bg: "#E9FBF2" },
   ];
   return <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">

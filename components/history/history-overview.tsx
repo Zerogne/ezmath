@@ -67,7 +67,7 @@ function TopicBreakdown({ attempts }: { attempts: HistoryAttempt[] }) {
   return <section className={`${portalCard} p-5 sm:p-6`}>
     <SectionTitle title="Сэдвийн гүйцэтгэл" text="Зөв хариултын хувиар, сулаас нь эхлэн."/>
     {topics.length ? <div className="mt-4 space-y-3.5">{topics.map((item) => <div key={item.topic}><div className="flex justify-between text-sm"><span className="font-medium">{item.topic}</span><span className={portalMuted}>{item.accuracy}%</span></div><div className="mt-1.5 h-2 rounded-full bg-[#EEF0F6]"><div className={`h-full rounded-full ${item.accuracy < 50 ? "bg-[#F472B6]" : item.accuracy < 75 ? "bg-[#9DB0FF]" : "bg-[#2B4BE8]"}`} style={{ width: `${Math.max(item.accuracy, 3)}%` }}/></div></div>)}</div> : <p className={`mt-4 text-sm ${portalMuted}`}>Сэдвийн задаргаа хараахан алга.</p>}
-    <Link href="/question-bank" className={`${btnSmOutline} mt-5 w-full`}>Сул сэдвээ давтах</Link>
+    <Link href="/tests?exam=SAT#bank" className={`${btnSmOutline} mt-5 w-full`}>Сул сэдвээ давтах</Link>
   </section>;
 }
 

@@ -112,7 +112,7 @@ function WeakTopics({ attempts }: { attempts: StudentDashboardData["attempts"] }
     <p className="mt-1.5 text-[13px] text-[#5B6275]">Зөв хариултын хувь хамгийн бага сэдвүүд</p>
     {topics.length ? <div className="mt-1">{topics.map((topic) => <div key={topic.name} className="pt-3.5"><p className="flex justify-between gap-3 text-sm"><span className="truncate font-medium">{topic.name}</span><span className="text-[#5B6275]">{topic.accuracy}%</span></p><div className="mt-[7px] h-2 rounded-full bg-[#EEF0F6]"><i className="block h-full rounded-full bg-[#2B4BE8]" style={{ width: `${topic.accuracy}%` }}/></div></div>)}</div>
       : <p className="mt-4 rounded-xl bg-[#F7F8FC] px-3 py-3 text-[13px] text-[#5B6275]">Сорил өгсний дараа сул сэдвүүд энд харагдана.</p>}
-    <Link href="/question-bank" className="mt-5 flex h-11 items-center justify-center rounded-full bg-[#2B4BE8] px-5 text-sm font-semibold text-white hover:bg-[#2440C8]">Эдгээрээр дасгал хийх</Link>
+    <Link href="/tests?exam=SAT#bank" className="mt-5 flex h-11 items-center justify-center rounded-full bg-[#2B4BE8] px-5 text-sm font-semibold text-white hover:bg-[#2440C8]">Эдгээрээр дасгал хийх</Link>
   </section>;
 }
 
@@ -130,7 +130,7 @@ function QuestionBankCard() {
   return <section className="relative overflow-hidden rounded-[22px] border-2 border-[#FFEDA3] bg-[#FFF6CC] py-5 pl-5 pr-[120px] sm:py-[22px] sm:pl-[22px]">
     <h2 className="font-sans text-base font-semibold tracking-normal">Бодлогын сан</h2>
     <p className="mt-2 text-[13px] leading-5 text-[#5C4A12]">SAT-ын ур чадвар бүрээр шүүж бод. Буруу хариулсан асуултаа дахин давт.</p>
-    <Link href="/question-bank" className="mt-4 inline-flex h-10 items-center rounded-full bg-[#0B1030] px-5 text-sm font-semibold text-white hover:bg-[#1A2150]">Бодлогын сан нээх</Link>
+    <Link href="/tests?exam=SAT#bank" className="mt-4 inline-flex h-10 items-center rounded-full bg-[#0B1030] px-5 text-sm font-semibold text-white hover:bg-[#1A2150]">Бодлогын сан нээх</Link>
     <Art name="friend-sun" size={110} className="absolute -bottom-3 right-1"/>
   </section>;
 }

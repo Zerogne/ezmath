@@ -44,7 +44,7 @@ export default async function QuestionBankPracticePage({ searchParams }: { searc
     <main className="container-page max-w-4xl py-8 sm:py-12">
       {set.questions.length
         ? <PracticeSession key={set.questions.map((item) => item.question.id).join(",")} items={set.questions.map((item) => ({ ...item, groupLabel: satGroupLabel(item.group) }))}/>
-        : <EmptyState heading="h1" pose="think" title="Тохирох асуулт олдсонгүй" text="Шүүлтүүрээ өөрчлөөд дахин оролдоно уу. “Буруу хариулсан”, “Тэмдэглэсэн” нь таны өмнө бодсон асуултаас сонгогдоно." action={<Link href="/question-bank" className="btn-dark">Бодлогын сан руу</Link>}/>}
+        : <EmptyState heading="h1" pose="think" title="Тохирох асуулт олдсонгүй" text="Шүүлтүүрээ өөрчлөөд дахин оролдоно уу. “Буруу хариулсан”, “Тэмдэглэсэн” нь таны өмнө бодсон асуултаас сонгогдоно." action={<Link href="/tests?exam=SAT#bank" className="btn-dark">Бодлогын сан руу</Link>}/>}
     </main>
   </>;
 }

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { signOut } from "@/app/auth/actions";
 
-const links = [["ЭЕШ", "/tests?exam=EYESH"], ["SAT", "/tests?exam=SAT"], ["Бодлогын сан", "/question-bank"], ["Онолын хичээл", "/lesson"], ["Үнэ", "/pricing"]] as const;
+const links = [["ЭЕШ", "/tests?exam=EYESH"], ["SAT", "/tests?exam=SAT"], ["Онолын хичээл", "/lesson"], ["Үнэ", "/pricing"]] as const;
 
 /** Site header shared by the homepage and every public page; `bordered` adds a hairline under it for pages that don't open on a hero. */
 export function Navbar({ bordered = true }: { bordered?: boolean }) {
