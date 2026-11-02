@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Шинэ материал", robots: 
 export default async function NewLibraryCollectionPage() {
   const data = await getLibraryCollectionEditor("school_admin", null);
   return <SchoolShell name={data.accountName} schoolName={data.schoolName} active="/school/library">
-    <header><p className="text-xs font-semibold tracking-[.15em] text-primary">БОДЛОГЫН САН</p><h1 className="mt-2 text-2xl font-semibold tracking-[-.02em] sm:text-[28px]">Шинэ материал</h1><p className="mt-1 text-sm leading-6 text-muted-foreground">Бүтэн материалын бодлогуудыг дарааллаар нь оруулна. Шалгалт үүсгэхдээ бүгдийг эсвэл заримыг нь сонгоно.</p></header>
+    <header><p className="text-xs font-semibold tracking-[.15em] text-[#2B4BE8]">БОДЛОГЫН САН</p><h1 className="mt-2 text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">Шинэ материал</h1><p className="mt-1 text-sm leading-6 text-muted-foreground">Бүтэн материалын бодлогуудыг дарааллаар нь оруулна. Шалгалт үүсгэхдээ бүгдийг эсвэл заримыг нь сонгоно.</p></header>
     <CollectionEditor collection={null} basePath={data.basePath} canEdit/>
   </SchoolShell>;
 }

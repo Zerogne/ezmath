@@ -38,7 +38,7 @@ function PasswordField({ name, label, autoComplete, value, onChange }: { name: s
   const [visible, setVisible] = useState(false);
   return <label className="grid gap-1.5 text-sm font-medium">{label}
     <span className="relative">
-      <input name={name} type={visible ? "text" : "password"} required autoComplete={autoComplete} maxLength={72} {...(onChange ? { value, onChange: (event: React.ChangeEvent<HTMLInputElement>) => onChange(event.target.value) } : {})} className="h-11 w-full rounded-xl border bg-white pl-3 pr-11 text-sm"/>
+      <input name={name} type={visible ? "text" : "password"} required autoComplete={autoComplete} maxLength={72} {...(onChange ? { value, onChange: (event: React.ChangeEvent<HTMLInputElement>) => onChange(event.target.value) } : {})} className="h-11 w-full rounded-[16px] border-2 border-[#EEF0F6] bg-white pl-3 pr-11 text-sm"/>
       <button type="button" onClick={() => setVisible((current) => !current)} aria-label={visible ? "Нууц үг нуух" : "Нууц үг харах"} className="absolute right-1 top-1 grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">{visible ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
     </span>
   </label>;

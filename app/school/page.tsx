@@ -17,12 +17,12 @@ export default async function SchoolPage({ searchParams }: { searchParams: Promi
   return (
     <SchoolShell name={data.accountName} schoolName={data.schoolName}>
       <header>
-        <p className="text-xs font-semibold tracking-[.15em] text-primary">СУРГУУЛИЙН ХЭСЭГ</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-.02em] sm:text-[28px]">{data.schoolName}</h1>
+        <p className="text-xs font-semibold tracking-[.15em] text-[#2B4BE8]">СУРГУУЛИЙН ХЭСЭГ</p>
+        <h1 className="mt-2 text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">{data.schoolName}</h1>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">Багш, анги, сурагчдын сургалтын үйл ажиллагааны нэгдсэн хяналт.</p>
       </header>
 
-      {data.mustChangePassword && <div role="alert" className="mt-5 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center"><AlertTriangle size={18} className="shrink-0"/><p className="flex-1">Та түр нууц үгээр нэвтэрсэн байна. Өөрийн нууц үгээ тохируулна уу.</p><Link href="/school/settings#password" className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-amber-900 px-4 text-xs font-semibold text-white hover:bg-amber-950">Нууц үг солих</Link></div>}
+      {data.mustChangePassword && <div role="alert" className="mt-5 flex flex-col gap-3 rounded-[16px] border-2 border-[#EEF0F6] border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center"><AlertTriangle size={18} className="shrink-0"/><p className="flex-1">Та түр нууц үгээр нэвтэрсэн байна. Өөрийн нууц үгээ тохируулна уу.</p><Link href="/school/settings#password" className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-amber-900 px-4 text-xs font-semibold text-white hover:bg-amber-950">Нууц үг солих</Link></div>}
       {query.error && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">Багшийн хүсэлтийг шинэчилж чадсангүй. Дахин оролдоно уу.</p>}
       {query.teacherUpdated && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Багшийн эрхийн төлөв амжилттай шинэчлэгдлээ.</p>}
 
@@ -37,7 +37,7 @@ export default async function SchoolPage({ searchParams }: { searchParams: Promi
         <Metric icon={BookOpenCheck} label="Дууссан хичээл" value={data.completedLessons}/>
       </section>
 
-      <section className="mt-6 overflow-hidden rounded-2xl border bg-white">
+      <section className="mt-6 overflow-hidden rounded-[22px] border-2 border-[#EEF0F6] bg-white">
         <div className="flex items-center justify-between gap-4 border-b px-5 py-4">
           <div>
             <h2 className="font-semibold">Баталгаажуулалт хүлээж буй багш</h2>
@@ -57,7 +57,7 @@ export default async function SchoolPage({ searchParams }: { searchParams: Promi
                   <form action={reviewTeacher}>
                     <input type="hidden" name="teacherId" value={teacher.id}/>
                     <input type="hidden" name="status" value="approved"/>
-                    <button className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-white"><Check size={16} aria-hidden="true"/>Зөвшөөрөх</button>
+                    <button className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0B1030] px-4 text-sm font-semibold text-white"><Check size={16} aria-hidden="true"/>Зөвшөөрөх</button>
                   </form>
                   <form action={reviewTeacher}>
                     <input type="hidden" name="teacherId" value={teacher.id}/>
@@ -72,11 +72,11 @@ export default async function SchoolPage({ searchParams }: { searchParams: Promi
       </section>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-2">
-        <section className="overflow-hidden rounded-2xl border bg-white">
+        <section className="overflow-hidden rounded-[22px] border-2 border-[#EEF0F6] bg-white">
           <div className="border-b px-5 py-4"><h2 className="font-semibold">Ангиуд</h2></div>
           {data.classes.length ? <div className="divide-y">{data.classes.map((item)=><div key={item.id} className="flex items-center justify-between gap-4 px-5 py-4"><div><p className="font-semibold">{item.name}</p><p className="mt-1 text-xs text-muted-foreground">{item.teacherName} · {item.code}</p></div><span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{item.studentCount} сурагч</span></div>)}</div> : <Empty text="Анги үүсээгүй байна."/>}
         </section>
-        <section className="overflow-hidden rounded-2xl border bg-white">
+        <section className="overflow-hidden rounded-[22px] border-2 border-[#EEF0F6] bg-white">
           <div className="border-b px-5 py-4"><h2 className="font-semibold">Багш нар</h2></div>
           {data.teachers.length ? <div className="divide-y">{data.teachers.map((teacher) => { const status = teacherStatus[teacher.status]; return <div key={teacher.id} className="flex items-center justify-between gap-4 px-5 py-4"><div><p className="font-semibold">{teacher.name}</p><p className="mt-1 text-xs text-muted-foreground">{teacher.classes} анги · {teacher.students} сурагч</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status.classes}`}>{status.label}</span></div>; })}</div> : <Empty text="Багш бүртгүүлээгүй байна."/>}
         </section>
@@ -85,5 +85,5 @@ export default async function SchoolPage({ searchParams }: { searchParams: Promi
   );
 }
 
-function Metric({icon:Icon,label,value}:{icon:typeof Users;label:string;value:number}) { return <article className="rounded-2xl border bg-white p-5"><Icon size={19} className="text-primary"/><p className="mt-4 text-2xl font-bold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></article>; }
+function Metric({icon:Icon,label,value}:{icon:typeof Users;label:string;value:number}) { return <article className="rounded-[22px] border-2 border-[#EEF0F6] bg-white p-5"><Icon size={19} className="text-primary"/><p className="mt-4 text-2xl font-bold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></article>; }
 function Empty({text}:{text:string}) { return <p className="px-5 py-10 text-center text-sm text-muted-foreground">{text}</p>; }
