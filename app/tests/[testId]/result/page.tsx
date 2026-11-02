@@ -3,4 +3,4 @@ import { Navbar } from "@/components/layout/navbar";
 import { ResultSummary } from "@/components/exam/result-summary";
 import { findPublishedTest } from "@/lib/data/test-repository";
 import { SiteFooter } from "@/components/layout/site-footer";
-export default async function ResultPage({ params }: { params: Promise<{ testId: string }> }) { const { testId } = await params; const test = await findPublishedTest(testId); if (!test) notFound(); return <><Navbar/><main className="container-page max-w-3xl py-12 sm:py-20"><ResultSummary test={test}/></main><SiteFooter/></>; }
+export default async function ResultPage({ params }: { params: Promise<{ testId: string }> }) { const { testId } = await params; const test = await findPublishedTest(testId); if (!test) notFound(); return <><Navbar/><main className="bg-gradient-to-b from-white to-[#F6F7FB]"><div className="container-page py-10 sm:py-14"><ResultSummary test={test}/></div></main><SiteFooter/></>; }

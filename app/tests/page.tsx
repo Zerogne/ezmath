@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
-import { TestFilter } from "@/components/tests/test-filter";
+import { EyeshHub } from "@/components/tests/eyesh-hub";
 import { SatHub } from "@/components/tests/sat-hub";
 import { listPublishedTests } from "@/lib/data/test-repository";
 import { loadBankIndex } from "@/lib/data/question-bank";
@@ -24,6 +24,6 @@ export default async function TestsPage({ searchParams }: { searchParams: Promis
     <nav aria-label="Шалгалтын төрөл" className="mt-8 inline-flex rounded-full bg-[#F1F3F8] p-1">{tabs.map(([value, label]) => <Link key={value} href={`/tests?exam=${value}`} aria-current={active === value ? "page" : undefined} className={`rounded-full px-6 py-2 text-sm font-semibold transition ${active === value ? "bg-white text-[#0B1030] shadow-sm" : "text-[#5B6275] hover:text-[#0B1030]"}`}>{label}</Link>)}</nav>
     {active === "SAT" && bank
       ? <SatHub tests={examTests} bankCounts={{ math: bank.questions.filter((question) => question.section === "Math").length, readingWriting: bank.questions.filter((question) => question.section === "Reading and Writing").length }}/>
-      : <div className="mt-8"><TestFilter tests={examTests} initialExam="EYESH" showExamFilter={false}/></div>}
+      : <EyeshHub tests={examTests}/>}
   </main><SiteFooter/></>;
 }

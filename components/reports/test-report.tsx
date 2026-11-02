@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Clock3, Target, XCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { loadCompletedAttempt } from "@/lib/exam/session-storage";
 import type { CompletedAttempt, StudentQuestion, Test } from "@/types/exam";
 import { EmptyState } from "@/components/ui/empty-state";
+import { StatCard } from "@/components/dashboard/portal-ui";
+
+const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
+const STATE_STYLE = { correct: "border-[#BBF7D0] bg-[#E9FBF2] text-[#15803D]", incorrect: "border-[#FECDD3] bg-[#FFE4E6] text-[#BE123C]", unanswered: "border-[#EEF0F6] bg-[#F6F7FB] text-[#9AA0B4]" } as const;
 
 export function TestReport({ test, questions }: { test: Test; questions: StudentQuestion[] }) {
   const [attempt, setAttempt] = useState<CompletedAttempt | null | undefined>(undefined);
@@ -15,18 +17,35 @@ export function TestReport({ test, questions }: { test: Test; questions: Student
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAttempt(loadCompletedAttempt(test.id));
   }, [test.id]);
-  if (attempt === undefined) return <div className="h-80 animate-pulse rounded-2xl bg-muted"/>;
-  if (!attempt) return <EmptyState heading="h1" pose="read" title="Тайлан олдсонгүй" text="Энэ шалгалтыг дуусгасны дараа дэлгэрэнгүй тайлан үүснэ." action={<ButtonLink href={`/tests/${test.id}`}>Шалгалт руу очих</ButtonLink>}/>;
+  if (attempt === undefined) return <div className="h-80 animate-pulse rounded-[22px] bg-[#F1F3F8]"/>;
+  if (!attempt) return <EmptyState heading="h1" pose="read" title="Тайлан олдсонгүй" text="Энэ шалгалтыг дуусгасны дараа дэлгэрэнгүй тайлан үүснэ." action={<Link href={`/tests/${test.id}`} className="btn-dark">Шалгалт руу очих</Link>}/>;
   const result = attempt.result;
+  const topics = [...result.topicBreakdown].sort((a, b) => a.accuracy - b.accuracy);
   return <>
-    <Link href={`/tests/${test.id}/result`} className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft size={16}/>Үр дүн рүү буцах</Link>
-    <div className="mt-7 flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><Badge tone={test.examType === "SAT" ? "blue" : "green"}>{test.examType === "EYESH" ? "ЭЕШ" : "SAT"}</Badge><h1 className="mt-4 text-3xl font-bold">Гүйцэтгэлийн тайлан</h1><p className="mt-2 text-muted-foreground">{test.title}</p></div><ButtonLink href={`/tests/${test.id}`}>Дахин шалгалт өгөх</ButtonLink></div>
-    <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4"><Stat icon={Target} label="Нарийвчлал" value={`${result.accuracy}%`}/><Stat icon={CheckCircle2} label="Зөв" value={`${result.correct}`}/><Stat icon={XCircle} label="Буруу / хоосон" value={`${result.incorrect + result.unanswered}`}/><Stat icon={Clock3} label="Зарцуулсан" value={`${Math.floor(result.durationSeconds / 60)}:${String(result.durationSeconds % 60).padStart(2,"0")}`}/></section>
-    <div className="mt-5 grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
-      <section className="rounded-2xl border bg-white p-6"><h2 className="text-lg font-bold">Сэдвийн гүйцэтгэл</h2><div className="mt-6 space-y-6">{result.topicBreakdown.map((topic) => <div key={topic.topic}><div className="flex justify-between gap-3 text-sm"><span className="font-medium">{topic.topic}</span><span className="text-muted-foreground">{topic.accuracy}%</span></div><div className="mt-2 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${topic.accuracy}%` }}/></div></div>)}</div></section>
-      <section className="rounded-2xl border bg-white p-6"><div className="flex justify-between"><h2 className="text-lg font-bold">Асуултын тойм</h2><span className="text-xs text-muted-foreground">{questions.length} асуулт</span></div><div className="mt-5 grid grid-cols-5 gap-2 sm:grid-cols-8">{questions.map((question) => { const state = result.answerResults[question.id] ?? "unanswered"; return <div key={question.id} title={state === "correct" ? "Зөв" : state === "incorrect" ? "Буруу" : "Хариулаагүй"} className={`grid h-10 place-items-center rounded-lg border text-sm font-semibold ${state === "correct" ? "border-emerald-200 bg-emerald-50 text-primary" : state === "incorrect" ? "border-red-200 bg-red-50 text-red-700" : "bg-muted text-muted-foreground"}`}>{question.questionNumber}</div>; })}</div><div className="mt-6 flex flex-wrap gap-5 text-xs text-muted-foreground"><Legend color="bg-emerald-100 border-emerald-200" label="Зөв"/><Legend color="bg-red-100 border-red-200" label="Буруу"/><Legend color="bg-muted" label="Хариулаагүй"/></div></section>
+    <Link href={`/tests/${test.id}/result`} className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5B6275] hover:text-[#0B1030]"><ArrowLeft size={16}/>Үр дүн рүү буцах</Link>
+    <div className="mt-5 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+      <div><span className={`rounded-full px-3 py-1 text-xs font-semibold ${test.examType === "SAT" ? "bg-[#FFF6CC] text-[#B45309]" : "bg-[#E8EEFF] text-[#2B4BE8]"}`}>{test.examType === "EYESH" ? "ЭЕШ" : "SAT"}</span><h1 className="mt-4 text-[32px] font-medium leading-tight tracking-[-0.03em] sm:text-[40px]">Гүйцэтгэлийн тайлан</h1><p className="mt-1 text-[15px] text-[#5B6275]">{test.title}</p></div>
+      <Link href={`/tests/${test.id}`} className="btn-dark">Дахин шалгалт өгөх<ArrowRight size={16}/></Link>
+    </div>
+    <section className="mt-7 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <StatCard art="target" tile="#EFE6FF" label="Нарийвчлал" value={`${result.accuracy}%`} note={`${result.score} / ${result.maxScore} оноо`}/>
+      <StatCard art="scorecard" tile="#E9FBF2" label="Зөв" value={`${result.correct}`} note="Зөв хариулт"/>
+      <StatCard art="pencil" tile="#FFE8EF" label="Буруу / хоосон" value={`${result.incorrect + result.unanswered}`} note={`${result.unanswered} хариулаагүй`}/>
+      <StatCard art="stopwatch" tile="#FFF0E6" label="Зарцуулсан" value={`${Math.floor(result.durationSeconds / 60)}:${String(result.durationSeconds % 60).padStart(2, "0")}`} note="Минут : секунд"/>
+    </section>
+    <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,.85fr)_minmax(0,1.15fr)]">
+      <section className={`${card} p-6`}>
+        <h2 className="font-sans text-lg font-semibold tracking-normal">Сэдвийн гүйцэтгэл</h2>
+        <p className="mt-1 text-sm text-[#5B6275]">Сулаас нь эхлэн эрэмбэлэв.</p>
+        <div className="mt-5 space-y-4">{topics.map((topic) => <div key={topic.topic}><div className="flex justify-between gap-3 text-sm"><span className="font-medium">{topic.topic}</span><span className="text-[#5B6275]">{topic.correct}/{topic.total} · {topic.accuracy}%</span></div><div className="mt-1.5 h-2 rounded-full bg-[#EEF0F6]"><div className={`h-full rounded-full ${topic.accuracy < 50 ? "bg-[#F472B6]" : topic.accuracy < 75 ? "bg-[#9DB0FF]" : "bg-[#2B4BE8]"}`} style={{ width: `${Math.max(topic.accuracy, 3)}%` }}/></div></div>)}</div>
+      </section>
+      <section className={`${card} p-6`}>
+        <div className="flex items-baseline justify-between"><h2 className="font-sans text-lg font-semibold tracking-normal">Асуултын тойм</h2><span className="text-xs font-medium text-[#5B6275]">{questions.length} асуулт</span></div>
+        <div className="mt-5 grid grid-cols-6 gap-2 sm:grid-cols-10">{questions.map((question) => { const state = result.answerResults[question.id] ?? "unanswered"; return <div key={question.id} title={state === "correct" ? "Зөв" : state === "incorrect" ? "Буруу" : "Хариулаагүй"} className={`grid h-10 place-items-center rounded-xl border-2 text-sm font-semibold ${STATE_STYLE[state]}`}>{question.questionNumber}</div>; })}</div>
+        <div className="mt-5 flex flex-wrap gap-5 text-xs font-medium text-[#5B6275]"><Legend className={STATE_STYLE.correct} label="Зөв"/><Legend className={STATE_STYLE.incorrect} label="Буруу"/><Legend className={STATE_STYLE.unanswered} label="Хариулаагүй"/></div>
+      </section>
     </div>
   </>;
 }
-function Stat({ icon: Icon, label, value }: { icon: typeof Target; label: string; value: string }) { return <div className="rounded-xl border bg-white p-5"><Icon size={18} className="text-primary"/><p className="mt-4 text-2xl font-bold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>; }
-function Legend({ color, label }: { color: string; label: string }) { return <span className="inline-flex items-center gap-2"><i className={`h-3 w-3 rounded border ${color}`}/>{label}</span>; }
+
+function Legend({ className, label }: { className: string; label: string }) { return <span className="inline-flex items-center gap-2"><i className={`h-3.5 w-3.5 rounded border-2 ${className}`}/>{label}</span>; }
