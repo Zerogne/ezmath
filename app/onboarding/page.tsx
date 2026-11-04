@@ -20,9 +20,11 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
   const { data: profile } = await supabase.from("profiles").select(`role, full_name, phone, ${GOAL_COLUMNS}` as const).eq("id", user.id).maybeSingle();
   if (profile && profile.role !== "student") redirect("/dashboard");
   const editing = edit === "1";
-  if (profile?.onboarded_at && !editing) redirect(nextPath);
+  // No redirect for onboarded students: saving goals mid-wizard refreshes this page, and a redirect here
+  // would throw the student out before the phone step. The wizard reads `startAt` only on first render.
   const [eyeshPlacement, satPlacement] = await Promise.all([findPlacementTest("EYESH"), findPlacementTest("SAT")]);
   return <OnboardingWizard
+    startAt={profile?.onboarded_at && !editing ? "done" : "exam"}
     name={profile?.full_name?.trim().split(/\s+/)[0] ?? ""}
     initial={goalFromProfile(profile)}
     editing={editing}

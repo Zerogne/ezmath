@@ -24,7 +24,8 @@ const EXAMS: { value: TargetExam; title: string; text: string }[] = [
 const HOURS = [2, 5, 8, 12, 20];
 const POSE: Record<Step, EziPose> = { exam: "wave", goal: "think", about: "read", phone: "point", done: "celebrate" };
 
-export function OnboardingWizard({ name, initial, editing, nextPath, phoneLinked, phoneEnabled, placement }: {
+export function OnboardingWizard({ startAt, name, initial, editing, nextPath, phoneLinked, phoneEnabled, placement }: {
+  startAt: "exam" | "done";
   name: string;
   initial: StudentGoal | null;
   editing: boolean;
@@ -36,7 +37,10 @@ export function OnboardingWizard({ name, initial, editing, nextPath, phoneLinked
   const router = useRouter();
   const now = new Date();
   const defaultYear = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
-  const [step, setStep] = useState<Step>("exam");
+  // Both are fixed on first render so a server refresh mid-wizard (after saving goals or verifying
+  // the phone) cannot move the student to another step or reshape the step list.
+  const [step, setStep] = useState<Step>(startAt);
+  const [askPhone] = useState(phoneEnabled && !phoneLinked);
   const [targetExam, setTargetExam] = useState<TargetExam | null>(initial?.targetExam ?? null);
   const [eyeshGoal, setEyeshGoal] = useState(initial?.eyeshGoal ?? 650);
   const [satGoal, setSatGoal] = useState(initial?.satGoal ?? 650);
@@ -48,7 +52,7 @@ export function OnboardingWizard({ name, initial, editing, nextPath, phoneLinked
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
-  const steps: Step[] = editing ? ["exam", "goal", "about"] : ["exam", "goal", "about", ...(phoneEnabled && !phoneLinked ? ["phone" as const] : []), "done"];
+  const steps: Step[] = editing ? ["exam", "goal", "about"] : ["exam", "goal", "about", ...(askPhone ? ["phone" as const] : []), "done"];
   const index = steps.indexOf(step);
   const wantsEyesh = targetExam !== "SAT";
   const wantsSat = targetExam !== "EYESH";
