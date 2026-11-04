@@ -5,6 +5,9 @@ import { SettingsForm } from "@/components/dashboard/portal-forms";
 import { planName, PortalHeader, PortalShell } from "@/components/dashboard/portal-shell";
 import { ArtTile, btnSmDark, Chip, portalCard, portalMuted } from "@/components/dashboard/portal-ui";
 import { getPortalData, type StudentPlan } from "@/lib/data/student-portal";
+import { PhoneSettings } from "@/components/dashboard/phone-settings";
+import { EXAM_LABELS, GRADE_LABELS, type StudentGoal } from "@/lib/goals";
+import { isVerifyMnConfigured } from "@/lib/verify-mn";
 
 export const metadata: Metadata = { title: "Тохиргоо" };
 
@@ -14,8 +17,10 @@ export default async function Page() {
     <PortalHeader title="Тохиргоо" description="Профайл болон багцын мэдээллээ удирдана."/>
     <div className="mt-6 grid max-w-[920px] gap-4">
       <SubscriptionDetails plan={d.plan}/>
+      <GoalSummary goal={d.goal}/>
       <SettingsForm name={d.profile.full_name ?? ""} avatarUrl={d.profile.avatar_url ?? ""}/>
       <section className={`${portalCard} flex items-center gap-4 p-5 sm:p-6`}><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#E8EEFF] text-[#2B4BE8]"><Mail size={20}/></span><div className="min-w-0"><p className="text-sm font-semibold">Нэвтрэх имэйл</p><p className={`mt-0.5 truncate text-sm ${portalMuted}`}>{d.email || "—"}</p></div></section>
+      <PhoneSettings phone={d.profile.phone ?? null} enabled={isVerifyMnConfigured()}/>
     </div>
   </PortalShell>;
 }
@@ -38,3 +43,18 @@ function features(code: StudentPlan["code"]) {
   return ["1 бүтэн mock эсвэл ЭЕШ", "Өдөрт 10 дасгал", "Хязгаартай хичээл", "Дэлгэрэнгүй тайлангүй"];
 }
 function date(value: string) { return new Intl.DateTimeFormat("mn-MN", { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Ulaanbaatar" }).format(new Date(value)); }
+
+function GoalSummary({ goal }: { goal: StudentGoal | null }) {
+  const items = goal ? [
+    ["Шалгалт", EXAM_LABELS[goal.targetExam]],
+    ...(goal.eyeshGoal ? [["ЭЕШ зорилго", `${goal.eyeshGoal}${goal.eyeshExamYear ? ` · ${goal.eyeshExamYear} он` : ""}`]] : []),
+    ...(goal.satGoal ? [["SAT Math зорилго", `${goal.satGoal}${goal.satExamMonth ? ` · ${goal.satExamMonth.slice(0, 7)}` : ""}`]] : []),
+    ...(goal.grade ? [["Анги", GRADE_LABELS[goal.grade]]] : []),
+    ...(goal.weeklyStudyHours ? [["7 хоногт", `~${goal.weeklyStudyHours} цаг`]] : []),
+    ...(goal.targetUniversity ? [["Сургууль", goal.targetUniversity]] : []),
+  ] : [];
+  return <section className={`${portalCard} p-5 sm:p-6`}>
+    <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-sans text-lg font-semibold tracking-normal">Зорилго</h2><Link href="/onboarding?edit=1" className={btnSmDark}>{goal ? "Зорилго засах" : "Зорилго тавих"}</Link></div>
+    {items.length > 0 && <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">{items.map(([label, value]) => <div key={label}><dt className={portalMuted}>{label}</dt><dd className="mt-0.5 font-semibold">{value}</dd></div>)}</dl>}
+  </section>;
+}

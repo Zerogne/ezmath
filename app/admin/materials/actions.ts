@@ -92,6 +92,23 @@ export async function setMaterialStatus(testId: string, status: "draft" | "publi
   return { success: true };
 }
 
+/** Makes `testId` the single placement test for its exam type (shown at the end of student onboarding), or clears it. */
+export async function setPlacementTest(testId: string, enabled: boolean): Promise<MaterialActionResult> {
+  if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
+  const admin = createAdminClient();
+  const { data: test } = await admin.from("tests").select("id, exam_type").eq("id", testId).maybeSingle();
+  if (!test) return { error: "Тест олдсонгүй." };
+  if (enabled) {
+    const { error: clearError } = await admin.from("tests").update({ is_placement: false }).eq("exam_type", test.exam_type).eq("is_placement", true).neq("id", testId);
+    if (clearError) return { error: "Түвшин тогтоох сорилыг шинэчилж чадсангүй." };
+  }
+  const { error } = await admin.from("tests").update({ is_placement: enabled }).eq("id", testId);
+  if (error) return { error: "Түвшин тогтоох сорилыг шинэчилж чадсангүй." };
+  revalidatePath("/admin/materials/sat");
+  revalidatePath("/admin/materials/eyesh");
+  return { success: true };
+}
+
 export async function getMaterialAttemptCount(testId: string): Promise<{ count?: number; error?: string }> {
   if (!await getAdminIdentity()) return { error: "Админ эрх шаардлагатай." };
   const { count, error } = await createAdminClient().from("test_attempts").select("id", { count: "exact", head: true }).eq("test_id", testId);

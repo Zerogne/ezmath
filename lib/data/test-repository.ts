@@ -46,3 +46,12 @@ export async function loadStudentQuestions(testId: string): Promise<StudentQuest
   for (const choice of choiceRows ?? []) choicesByQuestion.set(choice.question_id, [...(choicesByQuestion.get(choice.question_id) ?? []), { id: choice.id, label: choice.label, text: choice.text, imageUrl: choice.image_url ?? undefined }]);
   return questionRows.map((question) => ({ id: question.id, testId: question.test_id, questionNumber: question.question_number, questionText: question.question_text, questionType: question.question_type === "multi-blank" ? "multi-blank" as const : "multiple-choice" as const, responseFields: Array.isArray(question.response_fields) ? question.response_fields as { id: string; label: string }[] : [], topic: question.topic ?? undefined, imageUrl: question.image_url ?? undefined, choices: choicesByQuestion.get(question.id) ?? [] }));
 }
+
+/** The admin-chosen placement test for an exam, falling back to the newest published practice set. */
+export async function findPlacementTest(examType: "SAT" | "EYESH"): Promise<Test | undefined> {
+  if (!isSupabaseConfigured()) return mockTests.find((test) => test.examType === examType && test.type === "practice") ?? mockTests.find((test) => test.examType === examType);
+  const supabase = createPublicClient();
+  const { data: placement } = await supabase.from("tests").select("id").eq("exam_type", examType).eq("status", "published").eq("is_placement", true).maybeSingle();
+  const tests = (await listPublishedTests()).filter((test) => test.examType === examType && test.questionCount > 0);
+  return tests.find((test) => test.id === placement?.id) ?? tests.find((test) => test.type === "practice") ?? tests[0];
+}

@@ -58,6 +58,7 @@ Open [http://localhost:3000](http://localhost:3000). Without Supabase configurat
 | `BYL_API_TOKEN` | Server only | BYL Bearer token used to create hosted checkouts |
 | `BYL_WEBHOOK_SECRET` | Server only | BYL raw-body webhook signing secret |
 | `ANTHROPIC_API_KEY` | Server only | Claude Haiku key for converting PyMuPDF4LLM layout JSON into exam JSON |
+| `VERIFY_MN_API_KEY` | Server only | Verify.MN API key for reverse-SMS phone verification and password reset |
 
 Never expose `SUPABASE_SERVICE_ROLE_KEY` through a `NEXT_PUBLIC_` variable or client component. Never enable `ADMIN_DEMO_MODE` in a deployed environment.
 

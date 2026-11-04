@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getAdminIdentity } from "@/lib/admin/auth";
+import { rateLimit, RATE_LIMIT_MESSAGE } from "@/lib/rate-limit";
 import type { MaterialEditorData, MaterialQuestion } from "@/lib/admin/material-types";
 import { ensureImageBucket } from "@/lib/admin/question-images";
 import { SAT_DOMAINS, resolveSatSkill } from "@/lib/sat/taxonomy";
@@ -354,7 +355,10 @@ function mergeImports(imports: Record<string, unknown>[]) {
 }
 
 export async function POST(request: Request) {
-  if (!await getAdminIdentity()) return NextResponse.json({ error: "Админ эрх шаардлагатай." }, { status: 403 });
+  const adminIdentity = await getAdminIdentity();
+  if (!adminIdentity) return NextResponse.json({ error: "Админ эрх шаардлагатай." }, { status: 403 });
+  // Each import runs a PDF extraction and several paid LLM calls.
+  if (!await rateLimit("pdf-import", adminIdentity.id, 20, 3600)) return NextResponse.json({ error: RATE_LIMIT_MESSAGE }, { status: 429 });
   let stage = "request";
   try {
     const form = await request.formData();

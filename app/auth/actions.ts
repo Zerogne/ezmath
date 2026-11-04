@@ -6,6 +6,7 @@ import { safeNextPath } from "@/lib/auth/safe-next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { clientIp, rateLimit, RATE_LIMIT_MESSAGE } from "@/lib/rate-limit";
 
 export type AuthState = { error?: string; success?: string };
 
@@ -41,6 +42,7 @@ export async function signIn(_state: AuthState, formData: FormData): Promise<Aut
   if (!isSupabaseConfigured()) return { error: "Supabase тохируулагдаагүй байна. Environment variables-аа нэмнэ үү." };
   const { email, password, next } = credentials(formData);
   if (!email || !password) return { error: "Имэйл болон нууц үгээ оруулна уу." };
+  if (!await rateLimit("login-ip", await clientIp(), 30, 600) || !await rateLimit("login-email", email, 10, 600)) return { error: RATE_LIMIT_MESSAGE };
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: "Имэйл эсвэл нууц үг буруу байна." };
@@ -53,6 +55,8 @@ export async function signUp(_state: AuthState, formData: FormData): Promise<Aut
   const { email, password, fullName, next, role, schoolSlug, schoolCode } = credentials(formData);
   if (!email || !fullName || password.length < 8) return { error: "Нэр, зөв имэйл болон 8-аас дээш тэмдэгттэй нууц үг оруулна уу." };
   if (role === "teacher" && !schoolSlug) return { error: "Сургуулиа сонгоно уу." };
+  // Also slows down guessing school registration codes.
+  if (!await rateLimit("signup-ip", await clientIp(), 5, 3600)) return { error: RATE_LIMIT_MESSAGE };
   const admin = createAdminClient();
   let schoolId: string | null = null;
   if (role === "teacher") {
@@ -98,7 +102,7 @@ export async function signUp(_state: AuthState, formData: FormData): Promise<Aut
     await admin.auth.admin.deleteUser(data.user.id);
     return { error: "Бүртгэл үүссэн ч нэвтрүүлж чадсангүй. Дахин оролдоно уу." };
   }
-  redirect(next ?? (role === "teacher" ? "/teacher" : "/dashboard"));
+  redirect(role === "teacher" ? next ?? "/teacher" : `/onboarding${next ? `?next=${encodeURIComponent(next)}` : ""}`);
 }
 
 export async function signOut() {

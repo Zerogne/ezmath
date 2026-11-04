@@ -285,10 +285,10 @@ type MaterialRow = {
   updated_at: string;
 };
 
-export type AdminMaterialListItem = Test & { status: "draft" | "published" | "archived"; updated: string };
+export type AdminMaterialListItem = Test & { status: "draft" | "published" | "archived"; updated: string; isPlacement: boolean };
 
 export async function listAdminMaterials(examType: ExamType): Promise<AdminMaterialListItem[]> {
-  const tests = await asAdmin(request<MaterialRow[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,duration_minutes,difficulty,test_type,status,instructions,updated_at&exam_type=eq.${examType}&order=updated_at.desc`));
+  const tests = await asAdmin(request<(MaterialRow & { is_placement: boolean })[]>(`/rest/v1/tests?select=id,exam_type,title,subject,year,duration_minutes,difficulty,test_type,status,instructions,updated_at,is_placement&exam_type=eq.${examType}&order=updated_at.desc`));
   const testIds = tests.map((test) => test.id);
   const questions = testIds.length ? await request<{ test_id: string }[]>(`/rest/v1/questions?select=test_id&test_id=in.(${testIds.join(",")})`) : [];
   const counts = new Map<string, number>();
@@ -306,6 +306,7 @@ export async function listAdminMaterials(examType: ExamType): Promise<AdminMater
     type: test.test_type,
     status: test.status,
     updated: formatDate(test.updated_at),
+    isPlacement: test.is_placement,
   }));
 }
 

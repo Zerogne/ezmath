@@ -4,6 +4,7 @@ import type { StudentDashboardData } from "@/lib/data/student-dashboard";
 import { PlanBadge, PortalShell } from "@/components/dashboard/portal-shell";
 import { Art, Ezi, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { joinClass } from "@/app/dashboard/classes/actions";
+import { GoalProgress } from "@/components/dashboard/goal-progress";
 
 const DAILY_GOAL = 20;
 const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
@@ -41,7 +42,7 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 space-y-4"><NextExam test={nextTest}/><RecentTests attempts={recent}/><ActivityCard values={weekly}/></div>
-          <div className="space-y-4"><WeakTopics attempts={attempts}/><JoinClassCard/><QuestionBankCard/></div>
+          <div className="space-y-4"><GoalProgress goal={data.goal} attempts={attempts}/><WeakTopics attempts={attempts}/><JoinClassCard/><QuestionBankCard/></div>
         </div>
   </PortalShell>;
 }

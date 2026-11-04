@@ -6,6 +6,8 @@ import { SatHub } from "@/components/tests/sat-hub";
 import { listPublishedTests } from "@/lib/data/test-repository";
 import { PageHero } from "@/components/layout/page-hero";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export const metadata: Metadata = { title: "Бүх шалгалт нэг дор" };
 
@@ -13,7 +15,7 @@ const tabs = [["EYESH", "ЭЕШ"], ["SAT", "SAT"]] as const;
 
 export default async function TestsPage({ searchParams }: { searchParams: Promise<{ exam?: string }> }) {
   const { exam } = await searchParams;
-  const active = exam === "SAT" ? "SAT" : "EYESH";
+  const active = exam === "SAT" || exam === "EYESH" ? exam : await preferredExam();
   const tests = await listPublishedTests();
   const examTests = tests.filter((test) => test.examType === active);
   return <><Navbar/><main className="container-page py-12 sm:py-16">
@@ -23,4 +25,14 @@ export default async function TestsPage({ searchParams }: { searchParams: Promis
     <nav aria-label="Шалгалтын төрөл" className="mt-8 inline-flex rounded-full bg-[#F1F3F8] p-1">{tabs.map(([value, label]) => <Link key={value} href={`/tests?exam=${value}`} aria-current={active === value ? "page" : undefined} className={`rounded-full px-6 py-2 text-sm font-semibold transition ${active === value ? "bg-white text-[#0B1030] shadow-sm" : "text-[#5B6275] hover:text-[#0B1030]"}`}>{label}</Link>)}</nav>
     {active === "SAT" ? <SatHub tests={examTests}/> : <EyeshHub tests={examTests}/>}
   </main><SiteFooter/></>;
+}
+
+/** Signed-in students land on the exam they chose during onboarding; everyone else sees ЭЕШ first. */
+async function preferredExam(): Promise<"SAT" | "EYESH"> {
+  if (!isSupabaseConfigured()) return "EYESH";
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return "EYESH";
+  const { data } = await supabase.from("profiles").select("target_exam").eq("id", user.id).maybeSingle();
+  return data?.target_exam === "SAT" ? "SAT" : "EYESH";
 }

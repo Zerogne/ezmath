@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { deleteMaterial, getMaterialAttemptCount, setMaterialStatus } from "@/app/admin/materials/actions";
+import { deleteMaterial, getMaterialAttemptCount, setMaterialStatus, setPlacementTest } from "@/app/admin/materials/actions";
 import { Badge } from "@/components/ui/shadcn/badge";
 import { AdminTable } from "@/components/admin/data-table";
 import { AdminRowActions, type AdminRowAction } from "@/components/admin/row-actions";
@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { Test } from "@/types/exam";
 
 type MaterialStatus = "draft" | "published" | "archived";
-type AdminMaterial = Test & { status: MaterialStatus; updated: string };
+type AdminMaterial = Test & { status: MaterialStatus; updated: string; isPlacement: boolean };
 
 export function MaterialsTable({ materials, exam }: { materials: AdminMaterial[]; exam: "sat" | "eyesh" }) {
   const router = useRouter();
@@ -40,6 +40,13 @@ export function MaterialsTable({ materials, exam }: { materials: AdminMaterial[]
     else router.refresh();
   });
 
+  const togglePlacement = (id: string, enabled: boolean) => startTransition(async () => {
+    setError("");
+    const result = await setPlacementTest(id, enabled);
+    if (result.error) setError(result.error);
+    else router.refresh();
+  });
+
   const confirmDelete = () => {
     if (!deleteTarget) return;
     const material = deleteTarget;
@@ -58,10 +65,11 @@ export function MaterialsTable({ materials, exam }: { materials: AdminMaterial[]
       { label: "Засах", href: editHref },
       ...(material.status === "published" ? [{ label: "Тестийг нээх", href: `/tests/${material.id}` }, { label: "Draft болгох", onSelect: () => changeStatus(material.id, "draft"), disabled: pending }] : [{ label: "Нийтлэх", onSelect: () => changeStatus(material.id, "published"), disabled: pending }]),
       ...(material.status !== "archived" ? [{ label: "Archive хийх", onSelect: () => changeStatus(material.id, "archived"), disabled: pending }] : [{ label: "Draft болгож сэргээх", onSelect: () => changeStatus(material.id, "draft"), disabled: pending }]),
+      { label: material.isPlacement ? "Түвшин тогтоох сорилоос хасах" : "Түвшин тогтоох сорил болгох", onSelect: () => togglePlacement(material.id, !material.isPlacement), disabled: pending },
       { label: "Устгах", onSelect: () => openDelete(material), destructive: true, disabled: pending },
     ];
     const statusLabel = material.status === "published" ? "Published" : material.status === "archived" ? "Archived" : "Draft";
-    return <tr key={material.id}><td className="px-4 py-3"><Link href={editHref} className="font-semibold hover:text-primary">{material.title}</Link></td><td className="px-4 py-3 text-muted-foreground">{material.subject}</td><td className="px-4 py-3 text-muted-foreground">{exam === "sat" ? material.type : material.year ?? "—"}</td><td className="px-4 py-3">{material.questionCount}</td><td className="px-4 py-3">{material.durationMinutes} мин</td><td className="px-4 py-3"><Badge variant={material.status === "published" ? "success" : "secondary"}>{statusLabel}</Badge></td><td className="px-4 py-3 text-muted-foreground">{material.updated}</td><td className="px-4 py-3"><AdminRowActions label={`${material.title} үйлдэл`} actions={actions} /></td></tr>;
+    return <tr key={material.id}><td className="px-4 py-3"><Link href={editHref} className="font-semibold hover:text-primary">{material.title}</Link>{material.isPlacement && <Badge variant="secondary" className="ml-2">Түвшин тогтоох</Badge>}</td><td className="px-4 py-3 text-muted-foreground">{material.subject}</td><td className="px-4 py-3 text-muted-foreground">{exam === "sat" ? material.type : material.year ?? "—"}</td><td className="px-4 py-3">{material.questionCount}</td><td className="px-4 py-3">{material.durationMinutes} мин</td><td className="px-4 py-3"><Badge variant={material.status === "published" ? "success" : "secondary"}>{statusLabel}</Badge></td><td className="px-4 py-3 text-muted-foreground">{material.updated}</td><td className="px-4 py-3"><AdminRowActions label={`${material.title} үйлдэл`} actions={actions} /></td></tr>;
   })}</AdminTable>
   <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
     <AlertDialogContent>
