@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { StudentGrade, TargetExam } from "@/lib/supabase/database.types";
 import { GOAL_RANGE } from "@/lib/goals";
+import { isVerifyMnConfigured } from "@/lib/verify-mn";
 
 export type GoalInput = {
   targetExam: TargetExam;
@@ -39,6 +40,10 @@ export async function saveStudentGoals(input: GoalInput): Promise<{ error?: stri
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Дахин нэвтэрнэ үү." };
+  // Phone verification is required: a student without a verified phone is marked onboarded only once
+  // Verify.MN confirms it (see checkPhoneVerification). Existing onboarded_at values are never cleared.
+  const { data: profile } = await supabase.from("profiles").select("phone, onboarded_at").eq("id", user.id).maybeSingle();
+  const finished = Boolean(profile?.onboarded_at) || Boolean(profile?.phone) || !isVerifyMnConfigured();
   const { error } = await supabase.from("profiles").update({
     target_exam: input.targetExam,
     eyesh_goal: eyeshGoal,
@@ -48,7 +53,7 @@ export async function saveStudentGoals(input: GoalInput): Promise<{ error?: stri
     grade,
     weekly_study_hours: hours,
     target_university: university,
-    onboarded_at: new Date().toISOString(),
+    ...(finished && !profile?.onboarded_at ? { onboarded_at: new Date().toISOString() } : {}),
   }).eq("id", user.id);
   if (error) return { error: "Зорилгыг хадгалж чадсангүй. Дахин оролдоно уу." };
   revalidatePath("/dashboard", "layout");

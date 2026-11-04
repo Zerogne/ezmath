@@ -24,7 +24,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
   // would throw the student out before the phone step. The wizard reads `startAt` only on first render.
   const [eyeshPlacement, satPlacement] = await Promise.all([findPlacementTest("EYESH"), findPlacementTest("SAT")]);
   return <OnboardingWizard
-    startAt={profile?.onboarded_at && !editing ? "done" : "exam"}
+    startAt={editing ? "exam" : profile?.onboarded_at ? "done" : profile?.target_exam && !profile.phone && isVerifyMnConfigured() ? "phone" : "exam"}
     name={profile?.full_name?.trim().split(/\s+/)[0] ?? ""}
     initial={goalFromProfile(profile)}
     editing={editing}

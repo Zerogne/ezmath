@@ -25,7 +25,7 @@ const HOURS = [2, 5, 8, 12, 20];
 const POSE: Record<Step, EziPose> = { exam: "wave", goal: "think", about: "read", phone: "point", done: "celebrate" };
 
 export function OnboardingWizard({ startAt, name, initial, editing, nextPath, phoneLinked, phoneEnabled, placement }: {
-  startAt: "exam" | "done";
+  startAt: "exam" | "phone" | "done";
   name: string;
   initial: StudentGoal | null;
   editing: boolean;
@@ -118,7 +118,6 @@ export function OnboardingWizard({ startAt, name, initial, editing, nextPath, ph
         {step === "phone" && <>
           <Heading title="Утсаа баталгаажуулах" text="Нууц үгээ мартвал утсаараа сэргээх боломжтой болно. Таны дугаарыг өөр зорилгоор ашиглахгүй."/>
           <div className="mt-7"><PhoneVerify start={startPhoneLink} submitLabel="Код авах" onVerified={() => setStep("done")}/></div>
-          <button type="button" onClick={() => setStep("done")} className="mt-5 w-full text-center text-sm font-semibold text-[#5B6275] hover:text-[#0B1030]">Одоохондоо алгасах</button>
         </>}
 
         {step === "done" && <>

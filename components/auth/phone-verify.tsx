@@ -62,7 +62,7 @@ export function PhoneVerify({ start, onVerified, submitLabel = "Үргэлжлү
           <li className="flex items-baseline gap-3"><Step n={3}/><span><b className="font-display text-xl">{challenge.shortcode}</b> дугаар руу илгээнэ үү.</span></li>
         </ol>
         <a href={challenge.smsUri} className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#0B1030] text-sm font-semibold text-white hover:bg-[#1A2150] sm:hidden"><Smartphone size={16}/>SMS бичих</a>
-        <p className="mt-4 text-xs leading-5 text-[#5B6275]">SMS-ийн үнэ 150₮ (операторын тарифаар). Өөр SIM-ээс илгээвэл баталгаажихгүй.</p>
+        <p className="mt-4 text-xs leading-5 text-[#5B6275]">Өөр SIM-ээс илгээвэл баталгаажихгүй.</p>
       </div>
       <p role="status" className="flex items-center gap-2 text-sm text-[#5B6275]"><span className="h-2 w-2 animate-pulse rounded-full bg-[#2B4BE8]"/>SMS хүлээж байна… {minutes}:{String(secondsLeft % 60).padStart(2, "0")}</p>
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}

@@ -82,6 +82,8 @@ export async function checkPhoneVerification(id: string): Promise<CheckResult> {
   }
   if (row.purpose === "link_phone") {
     const { error } = await admin.from("profiles").update({ phone: row.phone, phone_verified_at: row.verified_at }).eq("id", row.user_id);
+    // Verifying the phone is the last required onboarding step.
+    if (!error) await admin.from("profiles").update({ onboarded_at: new Date().toISOString() }).eq("id", row.user_id).is("onboarded_at", null).not("target_exam", "is", null);
     await admin.from("phone_verifications").update({ consumed_at: new Date().toISOString() }).eq("id", id);
     if (error) return { status: "expired", error: error.code === "23505" ? "Энэ дугаар өөр бүртгэлд холбогдсон байна." : "Дугаарыг хадгалж чадсангүй." };
     revalidatePath("/dashboard/settings");
