@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { clientIp, rateLimit, RATE_LIMIT_MESSAGE } from "@/lib/rate-limit";
+import { LEGAL_VERSION } from "@/lib/legal";
 
 export type AuthState = { error?: string; success?: string };
 
@@ -55,6 +56,7 @@ export async function signUp(_state: AuthState, formData: FormData): Promise<Aut
   const { email, password, fullName, next, role, schoolSlug, schoolCode } = credentials(formData);
   if (!email || !fullName || password.length < 8) return { error: "Нэр, зөв имэйл болон 8-аас дээш тэмдэгттэй нууц үг оруулна уу." };
   if (role === "teacher" && !schoolSlug) return { error: "Сургуулиа сонгоно уу." };
+  if (formData.get("acceptTerms") !== "on") return { error: "Үйлчилгээний нөхцөл болон Нууцлалын бодлогыг зөвшөөрнө үү." };
   // Also slows down guessing school registration codes.
   if (!await rateLimit("signup-ip", await clientIp(), 5, 3600)) return { error: RATE_LIMIT_MESSAGE };
   const admin = createAdminClient();
@@ -71,7 +73,8 @@ export async function signUp(_state: AuthState, formData: FormData): Promise<Aut
     password,
     email_confirm: true,
     user_metadata: { full_name: fullName },
-    app_metadata: role === "teacher" ? { account_type: "teacher", school_id: schoolId } : { account_type: "student" },
+    // app_metadata is only writable with the service role, so it is a trustworthy record of consent.
+    app_metadata: { ...(role === "teacher" ? { account_type: "teacher", school_id: schoolId } : { account_type: "student" }), terms_version: LEGAL_VERSION, terms_accepted_at: new Date().toISOString() },
   });
   if (error || !data.user) return { error: signUpErrorMessage(error?.code) };
   if (role === "teacher") {

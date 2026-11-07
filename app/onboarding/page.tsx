@@ -30,6 +30,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
     editing={editing}
     nextPath={editing ? "/dashboard/settings" : nextPath}
     phoneLinked={Boolean(profile?.phone)}
+    needsConsent={!user.app_metadata?.terms_version}
     phoneEnabled={isVerifyMnConfigured()}
     placement={{ EYESH: eyeshPlacement ? { id: eyeshPlacement.id, title: eyeshPlacement.title, questionCount: eyeshPlacement.questionCount, durationMinutes: eyeshPlacement.durationMinutes } : null, SAT: satPlacement ? { id: satPlacement.id, title: satPlacement.title, questionCount: satPlacement.questionCount, durationMinutes: satPlacement.durationMinutes } : null }}
   />;

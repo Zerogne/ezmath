@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { StudentGrade, TargetExam } from "@/lib/supabase/database.types";
 import { GOAL_RANGE } from "@/lib/goals";
 import { isVerifyMnConfigured } from "@/lib/verify-mn";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { LEGAL_VERSION } from "@/lib/legal";
 
 export type GoalInput = {
   targetExam: TargetExam;
@@ -16,6 +18,8 @@ export type GoalInput = {
   grade: StudentGrade | null;
   weeklyStudyHours: number | null;
   targetUniversity: string;
+  /** Consent checkbox shown to accounts that have not accepted the terms (Google sign-ups). */
+  acceptTerms?: boolean;
 };
 
 const GRADES: StudentGrade[] = ["9", "10", "11", "12", "graduated"];
@@ -40,6 +44,12 @@ export async function saveStudentGoals(input: GoalInput): Promise<{ error?: stri
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Дахин нэвтэрнэ үү." };
+  if (!user.app_metadata?.terms_version) {
+    if (!input.acceptTerms) return { error: "Үйлчилгээний нөхцөл болон Нууцлалын бодлогыг зөвшөөрнө үү." };
+    // app_metadata can only be written with the service role, so it is a trustworthy record of consent.
+    const { error: consentError } = await createAdminClient().auth.admin.updateUserById(user.id, { app_metadata: { ...user.app_metadata, terms_version: LEGAL_VERSION, terms_accepted_at: new Date().toISOString() } });
+    if (consentError) return { error: "Зөвшөөрлийг хадгалж чадсангүй. Дахин оролдоно уу." };
+  }
   // Phone verification is required: a student without a verified phone is marked onboarded only once
   // Verify.MN confirms it (see checkPhoneVerification). Existing onboarded_at values are never cleared.
   const { data: profile } = await supabase.from("profiles").select("phone, onboarded_at").eq("id", user.id).maybeSingle();

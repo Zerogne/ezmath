@@ -24,8 +24,10 @@ const EXAMS: { value: TargetExam; title: string; text: string }[] = [
 const HOURS = [2, 5, 8, 12, 20];
 const POSE: Record<Step, EziPose> = { exam: "wave", goal: "think", about: "read", phone: "point", done: "celebrate" };
 
-export function OnboardingWizard({ startAt, name, initial, editing, nextPath, phoneLinked, phoneEnabled, placement }: {
+export function OnboardingWizard({ startAt, needsConsent, name, initial, editing, nextPath, phoneLinked, phoneEnabled, placement }: {
   startAt: "exam" | "phone" | "done";
+  /** True for accounts (Google sign-ups) that have not accepted the terms yet. */
+  needsConsent: boolean;
   name: string;
   initial: StudentGoal | null;
   editing: boolean;
@@ -42,6 +44,7 @@ export function OnboardingWizard({ startAt, name, initial, editing, nextPath, ph
   const [step, setStep] = useState<Step>(startAt);
   const [askPhone] = useState(phoneEnabled && !phoneLinked);
   const [targetExam, setTargetExam] = useState<TargetExam | null>(initial?.targetExam ?? null);
+  const [accepted, setAccepted] = useState(false);
   const [eyeshGoal, setEyeshGoal] = useState(initial?.eyeshGoal ?? 650);
   const [satGoal, setSatGoal] = useState(initial?.satGoal ?? 650);
   const [eyeshYear, setEyeshYear] = useState(initial?.eyeshExamYear ?? defaultYear);
@@ -62,7 +65,7 @@ export function OnboardingWizard({ startAt, name, initial, editing, nextPath, ph
     if (!targetExam) return;
     setError("");
     startTransition(async () => {
-      const result = await saveStudentGoals({ targetExam, eyeshGoal, satGoal, eyeshExamYear: eyeshYear, satExamMonth: satMonth || null, grade, weeklyStudyHours: hours, targetUniversity: university });
+      const result = await saveStudentGoals({ targetExam, eyeshGoal, satGoal, eyeshExamYear: eyeshYear, satExamMonth: satMonth || null, grade, weeklyStudyHours: hours, targetUniversity: university, acceptTerms: accepted });
       if (result.error) { setError(result.error); return; }
       if (editing) { router.push(nextPath); router.refresh(); return; }
       setStep(steps[index + 1]);
@@ -88,7 +91,8 @@ export function OnboardingWizard({ startAt, name, initial, editing, nextPath, ph
             <span className="min-w-0 flex-1"><span className="block text-[17px] font-semibold">{exam.title}</span><span className="block text-sm text-[#5B6275]">{exam.text}</span></span>
             {targetExam === exam.value && <CheckCircle2 className="text-[#2B4BE8]" size={22}/>}
           </button>)}</div>
-          <Nav onNext={() => setStep("goal")} nextDisabled={!targetExam}/>
+          {needsConsent && <label className="mt-6 flex items-start gap-3 rounded-xl border-2 border-[#E4E7F0] p-3.5 text-sm leading-6"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[#2B4BE8]"/><span><Link href="/terms" target="_blank" className="font-semibold text-[#2B4BE8] hover:underline">Үйлчилгээний нөхцөл</Link> болон <Link href="/privacy" target="_blank" className="font-semibold text-[#2B4BE8] hover:underline">Нууцлалын бодлого</Link>-ыг уншиж, зөвшөөрч байна. 18 нас хүрээгүй бол эцэг эх, асран хамгаалагч маань зөвшөөрсөн.</span></label>}
+          <Nav onNext={() => setStep("goal")} nextDisabled={!targetExam || (needsConsent && !accepted)}/>
         </>}
 
         {step === "goal" && <>
