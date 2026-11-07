@@ -2,12 +2,8 @@
 export const LEGAL_VERSION = "2026-11-07";
 export const LEGAL_EFFECTIVE_DATE = "2026 оны 11 сарын 7";
 
-/**
- * Who runs EzMath. It is operated by an individual until a company is registered.
- * TODO(legal): fill in the operator's full name and a support email before launch; the legal pages
- * show a contact line only once `email` is set.
- */
+/** Who runs EzMath: an individual until a company is registered. Add `name` to show it on the legal pages. */
 export const OPERATOR = {
   name: "",
-  email: "",
+  email: "aniragency.mn@gmail.com",
 };

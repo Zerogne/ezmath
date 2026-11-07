@@ -37,12 +37,9 @@ The migration is local only until the live integration begins. Do not deploy it 
 3. `BYL_PROJECT_ID`
 4. Webhook signing secret
 5. BYL product price lookup keys
-6. BYL recurring price lookup keys for `standard_monthly` and `mentor_monthly`
 7. Business verification and settlement bank account before Live mode
 
-Plans are fixed-length passes sold as one-time BYL prices: `BYL_WEEKLY_PRICE_ID`, `BYL_MONTHLY_PRICE_ID` and `BYL_QUARTERLY_PRICE_ID` hold the numeric price IDs for the 7-day, 1-month and 3-month plans (`lib/payments/plans.ts`). Each BYL price must charge exactly the plan's `priceMnt`, or the webhook rejects the payment. A pass bought while another is active starts when the current one ends. `BYL_STANDARD_PRICE_ID` and `BYL_MENTOR_PRICE_ID` map the earlier monthly plans so their existing subscriptions keep resolving.
-
-The webhook also requires `BYL_STANDARD_PRICE_ID` and `BYL_MENTOR_PRICE_ID`, using the numeric recurring-price IDs returned by BYL. This keeps subscription plan mapping server-controlled even though BYL webhook subscription objects currently include the price ID rather than its lookup key. (legacy plans)
+Plans are fixed-length passes sold as one-time BYL prices: `BYL_WEEKLY_PRICE_ID`, `BYL_MONTHLY_PRICE_ID` and `BYL_QUARTERLY_PRICE_ID` hold the numeric price IDs for the 7-day, 1-month and 3-month plans (`lib/payments/plans.ts`). Each BYL price must charge exactly the plan's `priceMnt`, or the webhook rejects the payment. A pass bought while another is active starts when the current one ends.
 
 Set `BYL_TEST_MODE=true` only for a BYL Test project. Checkout orders and webhook amount validation then use BYL's documented fixed ₮50 test transaction amount while the landing page continues to show the intended Live prices. Set it to `false` before switching the BYL project to Live mode.
 
@@ -50,11 +47,12 @@ Set `BYL_TEST_MODE=true` only for a BYL Test project. Checkout orders and webhoo
 
 | Plan | Price | Access |
 | --- | ---: | --- |
-| Free | ₮0 | One lifetime full mock or ЭЕШ attempt, 10 daily topic exercises, limited course previews, no detailed exam report |
-| Standard | ₮49,000/month | All courses, exams and exercises, detailed reports, AI-personalized analysis and study schedule |
-| Mentor+ | ₮149,000/month | Everything in Standard plus weekly 1:1 mentoring, mentor-reviewed plan adjustments, priority solution review, monthly parent report and priority chat |
+| No plan | — | One full mock or ЭЕШ attempt, 10 question-bank answers a day, first lesson of each section, no report or AI |
+| 7 хоног (`weekly`) | ₮8,900 one-time | Everything: all mocks, lessons, unlimited exercises, detailed reports, AI mock analysis and weekly AI plan, for 7 days |
+| 1 сар (`monthly`) | ₮14,900 one-time | Same, for 1 month |
+| 3 сар (`quarterly`) | ₮29,900 one-time | Same, for 3 months |
 
-Paid access is recognized while BYL reports `trialing`, `active`, or `past_due`. It is revoked when the verified webhook reports `subscription.canceled`. BYL subscriptions use request-to-pay renewal rather than automatic card charging.
+Payments are one-time and never renew automatically. Access lasts until `current_period_end`; a pass bought while another is active starts when the current one ends. Payments are non-refundable (see `/terms`).
 
 ## Planned flow
 

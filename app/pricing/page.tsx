@@ -26,7 +26,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
       <div className="container-page"><PageHero chip="Үнийн багц" chipIcon="₮" chipBg="#FFB020" title="Өөрт тохирох багцаа сонго" text="Бүх багц ижил боломжтой — зөвхөн хугацаа нь өөр. Нэг удаа төлж, автомат сунгалтгүй." pose="trophy"/></div>
       {payment && paymentMessages[payment] && <p role="alert" className="container-page mt-6 rounded-[18px] border-2 border-red-100 bg-red-50 px-4 py-3 text-center text-sm text-red-700">{paymentMessages[payment]}</p>}
       <div className="container-page mt-10 grid items-stretch gap-5 lg:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.code} {...plan}/>)}</div>
-      <p className="container-page mt-5 text-center text-sm text-[#5B6275]">Төлбөрийг BYL-ийн аюулгүй хуудсаар нэг удаа төлнө. Хугацаа дуусахад автоматаар сунгагдахгүй; эрх идэвхтэй байхад дахин авбал хугацаа нь нэмэгдэнэ. Дэлгэрэнгүйг <Link href="/terms#plans" className="font-semibold text-[#2B4BE8] hover:underline">Үйлчилгээний нөхцөл</Link>-өөс үзнэ үү.</p>
+      <p className="container-page mt-5 text-center text-sm text-[#5B6275]">Төлбөрийг BYL-ийн аюулгүй хуудсаар нэг удаа төлнө. Хугацаа дуусахад автоматаар сунгагдахгүй; эрх идэвхтэй байхад дахин авбал хугацаа нь нэмэгдэнэ. Төлсөн төлбөр буцаагдахгүй. Дэлгэрэнгүйг <Link href="/terms#plans" className="font-semibold text-[#2B4BE8] hover:underline">Үйлчилгээний нөхцөл</Link>-өөс үзнэ үү.</p>
       <Features/>
       <Schools/>
       <Faq/>
@@ -75,6 +75,7 @@ const faqs = [
   ["Багцууд юугаараа ялгаатай вэ?", "Бүх багц яг ижил боломжтой: бүх mock шалгалт, хичээл, хязгааргүй дасгал, дэлгэрэнгүй тайлан, AI дүн шинжилгээ болон 7 хоног бүрийн AI төлөвлөгөө. Зөвхөн эрхийн хугацаа нь өөр."],
   ["Автоматаар сунгагдах уу?", "Үгүй. Нэг удаа төлж, сонгосон хугацаандаа эрх эдэлнэ. Хугацаа дуусахад картаас мөнгө татахгүй."],
   ["Эрх идэвхтэй байхад дахин авбал яах вэ?", "Шинэ хугацаа одоогийн эрхийн дуусах өдрөөс эхэлж нэмэгдэнэ — төлсөн өдөр тань алдагдахгүй."],
+  ["Төлбөрөө буцааж авч болох уу?", "Үгүй. Багц төлбөр баталгаажмагц шууд нээгддэг тул төлсөн төлбөрийг буцаан олгохгүй. Төлсөн ч эрх нээгдээгүй бол бидэнд мэдэгдээрэй — шалгаад нээж өгнө."],
   ["Төлсний дараа эрх хэзээ нээгдэх вэ?", "Төлбөрийн хуудас BYL дээр нээгдэнэ. Төлбөр баталгаажмагц багцын эрх таны бүртгэлд автоматаар нээгдэнэ."],
 ];
 

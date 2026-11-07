@@ -1,10 +1,8 @@
 /** Plans on sale: same features, different length. */
 export const PAID_PLAN_CODES = ["weekly", "monthly", "quarterly"] as const;
-/** Earlier monthly plans, kept so existing subscriptions and payment history still resolve. */
-export const LEGACY_PLAN_CODES = ["standard_monthly", "mentor_monthly"] as const;
 
 export type PaidPlanCode = (typeof PAID_PLAN_CODES)[number];
-export type SubscriptionPlanCode = PaidPlanCode | (typeof LEGACY_PLAN_CODES)[number];
+export type SubscriptionPlanCode = PaidPlanCode;
 /** "free" means the student has no current plan (limited access). It is not sold. */
 export type PlanCode = "free" | SubscriptionPlanCode;
 
@@ -45,15 +43,13 @@ export function isPaidPlanCode(value: string): value is PaidPlanCode {
 
 export function planName(code: PlanCode | string) {
   if (isPaidPlanCode(code)) return planByCode[code].name;
-  if (code === "standard_monthly") return "Стандарт";
-  if (code === "mentor_monthly") return "Ментор+";
   return "Багцгүй";
 }
 
 /** End of the access period that starts at `start` for one payment of `code`. */
 export function addPlanPeriod(start: Date, code: SubscriptionPlanCode) {
   const end = new Date(start);
-  const period = isPaidPlanCode(code) ? planByCode[code].period : { months: 1 };
+  const period = planByCode[code].period;
   if ("days" in period) end.setUTCDate(end.getUTCDate() + period.days);
   else end.setUTCMonth(end.getUTCMonth() + period.months);
   return end;

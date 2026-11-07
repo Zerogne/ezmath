@@ -8,6 +8,7 @@ import { PhoneVerify } from "@/components/auth/phone-verify";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/layout/logo";
 import { Ezi } from "@/components/home/redesign/illustrations";
+import { OPERATOR } from "@/lib/legal";
 
 const input = "h-12 rounded-xl border-2 border-[#E4E7F0] bg-white px-3.5 font-normal placeholder:text-[#9AA0B4] focus:border-[#2B4BE8] focus:outline-none";
 
@@ -42,8 +43,7 @@ export function ForgotPassword({ enabled }: { enabled: boolean }) {
             <Button type="submit" size="lg" className="w-full" loading={pending}>{pending ? "Хадгалж байна…" : "Нууц үг солих"}</Button>
           </form>
           : <PhoneVerify start={startPasswordReset} submitLabel="Код авах" onVerified={setVerified}/>}</div>
-      {/* TODO: link a real support contact (email / Facebook page) for students who never verified a phone. */}
-      <p className="mt-6 text-center text-sm text-muted-foreground">Утсаа баталгаажуулаагүй бол EzMath-ийн админд хандана уу.</p>
+      <p className="mt-6 text-center text-sm text-muted-foreground">Утсаа баталгаажуулаагүй бол <a href={`mailto:${OPERATOR.email}`} className="font-semibold text-primary hover:underline">{OPERATOR.email}</a> хаягаар бидэнд бичээрэй.</p>
     </section>
   </main>;
 }

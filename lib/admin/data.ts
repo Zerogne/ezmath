@@ -1,5 +1,5 @@
 import "server-only";
-import { planName } from "@/lib/payments/plans";
+import { isPaidPlanCode, planName } from "@/lib/payments/plans";
 
 import { getAdminIdentity } from "@/lib/admin/auth";
 import type { ExamType, Test } from "@/types/exam";
@@ -191,12 +191,12 @@ export async function getAdminDashboardData() {
   const lastThirty = daily.reduce((sum, item) => sum + item.count, 0);
 
   // Paid revenue per month for the last six months, split by plan.
-  const months = Array.from({ length: 6 }, (_, index) => { const date = new Date(sixMonthsAgo); date.setUTCMonth(date.getUTCMonth() + index); return { key: date.toISOString().slice(0, 7), label: `${date.getUTCMonth() + 1}-р`, standard: 0, mentor: 0 }; });
+  const months = Array.from({ length: 6 }, (_, index) => { const date = new Date(sixMonthsAgo); date.setUTCMonth(date.getUTCMonth() + index); return { key: date.toISOString().slice(0, 7), label: `${date.getUTCMonth() + 1}-р`, weekly: 0, monthly: 0, quarterly: 0 }; });
   const monthIndex = new Map(months.map((month, index) => [month.key, index]));
   for (const payment of paidPayments) {
     const index = monthIndex.get((payment.paid_at ?? payment.created_at).slice(0, 7));
     if (index === undefined) continue;
-    if (payment.plan_code === "mentor_monthly") months[index].mentor += payment.amount_mnt; else months[index].standard += payment.amount_mnt;
+    if (isPaidPlanCode(payment.plan_code)) months[index][payment.plan_code] += payment.amount_mnt;
   }
 
   return {

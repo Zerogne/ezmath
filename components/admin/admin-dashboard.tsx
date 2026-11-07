@@ -109,21 +109,22 @@ function SignupChart({ signups }: { signups: Data["signups"] }) {
   </section>;
 }
 
+const REVENUE_SERIES = [["quarterly", "#7C4DEB"], ["monthly", "#2B4BE8"], ["weekly", "#F59E0B"]] as const;
+
 function RevenueChart({ months }: { months: Data["revenueByMonth"] }) {
-  const totals = months.map((month) => month.standard + month.mentor);
+  const totals = months.map((month) => month.weekly + month.monthly + month.quarterly);
   const max = Math.max(...totals, 1);
   const top = totals.indexOf(Math.max(...totals));
   return <section className={card}>
-    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className={title}>Орлого багцаар</h2><span className="flex gap-4 text-xs font-medium text-[#5B6275]"><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-[3px] bg-[#2B4BE8]"/>Стандарт</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-[3px] bg-[#D97706]"/>Ментор+</span></span></div>
+    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className={title}>Орлого багцаар</h2><span className="flex gap-4 text-xs font-medium text-[#5B6275]">{[...REVENUE_SERIES].reverse().map(([code, color]) => <span key={code} className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-[3px]" style={{ background: color }}/>{planName(code)}</span>)}</span></div>
     <p className="mt-1.5 text-[13px] text-[#5B6275]">Сар бүрийн нийт орлого</p>
     <div className="mt-3.5 flex gap-2.5 border-b border-[#EEF0F6]">{months.map((month, index) => {
       const total = totals[index];
       return <div key={month.key} className="flex flex-1 flex-col items-center gap-2 pb-2">
-        <div className="flex h-[170px] w-full flex-col items-center justify-end">
+        <div className="flex h-[170px] w-full flex-col items-center justify-end gap-0.5">
           {index === top && total > 0 && <span className="mb-1 text-xs font-semibold">{millions(total)}</span>}
-          {month.mentor > 0 && <i className="block w-[30px] rounded-t-md bg-[#D97706]" style={{ height: `${month.mentor / max * 150}px` }}/>}
-          {month.mentor > 0 && month.standard > 0 && <i className="block h-0.5 w-[30px] bg-white"/>}
-          <i className={`block w-[30px] rounded-b-[3px] bg-[#2B4BE8] ${month.mentor > 0 ? "" : "rounded-t-md"}`} style={{ height: `${Math.max(total ? 0 : 2, month.standard / max * 150)}px` }}/>
+          {total === 0 && <i className="block h-0.5 w-[30px] rounded-md bg-[#EEF0F6]"/>}
+          {REVENUE_SERIES.map(([code, color]) => month[code] > 0 && <i key={code} className="block w-[30px] rounded-[3px]" style={{ background: color, height: `${month[code] / max * 150}px` }}/>)}
         </div>
         <span className="text-[11px] font-medium text-[#9AA0B4]">{month.label}</span>
       </div>;
