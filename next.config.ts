@@ -33,6 +33,9 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["node-tikzjax"],
   outputFileTracingIncludes: {
     "/api/admin/materials/tikz": ["./node_modules/node-tikzjax/tex/**/*", "./node_modules/node-tikzjax/css/bakoma/ttf/**/*"],
+    // Saving a module/submodule/topic draws its TikZ figures in the page's Server Action (lib/latex/tikz-store.ts).
+    "/admin/lessons": ["./node_modules/node-tikzjax/tex/**/*", "./node_modules/node-tikzjax/css/bakoma/ttf/**/*"],
+    "/admin/lessons/**": ["./node_modules/node-tikzjax/tex/**/*", "./node_modules/node-tikzjax/css/bakoma/ttf/**/*"],
   },
   async headers() {
     return [{

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Eye, Lightbulb, PenLine, X } from "lucide-react";
 import type { Practice } from "@/lib/learning/course-catalog";
+import { LatexContent } from "@/components/math/latex-content";
 import { MathText } from "@/components/math/math-text";
 
 /** Loose comparison: case, spaces, $ signs and "," vs "." decimal marks don't matter. */
@@ -15,7 +16,7 @@ export function PracticeBlock({ practice, compact = false }: { practice: Practic
   return <div className={compact ? "space-y-3" : "space-y-4"}>
     {practice.example && <div className={`rounded-[18px] border-2 border-[#E8EEFF] bg-[#F7F9FF] ${compact ? "p-4" : "p-5"}`}>
       <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2B4BE8]"><Lightbulb size={14}/>Жишээ</p>
-      <div className={`mt-2 whitespace-pre-line leading-relaxed ${compact ? "text-[15px]" : "text-[16px]"}`}><MathText>{practice.example}</MathText></div>
+      <LatexContent source={practice.example} className={`mt-2 leading-relaxed ${compact ? "text-[15px]" : "text-[16px]"}`}/>
     </div>}
     {practice.problem && practice.answer && <TestProblem problem={practice.problem} answer={practice.answer} compact={compact}/>}
   </div>;
@@ -35,7 +36,7 @@ function TestProblem({ problem, answer, compact }: { problem: string; answer: st
 
   return <div className={`rounded-[18px] border-2 transition-colors ${tone} ${compact ? "p-4" : "p-5"}`}>
     <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7C4DEB]"><PenLine size={14}/>Өөрийгөө шалга</p>
-    <div className={`mt-2 whitespace-pre-line leading-relaxed ${compact ? "text-[15px]" : "text-[16px]"}`}><MathText>{problem}</MathText></div>
+    <LatexContent source={problem} className={`mt-2 leading-relaxed ${compact ? "text-[15px]" : "text-[16px]"}`}/>
     <form onSubmit={check} className="mt-4 flex gap-2">
       <input value={value} onChange={(event) => { setValue(event.target.value); setResult(null); }} aria-label="Таны хариу" placeholder="Хариугаа бич" className="h-11 min-w-0 flex-1 rounded-xl border-2 border-[#E3E6EF] bg-white px-3.5 text-[15px] outline-none transition focus:border-[#7C4DEB]"/>
       <button type="submit" disabled={!value.trim()} className="h-11 shrink-0 rounded-xl bg-[#0B1030] px-4 text-sm font-semibold text-white transition hover:bg-[#1A2150] disabled:opacity-40">Шалгах</button>

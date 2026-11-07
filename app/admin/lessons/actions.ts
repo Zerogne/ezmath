@@ -5,6 +5,7 @@ import { getAdminIdentity } from "@/lib/admin/auth";
 import { coreMathCourse } from "@/lib/learning/course-catalog";
 import { listAllModules } from "@/lib/data/course-catalog";
 import { createClient } from "@/lib/supabase/server";
+import { storeTikzDrawings } from "@/lib/latex/tikz-store";
 
 export type LessonFormState = { error?: string; success?: string; id?: string };
 export type LessonActionResult = { error?: string; success?: true };
@@ -90,6 +91,8 @@ export async function createModule(_: ModuleFormState, formData: FormData): Prom
   if (!admin || admin.id === "demo-admin") return { error: "Админ эрх болон Supabase холболт шаардлагатай." };
   const fields = parseModuleFields(formData);
   if ("error" in fields) return fields;
+  const tikzError = await storeTikzDrawings([fields.practice.example ?? "", fields.practice.test_problem ?? ""]);
+  if (tikzError) return { error: tikzError };
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
   if (parentId) {
     const parent = (await listAllModules()).find((item) => item.id === parentId);
@@ -125,6 +128,8 @@ export async function updateModule(_: ModuleFormState, formData: FormData): Prom
   if (target.builtin) return { error: "Үндсэн модулийг засах боломжгүй." };
   const fields = parseModuleFields(formData);
   if ("error" in fields) return fields;
+  const tikzError = await storeTikzDrawings([fields.practice.example ?? "", fields.practice.test_problem ?? ""]);
+  if (tikzError) return { error: tikzError };
   const supabase = await createClient();
   const { error } = await supabase.from("course_modules").update({ title: fields.title, description: fields.description, ...fields.practice }).eq("id", moduleId);
   if (error) return { error: error.message || "Модуль шинэчилж чадсангүй." };
@@ -153,6 +158,8 @@ export async function createLesson(_: LessonFormState, formData: FormData): Prom
   if (!admin || admin.id === "demo-admin") return { error: "Админ эрх болон Supabase холболт шаардлагатай." };
   const parsed = parseLesson(formData, await submoduleIds());
   if ("error" in parsed) return parsed;
+  const tikzError = await storeTikzDrawings([parsed.practice.example ?? "", parsed.practice.test_problem ?? ""]);
+  if (tikzError) return { error: tikzError };
 
   const supabase = await createClient();
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -185,6 +192,8 @@ export async function updateLesson(_: LessonFormState, formData: FormData): Prom
   if (!lessonId) return { error: "Сэдэв олдсонгүй." };
   const parsed = parseLesson(formData, await submoduleIds());
   if ("error" in parsed) return parsed;
+  const tikzError = await storeTikzDrawings([parsed.practice.example ?? "", parsed.practice.test_problem ?? ""]);
+  if (tikzError) return { error: tikzError };
 
   const supabase = await createClient();
   const { error } = await supabase.from("course_lessons").update({
