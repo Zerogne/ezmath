@@ -42,7 +42,7 @@ export function ForgotPassword({ enabled }: { enabled: boolean }) {
             {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
             <Button type="submit" size="lg" className="w-full" loading={pending}>{pending ? "Хадгалж байна…" : "Нууц үг солих"}</Button>
           </form>
-          : <PhoneVerify start={startPasswordReset} submitLabel="Код авах" onVerified={setVerified}/>}</div>
+          : <PhoneVerify start={startPasswordReset} onVerified={setVerified}/>}</div>
       <p className="mt-6 text-center text-sm text-muted-foreground">Утсаа баталгаажуулаагүй бол <a href={`mailto:${OPERATOR.email}`} className="font-semibold text-primary hover:underline">{OPERATOR.email}</a> хаягаар бидэнд бичээрэй.</p>
     </section>
   </main>;

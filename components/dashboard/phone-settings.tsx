@@ -16,6 +16,6 @@ export function PhoneSettings({ phone, enabled }: { phone: string | null; enable
       <div className="min-w-0 flex-1"><p className="text-sm font-semibold">Утасны дугаар</p><p className={`mt-0.5 text-sm ${portalMuted}`}>{phone ? `${formatPhone(phone)} · баталгаажсан` : "Нууц үгээ мартвал утсаараа сэргээхийн тулд баталгаажуулна уу."}</p></div>
       {enabled && !changing && <button type="button" onClick={() => setChanging(true)} className={btnSmOutline}>{phone ? "Дугаар солих" : "Баталгаажуулах"}</button>}
     </div>
-    {changing && <div className="mt-5 max-w-md"><PhoneVerify start={startPhoneLink} submitLabel="Код авах" onVerified={() => { setChanging(false); router.refresh(); }}/></div>}
+    {changing && <div className="mt-5 max-w-md"><PhoneVerify start={startPhoneLink} onVerified={() => { setChanging(false); router.refresh(); }}/></div>}
   </section>;
 }
