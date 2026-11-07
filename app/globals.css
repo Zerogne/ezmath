@@ -73,3 +73,10 @@ body {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Phone menu (components/layout/mobile-menu.tsx): items drop in one after another when it opens. */
+.mobile-menu .menu-item { opacity: 0; transform: translateY(-6px); transition: opacity .22s ease, transform .22s ease; }
+.mobile-menu[data-open] .menu-item { opacity: 1; transform: none; transition-delay: calc(var(--i, 0) * 35ms + 60ms); }
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu .menu-item { opacity: 1; transform: none; transition: none; }
+}
