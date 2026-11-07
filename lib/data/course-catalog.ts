@@ -1,11 +1,17 @@
 import "server-only";
-import { coreMathCourse, type Course, type CourseMainModule, type Lesson, type LessonInContext } from "@/lib/learning/course-catalog";
+import { coreMathCourse, type Course, type CourseMainModule, type Lesson, type LessonInContext, type Practice } from "@/lib/learning/course-catalog";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 type Section = Lesson["sections"][number];
 // parentId === null marks a main module; otherwise it is a submodule of that main module. Lessons attach to submodules only.
-export type ModuleSummary = { id: string; title: string; description: string; builtin: boolean; parentId: string | null };
+export type ModuleSummary = { id: string; title: string; description: string; builtin: boolean; parentId: string | null; practice?: Practice };
+
+/** Maps the example / test_problem / test_answer columns to a Practice, or undefined when all are empty. */
+export function practiceFromRow(row: { example?: string | null; test_problem?: string | null; test_answer?: string | null }): Practice | undefined {
+  const practice: Practice = { example: row.example?.trim() || undefined, problem: row.test_problem?.trim() || undefined, answer: row.test_answer?.trim() || undefined };
+  return practice.example || practice.problem ? practice : undefined;
+}
 
 function isSection(value: unknown): value is Section {
   if (!value || typeof value !== "object") return false;
@@ -17,7 +23,7 @@ export async function listCustomModules() {
   if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();
   const { data, error } = await supabase.from("course_modules")
-    .select("id,title,description,parent_id")
+    .select("id,title,description,parent_id,example,test_problem,test_answer")
     .eq("course_slug", coreMathCourse.slug)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -30,7 +36,7 @@ export async function listAllModules(): Promise<ModuleSummary[]> {
     { id: main.id, title: main.title, description: main.description, builtin: true, parentId: null },
     ...main.submodules.map((sub) => ({ id: sub.id, title: sub.title, description: sub.description, builtin: true, parentId: main.id })),
   ]);
-  const custom = (await listCustomModules()).map((item) => ({ id: item.id, title: item.title, description: item.description ?? "", builtin: false, parentId: item.parent_id }));
+  const custom = (await listCustomModules()).map((item) => ({ id: item.id, title: item.title, description: item.description ?? "", builtin: false, parentId: item.parent_id, practice: practiceFromRow(item) }));
   return [...builtin, ...custom];
 }
 
@@ -43,7 +49,7 @@ export async function getCourseCatalog(): Promise<Course> {
   const supabase = await createClient();
   const [{ data, error }, customModules] = await Promise.all([
     supabase.from("course_lessons")
-      .select("slug,module_id,title,duration_minutes,summary,objectives,sections,sort_order")
+      .select("slug,module_id,title,duration_minutes,summary,objectives,sections,sort_order,example,test_problem,test_answer")
       .eq("course_slug", coreMathCourse.slug)
       .eq("status", "published")
       .order("sort_order", { ascending: true }),
@@ -55,10 +61,10 @@ export async function getCourseCatalog(): Promise<Course> {
   }
 
   const mains: CourseMainModule[] = coreMathCourse.modules.map((main) => ({ ...main, submodules: main.submodules.map((sub) => ({ ...sub, lessons: [...sub.lessons] })) }));
-  for (const item of customModules) if (!item.parent_id) mains.push({ id: item.id, title: item.title, description: item.description ?? "", submodules: [] });
+  for (const item of customModules) if (!item.parent_id) mains.push({ id: item.id, title: item.title, description: item.description ?? "", practice: practiceFromRow(item), submodules: [] });
   for (const item of customModules) {
     if (!item.parent_id) continue;
-    mains.find((main) => main.id === item.parent_id)?.submodules.push({ id: item.id, title: item.title, description: item.description ?? "", lessons: [] });
+    mains.find((main) => main.id === item.parent_id)?.submodules.push({ id: item.id, title: item.title, description: item.description ?? "", practice: practiceFromRow(item), lessons: [] });
   }
 
   const submodules = new Map(mains.flatMap((main) => main.submodules.map((sub) => [sub.id, sub] as const)));
@@ -73,6 +79,7 @@ export async function getCourseCatalog(): Promise<Course> {
       summary: row.summary,
       objectives: row.objectives,
       sections,
+      practice: practiceFromRow(row),
     });
   }
   // Modules/submodules without published lessons stay listed; the UI shows them as "coming soon".

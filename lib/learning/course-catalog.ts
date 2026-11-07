@@ -1,4 +1,8 @@
+/** Optional worked example and self-check problem attached to a module, submodule or topic. Text supports $LaTeX$. */
+export type Practice = { example?: string; problem?: string; /** Accepted answers separated by ";" */ answer?: string };
+
 export type Lesson = {
+  practice?: Practice;
   id: string;
   title: string;
   duration: string;
@@ -8,6 +12,7 @@ export type Lesson = {
 };
 
 export type CourseModule = {
+  practice?: Practice;
   id: string;
   title: string;
   description: string;
@@ -16,6 +21,7 @@ export type CourseModule = {
 
 // Hierarchy: main module -> submodule (CourseModule) -> lesson. Lessons only ever hang off a submodule.
 export type CourseMainModule = {
+  practice?: Practice;
   id: string;
   title: string;
   description: string;

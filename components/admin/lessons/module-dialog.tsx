@@ -11,8 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button, type ButtonProps } from "@/components/ui/shadcn/button";
+import { PracticeFields } from "@/components/admin/lessons/practice-fields";
+import type { Practice } from "@/lib/learning/course-catalog";
 
-type EditableModule = { id: string; title: string; description: string };
+type EditableModule = { id: string; title: string; description: string; practice?: Practice };
 type DialogTarget = { kind: "create"; parent?: { id: string; title: string } } | { kind: "edit"; module: EditableModule; isSubmodule: boolean };
 
 const initialState: ModuleFormState = {};
@@ -75,7 +77,7 @@ function ModuleDialog({ open, onOpenChange, target }: { open: boolean; onOpenCha
     ? <>&ldquo;{target.parent.title}&rdquo; модуль дотор нэмэгдэнэ. Сэдвүүдээ дараа нь энэ дэд модульд нэмнэ.</>
     : target.kind === "create" ? "Үндсэн модуль нь дэд модулиудыг агуулна. Жишээ: Алгебр → Квадрат тэгшитгэл → сэдвүүд." : "Сурагчдад харагдах нэр болон тайлбарыг шинэчилнэ.";
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="sm:max-w-md">
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
       <DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription></DialogHeader>
       {/* Mounted only while open, so each opening starts with a fresh form state. */}
       {open && <ModuleForm target={target} onDone={() => onOpenChange(false)}/>}
@@ -93,6 +95,7 @@ function ModuleForm({ target, onDone }: { target: DialogTarget; onDone: () => vo
     {target.kind === "create" && target.parent && <input type="hidden" name="parentId" value={target.parent.id}/>}
     <div className="grid gap-1.5"><Label htmlFor="module-title">Нэр</Label><Input id="module-title" name="title" required minLength={3} maxLength={160} autoFocus defaultValue={current?.title} placeholder={target.kind === "create" && target.parent ? "Жишээ: Квадрат тэгшитгэл" : "Жишээ: Алгебр"}/></div>
     <div className="grid gap-1.5"><Label htmlFor="module-description">Тайлбар <span className="font-normal text-muted-foreground">— заавал биш</span></Label><Textarea id="module-description" name="description" rows={3} maxLength={500} defaultValue={current?.description} placeholder="Сурагч энэ хэсгээс юу сурах вэ?"/></div>
+    <div className="border-t pt-4"><p className="mb-3 text-sm font-semibold">Жишээ ба тест бодлого</p><PracticeFields initial={current?.practice} compact/></div>
     {state.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-red-700">{state.error}</p>}
     <DialogFooter className="gap-2 sm:gap-0">
       <Button type="button" variant="outline" onClick={onDone}>Болих</Button>

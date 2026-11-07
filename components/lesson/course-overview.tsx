@@ -6,6 +6,7 @@ import type { LessonProgress } from "@/lib/data/lesson-progress";
 import { Art, Cloud, Ezi, ObjectArt, ProductScene, Squiggle, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { ScrollMotion } from "@/components/home/redesign/scroll-motion";
 import "@/components/home/redesign/redesign.css";
+import { PracticeBlock } from "@/components/lesson/practice-block";
 
 const VIOLET = "#7C4DEB";
 const muted = "text-[#5B6275]";
@@ -227,6 +228,10 @@ export function SubmoduleCard({ sub, index, ctx }: { sub: CourseModule; index: n
         </li>;
       })}
     </ol>
+    {sub.practice && <details className="group border-t-2 border-[#F2F3F8] px-[18px] py-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2 py-2 text-sm font-semibold text-[#7C4DEB] hover:bg-[#FBF9FF] [&::-webkit-details-marker]:hidden"><span className="inline-flex items-center gap-2"><PenLine size={15}/>Жишээ ба тест бодлого</span><ArrowRight size={14} className="transition group-open:rotate-90"/></summary>
+      <div className="px-2 pb-2 pt-3"><PracticeBlock practice={sub.practice} compact/></div>
+    </details>}
     {!empty && <div className="flex items-center gap-4 px-[18px] pb-[18px] pt-3 sm:px-6">
       <div className="h-1.5 flex-1 rounded-full bg-[#EEF0F6]"><div className={`h-full rounded-full ${done ? "bg-[#22C55E]" : "bg-[#7C4DEB]"}`} style={{ width: `${(count / sub.lessons.length) * 100}%` }}/></div>
       <Link href={ctx.href(target)} className={started && !done ? "inline-flex h-10 shrink-0 items-center rounded-full bg-[#0B1030] px-5 text-sm font-medium text-white hover:bg-[#1A2150]" : "inline-flex h-10 shrink-0 items-center rounded-full border-2 border-[#E3E6EF] bg-white px-5 text-sm font-medium text-[#5B6275] hover:border-[#C9CDDA] hover:text-[#0B1030]"}>{done ? "Дахин үзэх" : started ? "Үргэлжлүүлэх" : "Эхлэх"}</Link>

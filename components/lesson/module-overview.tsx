@@ -4,6 +4,7 @@ import { moduleLessons, type Course, type CourseMainModule } from "@/lib/learnin
 import type { LessonProgress } from "@/lib/data/lesson-progress";
 import { Ezi, ObjectArt, Squiggle } from "@/components/home/redesign/illustrations";
 import { ScrollMotion } from "@/components/home/redesign/scroll-motion";
+import { PracticeBlock } from "@/components/lesson/practice-block";
 import { SubmoduleCard, type Ctx } from "./course-overview";
 import { ProgressRing } from "./progress-ring";
 import "@/components/home/redesign/redesign.css";
@@ -51,6 +52,11 @@ export function ModuleOverview({ progress, course, main }: { progress: LessonPro
     </section>
 
     <section className="container-page pb-20 pt-12 lg:pb-24">
+      {main.practice && <div className="mb-12 max-w-[760px]">
+        <h2 className="text-[28px] font-medium tracking-[-0.03em]">Жишээ ба тест бодлого</h2>
+        <p className={`mt-1 text-[15px] ${muted}`}>Модулийн гол санааг жишээгээр хараад, өөрөө бодож шалгаарай.</p>
+        <div className="mt-5"><PracticeBlock practice={main.practice}/></div>
+      </div>}
       {main.submodules.length ? <div className="grid gap-5 lg:grid-cols-2">{main.submodules.map((sub, index) => <div key={sub.id} id={sub.id} className="scroll-mt-24"><SubmoduleCard sub={sub} index={index} ctx={ctx}/></div>)}</div>
         : <div className="flex flex-col items-center rounded-[22px] border-2 border-dashed border-[#E3E6EF] bg-[#F8F9FC] px-6 py-12 text-center"><Ezi pose="sleep" size={110}/><p className="mt-3 text-lg font-medium">Энэ модулийн агуулга удахгүй нэмэгдэнэ</p><p className={`mt-1 text-sm ${muted}`}>Агуулга нэмэгдэх бүрт энд автоматаар гарч ирнэ.</p></div>}
 

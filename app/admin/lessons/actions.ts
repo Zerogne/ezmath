@@ -10,6 +10,20 @@ export type LessonFormState = { error?: string; success?: string; id?: string };
 export type LessonActionResult = { error?: string; success?: true };
 export type ModuleFormState = { error?: string; success?: string };
 
+type PracticeColumns = { example: string | null; test_problem: string | null; test_answer: string | null };
+
+/** The optional example and test problem (with answer) shared by modules, submodules and topics. */
+function parsePractice(formData: FormData): PracticeColumns | { error: string } {
+  const example = String(formData.get("example") ?? "").trim();
+  const problem = String(formData.get("testProblem") ?? "").trim();
+  const answer = String(formData.get("testAnswer") ?? "").trim();
+  if (example.length > 4000 || problem.length > 4000) return { error: "Жишээ болон тест бодлого 4000 тэмдэгтээс хэтрэхгүй." };
+  if (answer.length > 300) return { error: "Хариу 300 тэмдэгтээс хэтрэхгүй." };
+  if (problem && !answer) return { error: "Тест бодлогын зөв хариуг оруулна уу." };
+  if (answer && !problem) return { error: "Хариуны өмнө тест бодлогоо оруулна уу." };
+  return { example: example || null, test_problem: problem || null, test_answer: answer || null };
+}
+
 type ParsedLesson = {
   title: string;
   moduleId: string;
@@ -19,6 +33,7 @@ type ParsedLesson = {
   status: "draft" | "published";
   objectives: string[];
   sections: { title: string; body: string; example?: string }[];
+  practice: PracticeColumns;
 };
 
 function parseLesson(formData: FormData, validModuleIds: Set<string>): ParsedLesson | { error: string } {
@@ -41,8 +56,10 @@ function parseLesson(formData: FormData, validModuleIds: Set<string>): ParsedLes
   if (!validModuleIds.has(moduleId)) return { error: "Сэдвийг дэд модульд хадгална. Дэд модулиа сонгоно уу." };
   if (!objectives.length) return { error: "Дор хаяж нэг зорилго нэмнэ үү." };
   if (status === "published" && !sections.length) return { error: "Нийтлэхийн тулд дор хаяж нэг агуулгын хэсэг нэмнэ үү." };
+  const practice = parsePractice(formData);
+  if ("error" in practice) return practice;
 
-  return { title, moduleId, summary, durationMinutes, sortOrder: Number.isInteger(sortOrder) ? sortOrder : 100, status, objectives, sections };
+  return { title, moduleId, summary, durationMinutes, sortOrder: Number.isInteger(sortOrder) ? sortOrder : 100, status, objectives, sections, practice };
 }
 
 function generateSlug(prefix: string) {
@@ -63,7 +80,9 @@ function parseModuleFields(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   if (title.length < 3 || title.length > 160) return { error: "Нэр 3-160 тэмдэгт байх ёстой." };
   if (description.length > 500) return { error: "Тайлбар 500 тэмдэгтээс хэтрэхгүй." };
-  return { title, description };
+  const practice = parsePractice(formData);
+  if ("error" in practice) return practice;
+  return { title, description, practice };
 }
 
 export async function createModule(_: ModuleFormState, formData: FormData): Promise<ModuleFormState> {
@@ -85,6 +104,7 @@ export async function createModule(_: ModuleFormState, formData: FormData): Prom
       course_slug: coreMathCourse.slug,
       title: fields.title,
       description: fields.description,
+      ...fields.practice,
       parent_id: parentId,
       created_by: admin.id,
     });
@@ -106,7 +126,7 @@ export async function updateModule(_: ModuleFormState, formData: FormData): Prom
   const fields = parseModuleFields(formData);
   if ("error" in fields) return fields;
   const supabase = await createClient();
-  const { error } = await supabase.from("course_modules").update({ title: fields.title, description: fields.description }).eq("id", moduleId);
+  const { error } = await supabase.from("course_modules").update({ title: fields.title, description: fields.description, ...fields.practice }).eq("id", moduleId);
   if (error) return { error: error.message || "Модуль шинэчилж чадсангүй." };
   revalidateCatalog();
   return { success: "Хадгалагдлаа." };
@@ -145,6 +165,7 @@ export async function createLesson(_: LessonFormState, formData: FormData): Prom
       summary: parsed.summary,
       objectives: parsed.objectives,
       sections: parsed.sections,
+      ...parsed.practice,
       status: parsed.status,
       sort_order: parsed.sortOrder,
       created_by: admin.id,
@@ -173,6 +194,7 @@ export async function updateLesson(_: LessonFormState, formData: FormData): Prom
     summary: parsed.summary,
     objectives: parsed.objectives,
     sections: parsed.sections,
+    ...parsed.practice,
     status: parsed.status,
     sort_order: parsed.sortOrder,
   }).eq("id", lessonId);

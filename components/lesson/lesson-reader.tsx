@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PracticeBlock } from "@/components/lesson/practice-block";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, Clock3, Play } from "lucide-react";
 import { moduleLessons, type Course, type LessonInContext } from "@/lib/learning/course-catalog";
 import { updateLessonProgress } from "@/app/lesson/actions";
@@ -69,6 +70,11 @@ export function LessonReader({ lesson, completedIds, course }: { lesson: LessonI
               {section.example && <div className="mt-5 rounded-[18px] border-2 border-[#E8EEFF] bg-[#F7F9FF] p-5"><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2B4BE8]">Жишээ</p><p className="mt-2 font-serif text-[17px] leading-relaxed">{section.example}</p></div>}
             </section>;
           })}</div>
+          {lesson.practice && <section className="mt-11">
+            <h2 className="text-[24px] font-medium leading-tight tracking-[-0.03em] sm:text-[26px]">Жишээ ба тест бодлого</h2>
+            <p className={`mt-1 text-[15px] ${muted}`}>Сэдвээ дуусгахаас өмнө өөрийгөө шалгаарай.</p>
+            <div className="mt-5"><PracticeBlock practice={lesson.practice}/></div>
+          </section>}
           <div className="mt-11 border-t-2 border-[#F4F5FA] pt-7">{completed
             ? <div className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#E9FBF2] text-[15px] font-semibold text-[#15803D]"><Check size={18} strokeWidth={3}/>Сэдэв дууссан</div>
             : <form action={markComplete}><button type="submit" className="btn-dark w-full"><Check size={18}/>Сэдэв дуусгах</button></form>}</div>

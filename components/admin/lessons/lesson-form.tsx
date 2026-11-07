@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/shadcn/button";
+import { PracticeFields } from "@/components/admin/lessons/practice-fields";
+import type { Practice } from "@/lib/learning/course-catalog";
 
 const initialState: LessonFormState = {};
 
@@ -24,6 +26,7 @@ export type LessonEditorData = {
   status: "draft" | "published";
   objectives: string[];
   sections: { title: string; body: string; example?: string }[];
+  practice?: Practice;
 };
 
 // Lessons live in submodules, so the picker lists submodules grouped under their main module.
@@ -79,6 +82,10 @@ export function LessonForm({ initial, moduleGroups, lockedModule }: { initial?: 
           <Field label="Жишээ — заавал биш"><Textarea name={`sectionExample${index}`} rows={3} className="font-mono text-sm" value={section.example} onChange={(event) => updateSection(section.id, { example: event.target.value })} placeholder="Ажилласан жишээ эсвэл томьёо"/></Field>
         </CardContent>
       </Card>)}
+      <Card>
+        <CardHeader><CardTitle>Жишээ ба тест бодлого</CardTitle><p className="text-sm text-muted-foreground">Сэдвийн төгсгөлд харагдана. Сурагч тест бодлогыг өөрөө бодоод хариугаа шалгана.</p></CardHeader>
+        <CardContent><PracticeFields initial={initial?.practice}/></CardContent>
+      </Card>
     </div>
     <aside>
       <Card className="sticky top-24">
