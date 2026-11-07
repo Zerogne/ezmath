@@ -40,7 +40,9 @@ The migration is local only until the live integration begins. Do not deploy it 
 6. BYL recurring price lookup keys for `standard_monthly` and `mentor_monthly`
 7. Business verification and settlement bank account before Live mode
 
-The webhook also requires `BYL_STANDARD_PRICE_ID` and `BYL_MENTOR_PRICE_ID`, using the numeric recurring-price IDs returned by BYL. This keeps subscription plan mapping server-controlled even though BYL webhook subscription objects currently include the price ID rather than its lookup key.
+Plans are fixed-length passes sold as one-time BYL prices: `BYL_WEEKLY_PRICE_ID`, `BYL_MONTHLY_PRICE_ID` and `BYL_QUARTERLY_PRICE_ID` hold the numeric price IDs for the 7-day, 1-month and 3-month plans (`lib/payments/plans.ts`). Each BYL price must charge exactly the plan's `priceMnt`, or the webhook rejects the payment. A pass bought while another is active starts when the current one ends. `BYL_STANDARD_PRICE_ID` and `BYL_MENTOR_PRICE_ID` map the earlier monthly plans so their existing subscriptions keep resolving.
+
+The webhook also requires `BYL_STANDARD_PRICE_ID` and `BYL_MENTOR_PRICE_ID`, using the numeric recurring-price IDs returned by BYL. This keeps subscription plan mapping server-controlled even though BYL webhook subscription objects currently include the price ID rather than its lookup key. (legacy plans)
 
 Set `BYL_TEST_MODE=true` only for a BYL Test project. Checkout orders and webhook amount validation then use BYL's documented fixed ₮50 test transaction amount while the landing page continues to show the intended Live prices. Set it to `false` before switching the BYL project to Live mode.
 

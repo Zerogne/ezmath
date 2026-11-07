@@ -3,12 +3,14 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/session";
 import type { TeacherVerificationStatus } from "@/lib/supabase/database.types";
 
 async function currentUser(expectedRole: "student" | "teacher", nextPath: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Read-only page loads: local JWT check (no Auth round trip), deduplicated per request.
+  const user = await getSessionUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, role, school_id, teacher_status")

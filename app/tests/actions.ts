@@ -6,6 +6,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { SubmissionPayload, SubmissionResult } from "@/lib/exam/test-types";
 import { gradeWritten } from "@/lib/exam/grade-question";
+import { after } from "next/server";
+import { generateAttemptAnalysis } from "@/lib/ai/attempt-analysis";
+import { isAiConfigured } from "@/lib/ai/claude";
+import { hasPaidAccess } from "@/lib/payments/entitlement";
 
 export type StartAttemptResult = { attemptId: string; error?: undefined } | { attemptId: null; error?: "auth_required" | "limit_reached" | "failed" };
 
@@ -64,8 +68,8 @@ export async function submitTestAttempt(payload: SubmissionPayload): Promise<Sub
   }
   const accuracy = Math.round((correct / questions.length) * 100);
   return {
-    score: test.examType === "SAT" ? Math.round((400 + accuracy * 4) / 10) * 10 : accuracy,
-    maxScore: test.examType === "SAT" ? 800 : 100,
+    score: test.examType === "SAT" ? Math.round((400 + accuracy * 4) / 10) * 10 : Math.round(correct / questions.length * 800),
+    maxScore: 800,
     correct,
     incorrect,
     unanswered: questions.length - correct - incorrect,
@@ -130,8 +134,14 @@ async function submitDatabaseAttempt(payload: SubmissionPayload): Promise<Submis
   const answerRows = questions.map((question) => { const choiceId = selected.get(question.id); const choice = choiceMap.get(choiceId ?? ""); const validChoice = choice && choice.question_id === question.id ? choice : null; const result = answerResults[question.id]; return { attempt_id: attemptId!, question_id: question.id, selected_choice_id: question.question_type === "multi-blank" ? null : validChoice?.id ?? null, written_response: question.question_type === "multi-blank" ? written.get(question.id) ?? {} : null, is_correct: result === "unanswered" ? null : result === "correct", time_spent_seconds: null, marked_for_review: payload.markedForReview.includes(question.id) }; });
   const { error: answersError } = await admin.from("attempt_answers").upsert(answerRows, { onConflict: "attempt_id,question_id" });
   if (answersError) { console.error("Attempt answer save failed", { attemptId, testId: payload.testId, error: answersError }); throw new Error("Хариултуудыг хадгалж чадсангүй."); }
-  const score = test.exam_type === "SAT" ? Math.round((400 + accuracy * 4) / 10) * 10 : accuracy;
+  // SAT Math is reported as a 200–800 section score, ЭЕШ as 0–800.
+  const score = test.exam_type === "SAT" ? Math.round((400 + accuracy * 4) / 10) * 10 : Math.round(correct / questions.length * 800);
   const { error: completeError } = await admin.from("test_attempts").update({ status: "submitted", completed_at: new Date().toISOString(), score, duration_seconds: durationSeconds }).eq("id", attemptId).eq("user_id", user.id).eq("status", "in_progress");
   if (completeError) { console.error("Attempt completion failed", { attemptId, testId: payload.testId, error: completeError }); throw new Error("Шалгалтыг дуусгаж чадсангүй."); }
-  return { score, maxScore: test.exam_type === "SAT" ? 800 : 100, correct, incorrect, unanswered: questions.length - correct - incorrect, accuracy, durationSeconds, answerResults, topicBreakdown: Array.from(topics, ([topic, value]) => ({ topic, ...value, accuracy: Math.round(value.correct / value.total * 100) })) };
+  // Start the AI analysis for mocks right away, so it is usually ready by the time the result page polls for it.
+  if (test.test_type !== "practice" && isAiConfigured()) {
+    const userId = user.id, finishedAttemptId = attemptId!;
+    after(async () => { if (await hasPaidAccess(userId)) await generateAttemptAnalysis(userId, finishedAttemptId); });
+  }
+  return { attemptId, score, maxScore: 800, correct, incorrect, unanswered: questions.length - correct - incorrect, accuracy, durationSeconds, answerResults, topicBreakdown: Array.from(topics, ([topic, value]) => ({ topic, ...value, accuracy: Math.round(value.correct / value.total * 100) })) };
 }

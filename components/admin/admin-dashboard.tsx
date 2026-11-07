@@ -1,3 +1,4 @@
+import { planName } from "@/lib/payments/plans";
 import Link from "next/link";
 import { Check, Clock3, Plus, Search, X } from "lucide-react";
 import { Art, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
@@ -131,9 +132,8 @@ function RevenueChart({ months }: { months: Data["revenueByMonth"] }) {
 }
 
 function PlanBadge({ plan }: { plan: string }) {
-  if (plan === "mentor_monthly") return <span className="rounded-full bg-[#FFEDD5] px-2.5 py-1 text-xs font-semibold text-[#B45309]">Ментор+</span>;
-  if (plan === "standard_monthly") return <span className="rounded-full bg-[#E8EEFF] px-2.5 py-1 text-xs font-semibold text-[#2B4BE8]">Стандарт</span>;
-  return <span className="rounded-full bg-[#F1F3F8] px-2.5 py-1 text-xs font-semibold text-[#5B6275]">Үнэгүй</span>;
+  if (plan !== "free") return <span className="rounded-full bg-[#E8EEFF] px-2.5 py-1 text-xs font-semibold text-[#2B4BE8]">{planName(plan)}</span>;
+  return <span className="rounded-full bg-[#F1F3F8] px-2.5 py-1 text-xs font-semibold text-[#5B6275]">{planName(plan)}</span>;
 }
 
 function PaymentStatus({ status }: { status: Data["recentPayments"][number]["status"] }) {

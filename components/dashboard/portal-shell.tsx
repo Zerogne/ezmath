@@ -4,7 +4,9 @@ import { ArrowLeft, BarChart3, BookOpen, ClipboardCheck, Home, Settings, Target,
 import { AppPortalShell } from "@/components/dashboard/app-portal-shell";
 import { StudentMobileNav } from "@/components/dashboard/student-mobile-nav";
 import { Ezi } from "@/components/home/redesign/illustrations";
-import type { PlanCode } from "@/lib/payments/plans";
+import { planName, type PlanCode } from "@/lib/payments/plans";
+
+export { planName };
 
 const items = [
   ["Хяналтын самбар", "/dashboard", Home], ["Миний хичээлүүд", "/dashboard/courses", BookOpen],
@@ -31,8 +33,6 @@ export function PortalHeader({ title, description, action, back }: { title: Reac
   </header>;
 }
 
-export function planName(code: PlanCode) { return code === "mentor_monthly" ? "Ментор+" : code === "standard_monthly" ? "Стандарт" : "Үнэгүй"; }
-
 export function PlanBadge({ code }: { code: PlanCode }) {
   return <span className={`inline-flex items-center rounded-full px-2 py-px text-[10px] font-semibold ${code !== "free" ? "bg-[#DCFCE7] text-[#16A34A]" : "bg-[#F1F3F8] text-[#5B6275]"}`}>{planName(code)}</span>;
 }
@@ -42,7 +42,7 @@ function SidebarPlanCard({ plan }: { plan?: PortalPlan }) {
   const paid = code !== "free";
   if (!plan) return <div className="relative pt-14">
     <Ezi pose="wave" size={76} className="absolute left-[132px] top-0"/>
-    <div className="rounded-[20px] bg-[#0B1030] p-[18px] text-white"><p className="text-[13px] font-medium text-[#AEB4CC]">EzMath багц</p><p className="mt-1.5 text-sm leading-5 text-white">Бүх сорил, тайлан, ментор нэг дор.</p><Link href="/pricing" className="mt-3.5 flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-[#0B1030] hover:bg-[#EEF1FF]">Багц харах</Link></div>
+    <div className="rounded-[20px] bg-[#0B1030] p-[18px] text-white"><p className="text-[13px] font-medium text-[#AEB4CC]">EzMath багц</p><p className="mt-1.5 text-sm leading-5 text-white">Бүх сорил, тайлан, AI төлөвлөгөө нэг дор.</p><Link href="/pricing" className="mt-3.5 flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-[#0B1030] hover:bg-[#EEF1FF]">Багц харах</Link></div>
   </div>;
   return <div className="relative pt-14">
     <Ezi pose="wave" size={76} className="absolute left-[132px] top-0"/>
@@ -50,7 +50,7 @@ function SidebarPlanCard({ plan }: { plan?: PortalPlan }) {
       <div className="flex items-center justify-between"><p className="text-[13px] font-medium text-[#AEB4CC]">Таны багц</p>{paid && <span className="rounded-full bg-[rgba(52,211,153,0.18)] px-2.5 py-1 text-xs font-semibold text-[#6EE7B7]">● Идэвхтэй</span>}</div>
       <p className="mt-1.5 font-display text-2xl font-medium tracking-[-0.03em]">{planName(code)}</p>
       <p className="mt-0.5 text-xs text-[#AEB4CC]">{paid ? plan?.periodEnd ? `${formatPlanDate(plan.periodEnd)} хүртэл` : "Идэвхтэй эрх" : "Бүх сорил, тайлангаа нээгээрэй"}</p>
-      {code !== "mentor_monthly" && <Link href="/pricing" className="mt-3.5 flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-[#0B1030] hover:bg-[#EEF1FF]">{paid ? "Ментор+ болгох" : "Багц сонгох"}</Link>}
+      <Link href="/pricing" className="mt-3.5 flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-[#0B1030] hover:bg-[#EEF1FF]">{paid ? "Хугацаа сунгах" : "Багц сонгох"}</Link>
     </div>
   </div>;
 }

@@ -1,8 +1,8 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isBylTestMode } from "@/lib/byl/config";
-import { planByCode, type PlanCode } from "@/lib/payments/plans";
+import { bylPriceId, isBylTestMode, planForBylPrice } from "@/lib/byl/config";
+import { addPlanPeriod, isPaidPlanCode, planByCode, type PaidPlanCode } from "@/lib/payments/plans";
 import type { BylWebhookEvent } from "@/lib/byl/types";
 import type { Database, Json } from "@/lib/supabase/database.types";
 
@@ -76,10 +76,10 @@ async function processCheckoutCompleted(admin: AdminClient, event: BylWebhookEve
     .single();
   if (orderError || !order) throw new Error("BYL checkout-д харгалзах захиалга олдсонгүй.");
   if (order.provider_checkout_id !== checkoutId) throw new Error("BYL checkout захиалгын ID зөрж байна.");
-  if (order.plan_code !== "standard_monthly" && order.plan_code !== "mentor_monthly") throw new Error("BYL checkout багц танигдсангүй.");
+  if (!isPaidPlanCode(order.plan_code)) throw new Error("BYL checkout багц танигдсангүй.");
   const planCode = order.plan_code;
   if (!validCheckoutAmount(planCode, amountTotal)) throw new Error("BYL checkout серверийн үнэтэй зөрж байна.");
-  if (checkoutPriceId(object) !== priceIdForPlan(planCode)) throw new Error("BYL checkout price ID захиалгын багцтай зөрж байна.");
+  if (checkoutPriceId(object) !== bylPriceId(planCode)) throw new Error("BYL checkout price ID захиалгын багцтай зөрж байна.");
 
   if (order.status !== "paid") {
     const { error } = await admin.from("payment_orders").update({
@@ -104,7 +104,7 @@ async function grantCheckoutEntitlement(
   admin: AdminClient,
   event: BylWebhookEvent,
   object: Record<string, unknown>,
-  order: { user_id: string; plan_code: "standard_monthly" | "mentor_monthly" },
+  order: { user_id: string; plan_code: PaidPlanCode },
   checkoutId: number,
 ) {
   const customer = recordValue(object.customer);
@@ -112,13 +112,16 @@ async function grantCheckoutEntitlement(
   const customerUserId = customer && stringValue(customer.client_reference_id);
   if (!customerId || customerUserId !== order.user_id) throw new Error("BYL checkout customer захиалгын хэрэглэгчтэй зөрж байна.");
 
-  const periodStart = validDate(event.created_at) ? new Date(event.created_at) : new Date();
-  const periodEnd = new Date(periodStart);
-  periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
+  // A pass bought while another is still running starts when the current one ends, so no paid days are lost.
+  const paidAt = validDate(event.created_at) ? new Date(event.created_at) : new Date();
+  const { data: current } = await admin.from("student_subscriptions").select("current_period_end").eq("user_id", order.user_id).in("status", ["trialing", "active"]).neq("provider_subscription_id", checkoutId).order("current_period_end", { ascending: false }).limit(1).maybeSingle();
+  const currentEnd = current?.current_period_end ? new Date(current.current_period_end) : null;
+  const periodStart = currentEnd && currentEnd > paidAt ? currentEnd : paidAt;
+  const periodEnd = addPlanPeriod(periodStart, order.plan_code);
 
   const { error: cancelError } = await admin.from("student_subscriptions").update({
     status: "canceled",
-    canceled_at: periodStart.toISOString(),
+    canceled_at: paidAt.toISOString(),
     provider_updated_at: event.updated_at ?? event.created_at,
   }).eq("user_id", order.user_id).in("status", ["trialing", "active", "past_due"]).neq("provider_subscription_id", checkoutId);
   if (cancelError) throw new Error(`Өмнөх subscription шинэчилж чадсангүй: ${cancelError.code}`);
@@ -148,7 +151,7 @@ async function processSubscription(admin: AdminClient, event: BylWebhookEvent) {
   const priceId = price && integer(price.id);
   const upstreamUpdatedAt = nullableString(object.updated_at) ?? event.updated_at ?? event.created_at;
   const status = subscriptionStatus(event.type, object.status);
-  const planCode = priceId && planCodeForPrice(priceId);
+  const planCode = priceId && planForBylPrice(priceId);
   if (!subscriptionId || !uuid(userId) || !customerId || !planCode || !status || !validDate(upstreamUpdatedAt)) throw new Error("BYL subscription payload эсвэл price mapping хүчингүй байна.");
 
   const row = {
@@ -177,18 +180,6 @@ async function processSubscription(admin: AdminClient, event: BylWebhookEvent) {
   return "processed" as const;
 }
 
-function planCodeForPrice(priceId: number): Exclude<PlanCode, "free"> | null {
-  if (String(priceId) === process.env.BYL_STANDARD_PRICE_ID) return "standard_monthly";
-  if (String(priceId) === process.env.BYL_MENTOR_PRICE_ID) return "mentor_monthly";
-  return null;
-}
-
-function priceIdForPlan(planCode: Exclude<PlanCode, "free">) {
-  const raw = planCode === "standard_monthly" ? process.env.BYL_STANDARD_PRICE_ID : process.env.BYL_MENTOR_PRICE_ID;
-  const value = Number(raw);
-  return Number.isSafeInteger(value) && value > 0 ? value : null;
-}
-
 function checkoutPriceId(object: Record<string, unknown>) {
   const items = Array.isArray(object.items) ? object.items : [];
   const firstItem = recordValue(items[0]);
@@ -196,7 +187,7 @@ function checkoutPriceId(object: Record<string, unknown>) {
   return price && integer(price.id);
 }
 
-function validCheckoutAmount(planCode: Exclude<PlanCode, "free">, amount: number) {
+function validCheckoutAmount(planCode: PaidPlanCode, amount: number) {
   return amount === planByCode[planCode].priceMnt || (isBylTestMode() && amount === 50);
 }
 

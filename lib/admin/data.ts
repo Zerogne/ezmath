@@ -1,4 +1,5 @@
 import "server-only";
+import { planName } from "@/lib/payments/plans";
 
 import { getAdminIdentity } from "@/lib/admin/auth";
 import type { ExamType, Test } from "@/types/exam";
@@ -143,7 +144,6 @@ export async function countPendingPayments() {
 const DAY = 86_400_000;
 const dayKey = (value: string | Date) => new Date(value).toISOString().slice(0, 10);
 const shortDate = (value: string) => { const date = new Date(value); return `${String(date.getUTCMonth() + 1).padStart(2, "0")}.${String(date.getUTCDate()).padStart(2, "0")}`; };
-const planName = (code: string) => code === "mentor_monthly" ? "Ментор+" : code === "standard_monthly" ? "Стандарт" : code;
 /** t***n@gmail.com: enough to recognise an account without showing the address. */
 const maskEmail = (email: string) => { const [user, domain] = email.split("@"); return domain && user ? `${user[0]}***${user.length > 1 ? user.at(-1) : ""}@${domain}` : email; };
 
@@ -254,7 +254,7 @@ export async function getAdminPaymentsData() {
     id: order.id,
     studentName: profilesById.get(order.user_id)?.full_name ?? "Нэргүй сурагч",
     email: authById.get(order.user_id)?.email ?? "—",
-    plan: order.plan_code === "mentor_monthly" ? "Ментор+" : order.plan_code === "standard_monthly" ? "Стандарт" : order.plan_code,
+    plan: planName(order.plan_code),
     amountMnt: order.amount_mnt,
     status: order.status,
     checkoutId: order.provider_checkout_id,

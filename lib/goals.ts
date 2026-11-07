@@ -42,15 +42,6 @@ export function primaryExam(goal: StudentGoal | null): "EYESH" | "SAT" | null {
 /** Goal score range per exam: ЭЕШ is scored 0–800, the SAT Math section 200–800. */
 export const GOAL_RANGE = { EYESH: { min: 0, max: 800 }, SAT: { min: 200, max: 800 } } as const;
 
-/**
- * Puts an in-app attempt score on the goal's 800-point scale.
- * SAT attempts are already stored as 200–800 section scores; ЭЕШ attempts are stored as accuracy % (0–100).
- */
-export function estimateScaledScore(exam: "EYESH" | "SAT", storedScore: number) {
-  if (exam === "SAT") return Math.round(storedScore);
-  return Math.round(Math.max(0, Math.min(100, storedScore)) * 8);
-}
-
 /** ЭЕШ is held in early June; SAT dates are stored as the first of the chosen month. */
 export function examDate(goal: StudentGoal, exam: "EYESH" | "SAT"): Date | null {
   if (exam === "EYESH") return goal.eyeshExamYear ? new Date(Date.UTC(goal.eyeshExamYear, 5, 1)) : null;

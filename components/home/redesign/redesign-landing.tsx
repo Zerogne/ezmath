@@ -37,7 +37,14 @@ const solutionSteps: [string, ReactNode][] = [
   ["Утгаа орлуул", <>2a<sub>1</sub> + 9d = 6 + 36 = 42</>],
   ["Нийлбэрээ ол", <>S<sub>10</sub> = 10 · 42 / 2 = <b>210</b></>],
 ];
-const faqs = ["EzMath үнэгүй юу?", "ЭЕШ-ийн аль онуудын бодлого багтсан бэ?", "SAT-д бэлдэхэд тохирох уу?", "Сургууль, багш нар хэрхэн ашиглах вэ?", "Гар утсан дээр ажилладаг уу?", "Төлбөрөө хэрхэн төлөх вэ?"];
+const faqs: [string, string][] = [
+  ["Багцууд юугаараа ялгаатай вэ?", "7 хоног, 1 сар, 3 сарын багц бүгд ижил боломжтой: бүх mock шалгалт, хичээл, хязгааргүй дасгал, дэлгэрэнгүй тайлан, AI дүн шинжилгээ болон 7 хоног бүрийн AI төлөвлөгөө. Бүртгүүлээд нэг бүтэн сорил, өдөрт 10 дасгал, сэдэв бүрийн эхний хичээлээр туршиж үзэх боломжтой."],
+  ["ЭЕШ-ийн аль онуудын бодлого багтсан бэ?", "2006 оноос хойшхи ЭЕШ-ийн математикийн хувилбарууд багтсан бөгөөд шинэ онуудыг тогтмол нэмж байна."],
+  ["SAT-д бэлдэхэд тохирох уу?", "Тийм. SAT Math-ийн бүтэн mock, хэсгийн сорил болон College Board-ийн ур чадвараар ангилсан бодлогын сан бий."],
+  ["Сургууль, багш нар хэрхэн ашиглах вэ?", "Багш сургуулийн кодоор бүртгүүлж анги үүсгэнэ, сурагчдаа ангийн кодоор урина. Ангийн шалгалт өгч, сурагч бүрийн ахицыг нэг дороос хянана."],
+  ["Гар утсан дээр ажилладаг уу?", "Тийм. EzMath утас, таблет, компьютер дээр хөтчөөр шууд ажиллана — апп суулгах шаардлагагүй."],
+  ["Төлбөрөө хэрхэн төлөх вэ?", "Үнийн багц хуудаснаас багцаа сонгоод BYL-ийн аюулгүй хуудсаар нэг удаа төлнө. Автоматаар сунгагдахгүй."],
+];
 
 export function RedesignLanding() {
   return <div className="rd">
@@ -63,7 +70,7 @@ function Hero() {
     <div>
       <h1 className="rd-display text-[40px] leading-[1.08] sm:text-5xl lg:text-[64px]" data-rv>ЭЕШ ба SAT математикийн <Squiggle>цогц</Squiggle> бэлтгэл нэг дор</h1>
       <p className={`mt-6 max-w-[600px] text-lg leading-relaxed lg:text-[21px] ${muted}`} data-rv style={delay(0.08)}>Сүүлийн 20 жилийн ЭЕШ-ийн бодлого, бодит форматтай SAT сорил, онолын хичээл. Алдаа бүрээ ойлгож, сул сэдвээ анализаар олоорой.</p>
-      <div className="mt-8 flex flex-wrap gap-2.5" data-rv style={delay(0.16)}><Link href="/register" className={btnDark}>Үнэгүй эхлэх</Link><Link href="/pricing" className={btnOutline}>Би эцэг эх</Link><Link href="/register" className={btnOutline}>Би багш</Link></div>
+      <div className="mt-8 flex flex-wrap gap-2.5" data-rv style={delay(0.16)}><Link href="/register" className={btnDark}>Бүртгүүлэх</Link><Link href="/pricing" className={btnOutline}>Би эцэг эх</Link><Link href="/register" className={btnOutline}>Би багш</Link></div>
       <div className={`mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm ${muted}`} data-rv style={delay(0.24)}>{["Картын мэдээлэл шаардахгүй", "Монгол хэл дээр"].map((x) => <span key={x} className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={3} className="text-[#2B4BE8]"/>{x}</span>)}</div>
       <Link href="/pricing" className="mt-5 inline-block border-b-[1.5px] border-[#0B1030] pb-0.5 text-base font-medium" data-rv style={delay(0.32)}>Сургуулиудад зориулсан EzMath →</Link>
     </div>
@@ -119,7 +126,7 @@ function StatsBand() {
 
 function FeatureHead({ chip, chipBg, chipIcon, title, text }: { chip: string; chipBg: string; chipIcon: ReactNode; title: ReactNode; text: string }) {
   return <div className="grid items-end gap-6 lg:grid-cols-2 lg:gap-[60px]">
-    <div data-rv><span className="inline-flex items-center gap-2.5 text-[15px] font-medium"><i className="rd-display inline-flex h-[30px] w-[30px] items-center justify-center rounded-[9px] text-[15px] font-bold not-italic text-white" style={{ background: chipBg }}>{chipIcon}</i>{chip}</span><h2 className="rd-display mt-[18px] text-4xl leading-[1.08] lg:text-[52px]">{title}</h2><Link href="/register" className={`${btnDark} mt-7`}>Үнэгүй эхлэх</Link></div>
+    <div data-rv><span className="inline-flex items-center gap-2.5 text-[15px] font-medium"><i className="rd-display inline-flex h-[30px] w-[30px] items-center justify-center rounded-[9px] text-[15px] font-bold not-italic text-white" style={{ background: chipBg }}>{chipIcon}</i>{chip}</span><h2 className="rd-display mt-[18px] text-4xl leading-[1.08] lg:text-[52px]">{title}</h2><Link href="/register" className={`${btnDark} mt-7`}>Бүртгүүлэх</Link></div>
     <p className={`max-w-[500px] text-lg leading-relaxed lg:justify-self-end lg:text-[19px] ${muted}`} data-rv style={delay(0.1)}>{text}</p>
   </div>;
 }
@@ -208,7 +215,7 @@ function MoreFeatures() {
 function Faq() {
   return <section className={`${container} pt-24 lg:pt-[110px]`}>
     <SectionTitle>Түгээмэл асуултууд</SectionTitle>
-    <div className="mx-auto mt-12 max-w-[880px]">{faqs.map((question) => <div key={question} className="flex items-center justify-between border-b-2 border-[#EEF0F6] px-1 py-6 text-[19px] font-medium" data-rv><span>{question}</span><Plus className="shrink-0 text-[#9AA0B4]"/></div>)}</div>
+    <div className="mx-auto mt-12 max-w-[880px]">{faqs.map(([question, answer]) => <details key={question} className="group border-b-2 border-[#EEF0F6] px-1 py-6" data-rv><summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[19px] font-medium [&::-webkit-details-marker]:hidden"><span>{question}</span><Plus className="shrink-0 text-[#9AA0B4] transition group-open:rotate-45"/></summary><p className="mt-3 text-[16px] leading-relaxed text-[#5B6275]">{answer}</p></details>)}</div>
   </section>;
 }
 

@@ -25,7 +25,7 @@ The repo lives in iCloud-synced `~/Documents`. Evicted ("dataless") files in `no
 
 ## Architecture
 
-**Next.js 16 conventions.** Request interception lives in `proxy.ts` (the Next 16 replacement for `middleware.ts`). It refreshes the Supabase session with `getClaims()` and enforces a 24h idle sign-out cookie. Pages and actions still call `getUser()` for trusted identity. Mutations are mostly Server Actions in `actions.ts` files next to routes (`app/tests/actions.ts`, `app/dashboard/actions.ts`, `app/teacher/actions.ts`, …). Route handlers under `app/api/` cover checkpoints/integrity events, payments webhooks, and admin uploads/imports.
+**Next.js 16 conventions.** Request interception lives in `proxy.ts` (the Next 16 replacement for `middleware.ts`). It refreshes the Supabase session with `getClaims()` and enforces a 24h idle sign-out cookie. Page loaders use `getSessionUser()` (`lib/supabase/session.ts`: cached, local JWT check, no Auth round trip); auth flows, payments and account changes call `getUser()`. Vercel functions run in `syd1` (`vercel.json`) next to the Supabase database in `ap-southeast-2`; keep them co-located. Mutations are mostly Server Actions in `actions.ts` files next to routes (`app/tests/actions.ts`, `app/dashboard/actions.ts`, `app/teacher/actions.ts`, …). Route handlers under `app/api/` cover checkpoints/integrity events, payments webhooks, and admin uploads/imports.
 
 **Supabase clients (`lib/supabase/`)**: pick the right one.
 - `server.ts` `createClient()`: cookie-bound user client for RLS-scoped reads and auth checks.

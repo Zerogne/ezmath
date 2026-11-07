@@ -79,6 +79,11 @@ export async function getCourseCatalog(): Promise<Course> {
   return { ...coreMathCourse, modules: mains };
 }
 
+/** Free-plan "trial" lessons: the first lesson of every submodule. */
+export function isTrialLesson(course: Course, lessonId: string) {
+  return course.modules.some((main) => main.submodules.some((sub) => sub.lessons[0]?.id === lessonId));
+}
+
 export function findCourseLesson(course: Course, lessonId: string): LessonInContext | undefined {
   for (const main of course.modules) {
     for (const sub of main.submodules) {

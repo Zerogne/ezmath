@@ -1,4 +1,5 @@
 "use client";
+import { AttemptAnalysisCard } from "@/components/ai/attempt-analysis-card";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, BarChart3, BookOpenCheck, RotateCcw } from "lucide-react";
@@ -9,11 +10,13 @@ import { Ezi } from "@/components/home/redesign/illustrations";
 
 export function ResultSummary({ test }: { test: Test }) {
   const [result, setResult] = useState<SubmissionResult | null>(null);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => { const attempt = loadCompletedAttempt(test.id);
     // Results are browser-persisted in this version and become available only after mount.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setResult(attempt?.result ?? null);
+    setAttemptId(attempt?.result.attemptId ?? attempt?.attemptId ?? null);
     setLoaded(true); }, [test.id]);
   if (!loaded) return <div className="h-80 animate-pulse rounded-[26px] bg-[#F1F3F8]" aria-label="Үр дүнг ачаалж байна"/>;
   if (!result) return <EmptyState heading="h1" pose="think" title="Үр дүн олдсонгүй" text="Энэ төхөөрөмж дээр хадгалсан дууссан шалгалтын үр дүн алга. Шалгалтаа дахин эхлүүлж болно." action={<><Link href={`/tests/${test.id}`} className="btn-dark">Шалгалт руу очих</Link><Link href="/tests" className="btn-outline">Бүх шалгалт</Link></>}/>;
@@ -38,6 +41,7 @@ export function ResultSummary({ test }: { test: Test }) {
       </div>
       {result.unanswered > 0 && <p className="mt-4 text-sm text-[#5B6275]">Хариулаагүй: {result.unanswered}</p>}
     </section>
+    {attemptId && test.type !== "practice" && <div className="lg:col-start-1"><AttemptAnalysisCard attemptId={attemptId}/></div>}
     <aside className="space-y-4">
       <section className="rounded-[26px] border-2 border-[#EEF0F6] bg-white p-6">
         <h2 className="font-sans text-lg font-semibold tracking-normal">Дараагийн алхам</h2>

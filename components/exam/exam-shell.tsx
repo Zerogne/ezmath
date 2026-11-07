@@ -15,7 +15,7 @@ import { QuestionNavigation } from "./question-navigation";
 import { QuestionView } from "./question-view";
 
 const subscribeToBrowserCapabilities = () => () => undefined;
-const START_ERROR_MESSAGES = { limit_reached: "Үнэгүй эрхийн 1 бүтэн шалгалтын лимит дууссан. Багцаа ахиулна уу.", failed: "Оролдлого үүсгэж чадсангүй. Дахин оролдоно уу." } as const;
+const START_ERROR_MESSAGES = { limit_reached: "Багцгүй эрхээр 1 бүтэн шалгалт өгөх боломжтой. Үргэлжлүүлэхийн тулд багц сонгоно уу.", failed: "Оролдлого үүсгэж чадсангүй. Дахин оролдоно уу." } as const;
 
 export function ExamShell({ test, questions, isAuthenticated = true, fullscreenRequired = true }: { test: Test; questions: StudentQuestion[]; isAuthenticated?: boolean; fullscreenRequired?: boolean }) {
   const router = useRouter();

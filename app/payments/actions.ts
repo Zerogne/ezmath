@@ -2,31 +2,29 @@
 
 import { redirect } from "next/navigation";
 import { BylApiError, createBylCheckout, findBylCustomerByReference, upsertBylCustomer } from "@/lib/byl/server";
-import { bylChargeAmount } from "@/lib/byl/config";
-import { paidPlans, type PlanCode } from "@/lib/payments/plans";
+import { bylChargeAmount, bylPriceId } from "@/lib/byl/config";
+import { isPaidPlanCode } from "@/lib/payments/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-const paidPlanCodes = new Set<PlanCode>(paidPlans.map((plan) => plan.code));
 
 export async function startBylCheckout(formData: FormData) {
   const rawPlanCode = String(formData.get("planCode") ?? "");
-  if (!paidPlanCodes.has(rawPlanCode as PlanCode)) redirect("/pricing?payment=invalid-plan");
-  const planCode = rawPlanCode as Exclude<PlanCode, "free">;
+  if (!isPaidPlanCode(rawPlanCode)) redirect("/pricing?payment=invalid-plan");
+  const planCode = rawPlanCode;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) redirect(`/login?next=${encodeURIComponent(`/pricing?plan=${planCode}`)}`);
 
+  // Plans are fixed-length passes: buying again while one is active extends it (see grantCheckoutEntitlement).
   const admin = createAdminClient();
-  const { data: existingSubscription } = await admin.from("student_subscriptions")
-    .select("plan_code,status")
-    .eq("user_id", user.id)
-    .in("status", ["trialing", "active", "past_due"])
-    .maybeSingle();
-  if (existingSubscription?.plan_code === planCode) redirect("/dashboard?payment=already-subscribed");
 
-  const priceId = priceIdForPlan(planCode);
+  const priceId = bylPriceId(planCode);
+  if (!priceId) {
+    console.error("BYL price ID missing for plan", { planCode });
+    redirect("/pricing?payment=unavailable");
+  }
   const appUrl = productionAppUrl();
   const { data: order, error: orderError } = await admin.from("payment_orders").insert({
     user_id: user.id,
@@ -69,12 +67,6 @@ export async function startBylCheckout(formData: FormData) {
   }
 }
 
-function priceIdForPlan(planCode: Exclude<PlanCode, "free">) {
-  const raw = planCode === "standard_monthly" ? process.env.BYL_STANDARD_PRICE_ID : process.env.BYL_MENTOR_PRICE_ID;
-  const value = Number(raw);
-  if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${planCode} BYL price ID тохируулагдаагүй байна.`);
-  return value;
-}
 
 function productionAppUrl() {
   const value = process.env.NEXT_PUBLIC_APP_URL;

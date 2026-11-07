@@ -40,6 +40,8 @@ export type SubmissionPayload = {
 };
 
 export type SubmissionResult = {
+  /** Server attempt id; absent for results produced without Supabase (mock dataset). */
+  attemptId?: string;
   score: number;
   maxScore: number;
   correct: number;

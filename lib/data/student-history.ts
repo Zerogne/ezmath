@@ -1,8 +1,10 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/session";
 
 export type HistoryAttempt = {
   id: string;
@@ -21,86 +23,53 @@ export type HistoryAttempt = {
   topics: { topic: string; correct: number; total: number; accuracy: number }[];
 };
 
-export async function getStudentHistory(): Promise<HistoryAttempt[]> {
-  if (!isSupabaseConfigured()) return [];
+type HistoryRow = {
+  attempt_id: string;
+  test_id: string;
+  title: string;
+  exam_type: string;
+  subject: string;
+  score: number | string;
+  duration_seconds: number | null;
+  completed_at: string;
+  correct: number;
+  total: number;
+  topics: { topic: string; correct: number; total: number }[] | null;
+};
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+const percent = (correct: number, total: number) => total ? Math.round(correct / total * 100) : 0;
+
+/** The student's latest 100 submitted attempts, oldest first, in one database round trip (deduplicated per request). */
+export const getStudentHistory = cache(async (): Promise<HistoryAttempt[]> => {
+  if (!isSupabaseConfigured()) return [];
+  const user = await getSessionUser();
   if (!user) redirect("/login?next=/dashboard/progress");
 
-  const { data: attempts, error } = await supabase
-    .from("test_attempts")
-    .select("id, test_id, score, duration_seconds, completed_at")
-    .eq("user_id", user.id)
-    .eq("status", "submitted")
-    .not("completed_at", "is", null)
-    .not("score", "is", null)
-    .order("completed_at", { ascending: true })
-    .limit(100);
-
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("student_attempt_history", { p_limit: 100 });
   if (error) throw new Error("Шалгалтын түүхийг ачаалж чадсангүй.");
-  if (!attempts.length) return [];
 
-  const attemptIds = attempts.map((attempt) => attempt.id);
-  const testIds = [...new Set(attempts.map((attempt) => attempt.test_id))];
-  const [{ data: tests, error: testsError }, { data: answers, error: answersError }] = await Promise.all([
-    supabase.from("tests").select("id, title, exam_type, subject").in("id", testIds),
-    supabase.from("attempt_answers").select("attempt_id, question_id, is_correct").in("attempt_id", attemptIds),
-  ]);
-
-  if (testsError || answersError) throw new Error("Шалгалтын үр дүнг ачаалж чадсангүй.");
-
-  const questionIds = [...new Set((answers ?? []).map((answer) => answer.question_id))];
-  const { data: questions, error: questionsError } = questionIds.length
-    ? await supabase.from("student_questions").select("id, topic").in("id", questionIds)
-    : { data: [], error: null };
-  if (questionsError) throw new Error("Сэдвийн үр дүнг ачаалж чадсангүй.");
-
-  const testsById = new Map((tests ?? []).map((test) => [test.id, test]));
-  const topicByQuestion = new Map((questions ?? []).map((question) => [question.id, question.topic?.trim() || "Бусад"]));
-  const totals = new Map<string, { correct: number; total: number }>();
-  const topics = new Map<string, Map<string, { correct: number; total: number }>>();
-  for (const answer of answers ?? []) {
-    const value = totals.get(answer.attempt_id) ?? { correct: 0, total: 0 };
-    value.total += 1;
-    if (answer.is_correct) value.correct += 1;
-    totals.set(answer.attempt_id, value);
-    const topic = topicByQuestion.get(answer.question_id) ?? "Бусад";
-    const attemptTopics = topics.get(answer.attempt_id) ?? new Map<string, { correct: number; total: number }>();
-    const topicValue = attemptTopics.get(topic) ?? { correct: 0, total: 0 };
-    topicValue.total += 1;
-    if (answer.is_correct) topicValue.correct += 1;
-    attemptTopics.set(topic, topicValue);
-    topics.set(answer.attempt_id, attemptTopics);
-  }
-
-  const previousScore = new Map<"SAT" | "EYESH", number>();
-  return attempts.flatMap((attempt) => {
-    const test = testsById.get(attempt.test_id);
-    if (!test || attempt.score === null || !attempt.completed_at) return [];
-    const score = Number(attempt.score);
-    const answerTotal = totals.get(attempt.id) ?? { correct: 0, total: 0 };
-    const prior = previousScore.get(test.exam_type);
-    previousScore.set(test.exam_type, score);
-    return [{
-      id: attempt.id,
-      testId: attempt.test_id,
-      title: test.title,
-      examType: test.exam_type,
-      subject: test.subject,
+  const previousScore = new Map<string, number>();
+  return (data as HistoryRow[]).map((row) => {
+    const examType = row.exam_type === "SAT" ? "SAT" : "EYESH";
+    const score = Number(row.score);
+    const prior = previousScore.get(examType);
+    previousScore.set(examType, score);
+    return {
+      id: row.attempt_id,
+      testId: row.test_id,
+      title: row.title,
+      examType,
+      subject: row.subject,
       score,
-      maxScore: test.exam_type === "SAT" ? 800 : 100,
-      accuracy: answerTotal.total ? Math.round(answerTotal.correct / answerTotal.total * 100) : 0,
-      correct: answerTotal.correct,
-      total: answerTotal.total,
-      durationSeconds: attempt.duration_seconds ?? 0,
-      completedAt: attempt.completed_at,
+      maxScore: 800,
+      accuracy: percent(row.correct, row.total),
+      correct: row.correct,
+      total: row.total,
+      durationSeconds: row.duration_seconds ?? 0,
+      completedAt: row.completed_at,
       change: prior === undefined ? null : score - prior,
-      topics: [...(topics.get(attempt.id) ?? new Map()).entries()].map(([topic, value]) => ({
-        topic,
-        ...value,
-        accuracy: value.total ? Math.round(value.correct / value.total * 100) : 0,
-      })),
-    }];
+      topics: (row.topics ?? []).map((topic) => ({ ...topic, accuracy: percent(topic.correct, topic.total) })),
+    };
   });
-}
+});

@@ -14,5 +14,5 @@ export default async function ProgressPage() {
 }
 
 function LockedProgress() {
-  return <><PortalHeader title="Явцын тайлан" description="Онооны задаргаа, сэдэв тус бүрийн ахиц болон хувийн зөвлөмж."/><EmptyState className="mt-6" heading="h2" pose="trophy" title="Дэлгэрэнгүй явцын тайлан" text="Үнэгүй эрхээр шалгалт өгөх боломжтой ч онооны задаргаа, сэдэв тус бүрийн ахиц болон хувийн зөвлөмж зөвхөн төлбөртэй багцад нээгдэнэ." action={<Link href="/pricing" className={btnSmDark}>Багц сонгох</Link>}/></>;
+  return <><PortalHeader title="Явцын тайлан" description="Онооны задаргаа, сэдэв тус бүрийн ахиц болон хувийн зөвлөмж."/><EmptyState className="mt-6" heading="h2" pose="trophy" title="Дэлгэрэнгүй явцын тайлан" text="Багцгүй эрхээр шалгалт өгөх боломжтой ч онооны задаргаа, сэдэв тус бүрийн ахиц болон хувийн зөвлөмж зөвхөн төлбөртэй багцад нээгдэнэ." action={<Link href="/pricing" className={btnSmDark}>Багц сонгох</Link>}/></>;
 }

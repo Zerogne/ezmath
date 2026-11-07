@@ -50,7 +50,7 @@ export function CourseSummary({ course, tests, attempts, paid = true }: { course
       <div className="relative z-[1] max-w-[620px]">
         <Chip tone="violet">Онолын хичээл</Chip>
         <h2 className="mt-3 text-[28px] font-medium leading-tight tracking-[-0.03em] sm:text-[34px]">{course.title}</h2>
-        <p className={`mt-2 text-[15px] leading-relaxed ${portalMuted}`}>{paid ? course.description : "Үнэгүй эрхээр хөтөлбөртэй танилцана. Бүх хичээлийг нээхийн тулд багцаа ахиулна уу."}</p>
+        <p className={`mt-2 text-[15px] leading-relaxed ${portalMuted}`}>{paid ? course.description : "Багцгүй эрхээр сэдэв бүрийн эхний хичээлийг үзнэ. Бүх хичээлийг нээхийн тулд багц сонгоно уу."}</p>
         <div className="mt-4 flex flex-wrap gap-2"><Chip icon={<BookOpen size={13}/>}>{course.modules} дэд модуль</Chip><Chip icon={<ListChecks size={13}/>}>{course.lessons} сэдэв</Chip><Chip icon={<PenLine size={13}/>}>{course.exercises} дасгал</Chip></div>
         <div className="mt-5 max-w-[420px] rounded-2xl bg-white/80 p-4">
           <div className="flex items-baseline justify-between"><p className="text-sm font-semibold">Таны явц</p><p className="text-sm"><b className="font-display text-xl font-medium text-[#7C4DEB]">{percent}%</b> <span className={portalMuted}>· {course.completed}/{course.lessons}</span></p></div>

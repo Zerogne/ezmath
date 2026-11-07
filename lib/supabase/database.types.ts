@@ -9,6 +9,9 @@ type Profile = { id: string; full_name: string | null; avatar_url: string | null
 export type TargetExam = "EYESH" | "SAT" | "BOTH";
 export type StudentGrade = "9" | "10" | "11" | "12" | "graduated";
 export type StudentGoalFields = { target_exam: TargetExam | null; eyesh_goal: number | null; sat_goal: number | null; eyesh_exam_year: number | null; sat_exam_month: string | null; grade: StudentGrade | null; weekly_study_hours: number | null; target_university: string | null; onboarded_at: string | null };
+export type AiStatus = "pending" | "ready" | "failed";
+type AiAttemptAnalysisRow = { attempt_id: string; user_id: string; status: AiStatus; content: Json | null; model: string | null; error: string | null; created_at: string; updated_at: string };
+type AiStudyPlanRow = { user_id: string; week_start: string; status: AiStatus; content: Json | null; model: string | null; error: string | null; created_at: string; updated_at: string };
 type PhoneVerificationRow = { id: string; provider_session_id: string; purpose: "link_phone" | "reset_password"; user_id: string; phone: string; code: string; expires_at: string; verified_at: string | null; consumed_at: string | null; created_at: string };
 type SchoolRow = { id: string; name: string; slug: string; is_active: boolean; registration_code_hash: string; teacher_registration_code: string | null; created_at: string };
 type ClassroomRow = { id: string; teacher_id: string; school_id: string; name: string; code: string; created_at: string; updated_at: string };
@@ -29,7 +32,7 @@ type TestIntegrityEventRow = { id: string; attempt_id: string; user_id: string; 
 type SupportQuestionRow = { id: string; user_id: string; subject: string; message: string; status: "open" | "answered" | "closed"; answer: string | null; answered_at: string | null; created_at: string };
 type PaymentOrderRow = { id: string; user_id: string; provider: "byl"; plan_code: string; amount_mnt: number; status: "pending" | "checkout_created" | "paid" | "expired" | "canceled" | "failed" | "refunded"; provider_checkout_id: number | null; checkout_url: string | null; payment_method: string | null; expires_at: string | null; paid_at: string | null; metadata: Json; created_at: string; updated_at: string };
 type PaymentWebhookEventRow = { id: string; provider: "byl"; provider_event_id: number; event_type: string; processing_status: "received" | "processed" | "ignored" | "failed"; payload: Json; error_message: string | null; received_at: string; processed_at: string | null };
-type StudentSubscriptionRow = { id: string; user_id: string; provider: "byl"; plan_code: "standard_monthly" | "mentor_monthly"; status: "trialing" | "active" | "past_due" | "canceled"; provider_customer_id: number | null; provider_subscription_id: number; current_period_start: string | null; current_period_end: string | null; canceled_at: string | null; provider_updated_at: string; created_at: string; updated_at: string };
+type StudentSubscriptionRow = { id: string; user_id: string; provider: "byl"; plan_code: import("@/lib/payments/plans").SubscriptionPlanCode; status: "trialing" | "active" | "past_due" | "canceled"; provider_customer_id: number | null; provider_subscription_id: number; current_period_start: string | null; current_period_end: string | null; canceled_at: string | null; provider_updated_at: string; created_at: string; updated_at: string };
 type StudentLessonProgressRow = { id: string; user_id: string; lesson_id: string; completed_at: string | null; last_opened_at: string; created_at: string; updated_at: string };
 type CourseLessonRow = { id: string; slug: string; course_slug: string; module_id: string; title: string; duration_minutes: number; summary: string; objectives: string[]; sections: Json; status: "draft" | "published" | "archived"; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
 type CourseModuleRow = { id: string; course_slug: string; title: string; description: string; parent_id: string | null; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
@@ -39,6 +42,8 @@ export type Database = {
   public: {
     Tables: {
       profiles: Table<Profile, { id: string; full_name?: string | null; avatar_url?: string | null; role?: "student" | "teacher" | "school_admin" | "admin"; school_id?: string | null; teacher_status?: TeacherVerificationStatus | null } & Partial<StudentGoalFields> & { phone?: string | null; phone_verified_at?: string | null }>;
+      ai_attempt_analyses: Table<AiAttemptAnalysisRow, Pick<AiAttemptAnalysisRow, "attempt_id" | "user_id" | "status"> & Partial<AiAttemptAnalysisRow>>;
+      ai_study_plans: Table<AiStudyPlanRow, Pick<AiStudyPlanRow, "user_id" | "week_start" | "status"> & Partial<AiStudyPlanRow>>;
       phone_verifications: Table<PhoneVerificationRow, Pick<PhoneVerificationRow, "provider_session_id" | "purpose" | "user_id" | "phone" | "code" | "expires_at"> & Partial<PhoneVerificationRow>>;
       schools: Table<SchoolRow, Pick<SchoolRow, "name" | "slug"> & Partial<SchoolRow>>;
       classrooms: Table<ClassroomRow, Pick<ClassroomRow, "teacher_id" | "school_id" | "name" | "code"> & Partial<ClassroomRow>>;
@@ -70,6 +75,10 @@ export type Database = {
       student_answer_choices: { Row: Pick<ChoiceRow, "id" | "question_id" | "label" | "text" | "image_url" | "sort_order">; Relationships: [] };
     };
     Functions: {
+      student_attempt_history: {
+        Args: { p_limit?: number };
+        Returns: { attempt_id: string; test_id: string; title: string; exam_type: string; subject: string; score: number; duration_seconds: number | null; completed_at: string; correct: number; total: number; topics: Json }[];
+      };
       consume_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number };
         Returns: boolean;

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissingTable } from "@/lib/data/question-bank";
 import { gradeWritten } from "@/lib/exam/grade-question";
+import { FREE_DAILY_EXERCISES, hasPaidAccess, startOfUlaanbaatarDay } from "@/lib/payments/entitlement";
 
 export type BankCheckResult =
   | { error: string }
@@ -30,6 +31,7 @@ export async function checkBankAnswer(input: { questionId: string; selectedChoic
   if (!userId) return { error: "Дахин нэвтэрнэ үү." };
   const question = await loadBankQuestion(input.questionId);
   if (!question) return { error: "Асуулт олдсонгүй." };
+  if (!await withinFreeDailyLimit(userId, question.id)) return { error: `Багцгүй эрхээр өдөрт ${FREE_DAILY_EXERCISES} бодлого бодно. Маргааш дахин үргэлжлүүлэх эсвэл багц сонгоно уу.` };
   const admin = createAdminClient();
   const [{ data: choices }, { data: accepted }] = await Promise.all([
     admin.from("answer_choices").select("id, is_correct").eq("question_id", question.id),
@@ -59,6 +61,15 @@ export async function setBankMark(questionId: string, marked: boolean) {
   const { error } = await createAdminClient().from("question_bank_progress").upsert({ user_id: userId, question_id: questionId, marked, updated_at: new Date().toISOString() }, { onConflict: "user_id,question_id" });
   if (error && !isMissingTable(error)) console.error("Question bank mark failed", error);
   return !error;
+}
+
+/** Free students may answer FREE_DAILY_EXERCISES distinct questions per day; re-checking one of today's questions is free. */
+async function withinFreeDailyLimit(userId: string, questionId: string) {
+  if (await hasPaidAccess(userId)) return true;
+  const since = startOfUlaanbaatarDay();
+  const { data, error } = await createAdminClient().from("question_bank_progress").select("question_id").eq("user_id", userId).gte("last_answered_at", since);
+  if (error) return true;
+  return data.some((row) => row.question_id === questionId) || data.length < FREE_DAILY_EXERCISES;
 }
 
 async function recordAnswer(userId: string, questionId: string, correct: boolean) {

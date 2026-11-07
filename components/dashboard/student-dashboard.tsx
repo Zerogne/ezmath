@@ -5,8 +5,17 @@ import { PlanBadge, PortalShell } from "@/components/dashboard/portal-shell";
 import { Art, Ezi, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { joinClass } from "@/app/dashboard/classes/actions";
 import { GoalProgress } from "@/components/dashboard/goal-progress";
+import { primaryExam } from "@/lib/goals";
+import { StudyPlanCard } from "@/components/ai/study-plan-card";
+import { todayIndex } from "@/lib/ai/study-plan";
 
-const DAILY_GOAL = 20;
+const FREE_DAILY_LIMIT = 10;
+
+/** Problems per day: ~3 per weekly study hour from onboarding, capped by the free plan's daily limit. */
+function dailyGoal(weeklyHours: number | null | undefined, free: boolean) {
+  const goal = weeklyHours ? Math.min(60, Math.max(10, Math.round(weeklyHours * 3 / 5) * 5)) : 20;
+  return free ? Math.min(goal, FREE_DAILY_LIMIT) : goal;
+}
 const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
 const TYPE_LABEL = { full: "Бүрэн mock", practice: "Дасгал", "previous-year": "Өмнөх оны" } as const;
 
@@ -15,9 +24,11 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
   const answered = attempts.reduce((sum, item) => sum + item.total, 0);
   const correct = attempts.reduce((sum, item) => sum + item.correct, 0);
   const averageAccuracy = answered ? Math.round(correct / answered * 100) : 0;
-  const satAttempts = attempts.filter((item) => item.examType === "SAT");
-  const satAverage = satAttempts.length ? Math.round(satAttempts.reduce((sum, item) => sum + item.score, 0) / satAttempts.length) : 0;
-  const scoreChange = satAttempts.length > 1 ? satAttempts.at(-1)!.score - satAttempts.at(-2)!.score : 0;
+  const goalToday = dailyGoal(data.goal?.weeklyStudyHours, data.planCode === "free");
+  const scoreExam = primaryExam(data.goal) ?? "SAT";
+  const examAttempts = attempts.filter((item) => item.examType === scoreExam);
+  const examAverage = examAttempts.length ? Math.round(examAttempts.reduce((sum, item) => sum + item.score, 0) / examAttempts.length) : 0;
+  const scoreChange = examAttempts.length > 1 ? examAttempts.at(-1)!.score - examAttempts.at(-2)!.score : 0;
   const recent = [...attempts].reverse().slice(0, 3);
   const weekly = weeklyActivity(attempts);
   const attemptedIds = new Set(attempts.map((attempt) => attempt.testId));
@@ -26,9 +37,9 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
 
   return <PortalShell active="/dashboard" plan={{ code: data.planCode, periodEnd: data.planExpiresAt }}>
         <header className="flex flex-wrap items-center gap-4">
-          <div><h1 className="text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">Сайн уу, {firstName(data.name)} 👋</h1><p className="mt-1 text-[15px] text-[#5B6275]">Өнөөдрийн зорилт: {DAILY_GOAL} бодлого. Бэлтгэлээ үргэлжлүүлээрэй.</p></div>
+          <div><h1 className="text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">Сайн уу, {firstName(data.name)} 👋</h1><p className="mt-1 text-[15px] text-[#5B6275]">Өнөөдрийн зорилт: {goalToday} бодлого. Бэлтгэлээ үргэлжлүүлээрэй.</p></div>
           <div className="ml-auto hidden items-center gap-3 sm:flex">
-            <div className="flex items-center gap-3 rounded-full border-2 border-[#EEF0F6] bg-white px-4 py-2.5"><GoalRing value={Math.min(1, solvedToday / DAILY_GOAL)}/><div><p className="text-sm font-semibold">{Math.min(solvedToday, 999)} / {DAILY_GOAL} бодлого</p><p className="text-xs text-[#5B6275]">Өнөөдрийн зорилт</p></div></div>
+            <div className="flex items-center gap-3 rounded-full border-2 border-[#EEF0F6] bg-white px-4 py-2.5"><GoalRing value={Math.min(1, solvedToday / goalToday)}/><div><p className="text-sm font-semibold">{Math.min(solvedToday, 999)} / {goalToday} бодлого</p><p className="text-xs text-[#5B6275]">Өнөөдрийн зорилт</p></div></div>
             <Link href="/dashboard/settings" aria-label="Профайл болон тохиргоо" className="flex items-center gap-2.5 rounded-2xl border-2 border-[#EEF0F6] bg-white py-1.5 pl-1.5 pr-3.5 hover:border-[#C9CDDA]"><Avatar data={data}/><div><p className="max-w-32 truncate text-[13px] font-semibold">{firstName(data.name)}</p><PlanBadge code={data.planCode}/></div></Link>
           </div>
         </header>
@@ -37,11 +48,11 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
           <Kpi art="target" tile="#EFE6FF" label="Ерөнхий эзэмшилт" value={`${averageAccuracy}%`} note={attempts.length ? `${attempts.length} сорилын нийлбэр үр дүн` : "Эхний сорилоо өгөөрэй"}/>
           <Kpi art="flame" tile="#FFF0E6" label="Дадлагын цуврал" value={`${currentStreak(attempts)} хоног`} note="Дараалсан идэвхтэй өдрүүд"/>
           <Kpi art="notebook" tile="#E8EEFF" label="Бодсон бодлого" value={answered.toLocaleString("en-US")} note={`Нийт ${attempts.length} сорил`}/>
-          <Kpi art="calculator" tile="#E9FBF2" label="SAT mock дундаж" value={satAverage ? `${satAverage} / 800` : "— / 800"} note={scoreChange ? `${scoreChange > 0 ? "↑ +" : "↓ "}${scoreChange} өмнөхөөс` : "Онооны түүх хүлээгдэж байна"} positive={scoreChange > 0}/>
+          <Kpi art="calculator" tile="#E9FBF2" label={`${scoreExam === "SAT" ? "SAT" : "ЭЕШ"} дундаж оноо`} value={examAverage ? `${examAverage} / 800` : "— / 800"} note={scoreChange ? `${scoreChange > 0 ? "↑ +" : "↓ "}${scoreChange} өмнөхөөс` : "Онооны түүх хүлээгдэж байна"} positive={scoreChange > 0}/>
         </section>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="min-w-0 space-y-4"><NextExam test={nextTest}/><RecentTests attempts={recent}/><ActivityCard values={weekly}/></div>
+          <div className="min-w-0 space-y-4"><NextExam test={nextTest}/><StudyPlanCard today={todayIndex()}/><RecentTests attempts={recent}/><ActivityCard values={weekly}/></div>
           <div className="space-y-4"><GoalProgress goal={data.goal} attempts={attempts}/><WeakTopics attempts={attempts}/><JoinClassCard/><QuestionBankCard/></div>
         </div>
   </PortalShell>;

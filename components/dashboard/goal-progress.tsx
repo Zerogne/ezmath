@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Pencil } from "lucide-react";
 import type { HistoryAttempt } from "@/lib/data/student-history";
-import { daysUntil, estimateScaledScore, examDate, GOAL_RANGE, goalIncludes, type StudentGoal } from "@/lib/goals";
+import { daysUntil, examDate, GOAL_RANGE, goalIncludes, type StudentGoal } from "@/lib/goals";
 
 const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
 
@@ -11,7 +11,8 @@ export function GoalProgress({ goal, attempts }: { goal: StudentGoal | null; att
   const rows = (["EYESH", "SAT"] as const).filter((exam) => goalIncludes(goal, exam)).map((exam) => {
     const target = exam === "EYESH" ? goal.eyeshGoal : goal.satGoal;
     const latest = [...attempts].reverse().find((attempt) => attempt.examType === exam);
-    const current = latest ? estimateScaledScore(exam, latest.score) : null;
+    // Attempt scores share the goal's 800-point scale.
+    const current = latest ? Math.round(latest.score) : null;
     const date = examDate(goal, exam);
     return { exam, target, current, days: date ? daysUntil(date) : null };
   });
