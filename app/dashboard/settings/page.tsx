@@ -31,8 +31,8 @@ function SubscriptionDetails({ plan }: { plan: StudentPlan }) {
   return <section className={`rounded-[22px] border-2 p-5 sm:p-6 ${paid ? "border-[#BBF7D0] bg-[#F0FDF4]" : "border-[#EEF0F6] bg-white"}`}>
     <div className="flex flex-wrap items-center gap-4">
       <ArtTile kind="scorecard" bg={paid ? "#DCFCE7" : "#F1F3F8"}/>
-      <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><h2 className="font-sans text-lg font-semibold tracking-normal">{planName(plan.code)} багц</h2><Chip tone={paid ? "green" : "grey"}>{paid ? "Идэвхтэй" : "Идэвхгүй"}</Chip></div><p className={`mt-1 text-sm ${portalMuted}`}>{paid && plan.periodEnd ? `${date(plan.periodEnd)} хүртэл хүчинтэй` : "Багц идэвхгүй — боломжууд хязгаартай"}</p></div>
-      <Link href="/pricing" className={btnSmDark}>{paid ? "Хугацаа сунгах" : "Багц сонгох"}</Link>
+      <div className="min-w-0 flex-1 basis-48"><div className="flex flex-wrap items-center gap-2"><h2 className="font-sans text-lg font-semibold tracking-normal">{paid ? `${planName(plan.code)} багц` : "Багц идэвхгүй"}</h2>{paid && <Chip tone="green">Идэвхтэй</Chip>}</div><p className={`mt-1 text-sm ${portalMuted}`}>{paid && plan.periodEnd ? `${date(plan.periodEnd)} хүртэл хүчинтэй` : "Боломжууд хязгаартай. Багц сонгож бүгдийг нээгээрэй."}</p></div>
+      <Link href="/pricing" className={`${btnSmDark} w-full sm:w-auto`}>{paid ? "Хугацаа сунгах" : "Багц сонгох"}</Link>
     </div>
     <div className="mt-5 grid gap-2.5 text-sm sm:grid-cols-2">{features(plan.code).map((item) => <p key={item} className="flex items-center gap-2"><CheckCircle2 size={16} className={paid ? "text-[#16A34A]" : "text-[#9AA0B4]"}/>{item}</p>)}</div>
   </section>;

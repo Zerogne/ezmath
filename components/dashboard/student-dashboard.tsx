@@ -5,7 +5,7 @@ import { PlanBadge, PortalShell } from "@/components/dashboard/portal-shell";
 import { Art, Ezi, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { joinClass } from "@/app/dashboard/classes/actions";
 import { GoalProgress } from "@/components/dashboard/goal-progress";
-import { primaryExam } from "@/lib/goals";
+import { goalIncludes, primaryExam } from "@/lib/goals";
 import { StudyPlanCard } from "@/components/ai/study-plan-card";
 import { todayIndex } from "@/lib/ai/study-plan";
 
@@ -51,9 +51,10 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
           <Kpi art="calculator" tile="#E9FBF2" label={`${scoreExam === "SAT" ? "SAT" : "ЭЕШ"} дундаж оноо`} value={examAverage ? `${examAverage} / 800` : "— / 800"} note={scoreChange ? `${scoreChange > 0 ? "↑ +" : "↓ "}${scoreChange} өмнөхөөс` : "Онооны түүх хүлээгдэж байна"} positive={scoreChange > 0}/>
         </section>
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="min-w-0 space-y-4"><NextExam test={nextTest}/><StudyPlanCard today={todayIndex()}/><RecentTests attempts={recent}/><ActivityCard values={weekly}/></div>
-          <div className="space-y-4"><GoalProgress goal={data.goal} attempts={attempts}/><WeakTopics attempts={attempts}/><JoinClassCard/><QuestionBankCard/></div>
+        <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+          {/* On phones the sidebar stacks below everything, so the goal card is also rendered first in the main column. */}
+          <div className="min-w-0 space-y-4"><div className="empty:hidden xl:hidden"><GoalProgress goal={data.goal} attempts={attempts}/></div><NextExam test={nextTest}/><StudyPlanCard today={todayIndex()}/><RecentTests attempts={recent}/><ActivityCard values={weekly}/></div>
+          <div className="min-w-0 space-y-4"><div className="hidden empty:hidden xl:block"><GoalProgress goal={data.goal} attempts={attempts}/></div><WeakTopics attempts={attempts}/><JoinClassCard/>{(!data.goal || goalIncludes(data.goal, "SAT")) && <QuestionBankCard/>}</div>
         </div>
   </PortalShell>;
 }
@@ -106,6 +107,13 @@ function RecentTests({ attempts }: { attempts: StudentDashboardData["attempts"] 
 function ActivityCard({ values }: { values: { day: string; count: number }[] }) {
   const max = Math.max(...values.map((item) => item.count), 1);
   const peak = values.findIndex((item) => item.count === max && max > 0);
+  const total = values.reduce((sum, item) => sum + item.count, 0);
+  // An empty week would be a tall block of flat bars; show a compact row instead.
+  if (!total) return <section className={`${card} p-5 sm:p-[22px]`}>
+    <h2 className="font-sans text-base font-semibold tracking-normal">Долоо хоногийн идэвх</h2>
+    <p className="mt-1 text-[13px] text-[#5B6275]">Энэ 7 хоногт бодлого бодоогүй байна. Өнөөдрөөс эхэлцгээе!</p>
+    <div className="mt-4 flex justify-between gap-1">{values.map((item) => <span key={item.day} className="flex flex-1 flex-col items-center gap-1.5"><i className="block h-2 w-full max-w-[34px] rounded-full bg-[#EEF0F6]"/><span className="text-[11px] font-medium text-[#9AA0B4]">{item.day}</span></span>)}</div>
+  </section>;
   return <section className={`${card} p-5 sm:p-[22px]`}>
     <div className="flex flex-wrap justify-between gap-2"><h2 className="font-sans text-base font-semibold tracking-normal">Долоо хоногийн идэвх</h2><span className="text-[13px] font-medium text-[#5B6275]">Өдөрт бодсон бодлого · нийт {values.reduce((sum, item) => sum + item.count, 0)}</span></div>
     <div className="mt-[18px] flex gap-2.5 border-b-2 border-[#EEF0F6]">{values.map((item, index) => <div key={item.day} className="flex flex-1 flex-col items-center gap-2 pb-2">
