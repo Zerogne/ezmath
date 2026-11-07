@@ -13,7 +13,7 @@ import type { Test } from "@/types/exam";
 
 const SECTIONS: SatSection[] = ["Math", "Reading and Writing"];
 
-/** The whole SAT area on one page, OnePrep style: the filterable question bank first, then numbered full mocks, then section tests. */
+/** The whole SAT area on one page: numbered full mocks first, then section tests, then the filterable question bank. */
 export async function SatHub({ tests }: { tests: Test[] }) {
   const [{ questions, unplaced }, identity] = await Promise.all([loadBankIndex(), getIdentity()]);
   let status: Awaited<ReturnType<typeof loadBankStatus>> = new Map();
@@ -43,28 +43,28 @@ export async function SatHub({ tests }: { tests: Test[] }) {
     { title: "Reading & Writing", tests: sectionTests.filter((test) => sectionForSubject(test.subject) === "Reading and Writing") },
     { title: "Бусад", tests: sectionTests.filter((test) => !sectionForSubject(test.subject)) },
   ].filter((group) => group.tests.length);
-  const jumps = [["#bank", "Бодлогын сан", questions.length], ["#mocks", "Бүтэн mock", mocks.length], ["#sections", "Хэсгийн сорил", sectionTests.length]] as const;
+  const jumps = [["#mocks", "Бүтэн mock", mocks.length], ["#sections", "Хэсгийн сорил", sectionTests.length], ["#bank", "Бодлогын сан", questions.length]] as const;
 
   return <div className="mt-8">
     <nav aria-label="SAT хэсгүүд" className="flex flex-wrap gap-2">{jumps.map(([href, label, count]) => <a key={href} href={href} className="inline-flex items-center gap-2 rounded-full border-2 border-[#EEF0F6] bg-white px-4 py-2 text-sm font-semibold transition hover:border-[#2B4BE8] hover:text-[#2B4BE8]">{label}<span className="rounded-full bg-[#F1F3F8] px-2 py-px text-xs text-[#5B6275]">{count}</span></a>)}</nav>
 
-    <section id="bank" className="mt-10 scroll-mt-24">
-      <SectionHead art="target" tile="#E8EEFF" title="Бодлогын сан" text="Хэсэг, домэйн, ур чадвар, түвшингээр шүүгээд бод. Бодлого бүрийн дараа зөв хариу, тайлбар шууд гарна. Буруу хариулсан, тэмдэглэсэн асуултаа дахин давт."/>
-      <div className="mt-6"><BankBrowser sections={sections} questions={compact} signedIn={Boolean(identity)}/></div>
-      {unplaced > 0 && <p className="mt-4 text-xs text-[#5B6275]">{unplaced} асуултын хэсэг тодорхойгүй тул санд ороогүй байна.</p>}
-    </section>
-
-    <section id="mocks" className="mt-20 scroll-mt-24">
+    <section id="mocks" className="mt-10 scroll-mt-24">
       <SectionHead art="calculator" tile="#E9FBF2" title="Бүтэн mock шалгалт" text="Бодит шалгалтын хугацаа, бүтэцтэй. Дугаараар нь дарааллаар өгөөрэй."/>
       {mocks.length ? <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{mocks.map((test, index) => <li key={test.id}><SatTestCard test={test} number={index + 1}/></li>)}</ol>
         : <EmptyState className="mt-6" pose="sleep" title="Mock шалгалт удахгүй нэмэгдэнэ"/>}
     </section>
 
-    <section id="sections" className="mt-20 scroll-mt-24">
+    <section id="sections" className="mt-14 scroll-mt-24">
       <SectionHead art="stopwatch" tile="#FFF0E6" title="Хэсгийн сорил" text="Нэг хэсгийг тусад нь, бодит хугацаагаар дадлага хий."/>
       {groups.length ? groups.map((group) => <div key={group.title} className="mt-6"><h3 className="text-xs font-semibold uppercase tracking-[.14em] text-[#9AA0B4]">{group.title}</h3><div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.tests.map((test) => <SatTestCard key={test.id} test={test}/>)}</div></div>)
         : <EmptyState className="mt-6" pose="sleep" title="Хэсгийн сорил удахгүй нэмэгдэнэ"/>}
     </section>
+    <section id="bank" className="mt-16 scroll-mt-24">
+      <SectionHead art="target" tile="#E8EEFF" title="Бодлогын сан" text="Хэсэг, домэйн, ур чадвар, түвшингээр шүүгээд бод. Бодлого бүрийн дараа зөв хариу, тайлбар шууд гарна. Буруу хариулсан, тэмдэглэсэн асуултаа дахин давт."/>
+      <div className="mt-6"><BankBrowser sections={sections} questions={compact} signedIn={Boolean(identity)}/></div>
+      {unplaced > 0 && <p className="mt-4 text-xs text-[#5B6275]">{unplaced} асуултын хэсэг тодорхойгүй тул санд ороогүй байна.</p>}
+    </section>
+
   </div>;
 }
 
