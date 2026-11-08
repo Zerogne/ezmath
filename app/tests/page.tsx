@@ -9,7 +9,11 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
-export const metadata: Metadata = { title: "Бүх шалгалт нэг дор" };
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ exam?: string }> }): Promise<Metadata> {
+  const { exam } = await searchParams;
+  if (exam === "SAT") return { title: "SAT Math ба Reading бэлтгэл — mock шалгалт, бодлогын сан", description: "SAT-ын албан ёсны ур чадвараар ангилсан бодлогын сан, бүтэн mock шалгалт, хэсгийн сорил. Оноо, тайлангаа шууд аваарай.", alternates: { canonical: "/tests?exam=SAT" } };
+  return { title: "ЭЕШ математик — өмнөх оны хувилбарууд, хариу", description: "ЭЕШ-ийн математикийн өмнөх оны A, B, C, D хувилбаруудыг онлайн бодоод оноо, зөв хариу, сэдвийн тайлангаа аваарай.", alternates: { canonical: "/tests?exam=EYESH" } };
+}
 
 const tabs = [["EYESH", "ЭЕШ"], ["SAT", "SAT"]] as const;
 
