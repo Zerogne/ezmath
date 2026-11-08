@@ -1,79 +1,101 @@
 # EzMath Codebase Audit
 
-Audit date: 2026-08-21
+Audit date: 2026-11-09 (replaces the 2026-08-21 audit)
 
-## Executive summary
+## Summary
 
-The application builds successfully and has a sound baseline for a production-oriented Next.js and Supabase application. Authentication is verified server-side, student records use ownership-based RLS, published exam data is separated from answer-key data, service-role access remains in server-only modules, and the dependency audit currently reports no known vulnerabilities.
+EzMath is in good shape for production. Since the first audit, the project has added:
+- automated tests and CI;
+- error tracking;
+- request rate limits on login, registration, phone verification, avatar upload and the AI PDF import;
+- a hard production guard on the admin demo switch.
 
-Production readiness is limited mainly by missing automated tests and CI, missing request rate limits, a dangerous local-only admin demo switch, and the need for a clean-project integration test of the admin material writer RPC.
+All 30 application tables have row-level security. Students never receive answer keys before they submit. Service-role access stays in server-only modules.
+
+The open items are smaller:
+- rate limits are still missing on some write endpoints;
+- one low-severity KaTeX advisory waits on a breaking upgrade;
+- the admin material RPC has no integration test.
 
 ## Checks performed
 
 | Check | Result |
 | --- | --- |
+| Lint (`npm run lint`) | Pass. Two warnings, both in the local, git-ignored `imports/` scripts. |
 | TypeScript (`npm run typecheck`) | Pass |
-| ESLint (`npm run lint`) | Pass |
-| Next.js production build (`npm run build`) | Pass |
-| npm vulnerability audit | Pass — 0 known vulnerabilities |
-| Supabase database lint | Pass — no schema errors |
-| Local/remote migration parity | Pass — 5 migrations synchronized |
-| Secret file ignore rules | Pass — `.env*.local` ignored |
-| RLS enabled on exposed application tables | Pass |
-| Student ownership predicates | Pass |
+| Unit tests (`npm test`, Vitest) | Pass, 20 tests: grading, SAT grid-in rules, streaks, Ulaanbaatar time, exam countdown |
+| Browser tests (`npm run test:e2e`, Playwright) | Pass, 10 tests: exam start and finish, fullscreen monitoring and refusal, session restore, SEO routes, phone smoke tests |
+| Production build | Pass |
+| CI (GitHub Actions, `.github/workflows/ci.yml`) | Runs all of the above on every push and pull request |
+| Dependency audit (`npm audit --omit=dev`) | 1 low (KaTeX). Next.js, sharp and source-map-js were patched on 2026-11-09. |
+| Unused code (`npx knip`) | No unused files or dependencies |
+| RLS on application tables | Pass, 30 of 30 tables |
 | Student-safe question/choice views | Pass |
-| Service-role imports in client components | Pass — none found |
+| Service-role imports in client components | Pass, none |
 
-## Findings
+## Resolved since the 2026-08-21 audit
 
-### High: production must reject admin demo mode
+- **High: admin demo mode in production.** `lib/admin/auth.ts` now throws when `ADMIN_DEMO_MODE=true` and `NODE_ENV=production`.
+- **Medium: no tests or CI.** Vitest unit tests, Playwright browser tests and a GitHub Actions workflow now exist.
+  - The browser suite runs against the bundled mock dataset, so CI needs no secrets.
+  - In mock mode, the `e2e-monitored=1` cookie exercises the exam path for school and class students.
+- **Medium: no rate limits.** A fixed-window limiter exists: `lib/rate-limit.ts`, backed by `public.consume_rate_limit`.
+  - It now covers login (per email), registration (per IP), phone linking and checks, password reset by phone, avatar upload and the AI PDF import.
+  - Other write endpoints are still open; see below.
+- **Low: minimal observability.** Rollbar is connected through the Vercel Marketplace.
+  - Uncaught server errors go through `instrumentation.ts` `onRequestError`. Browser errors are captured too.
+  - Handled failures go through `reportServerError()`: attempt start, submission and checkpoint.
+  - Answers, tokens and phone numbers are scrubbed before sending.
+- **Dependencies.** Next.js moved from 16.3.1 to 16.4.5, fixing a critical metadata-image disclosure advisory and a `use cache` leak advisory. sharp went to 0.35.5 and source-map-js to 1.2.2.
+- **Dead code.** These were removed:
+  - unused components and the `session-storage` shim;
+  - the `pdf-parse` dependency;
+  - the superseded v1 illustration sources;
+  - copies of the Ulaanbaatar-time math, now consolidated in `lib/ulaanbaatar-time.ts`.
 
-`ADMIN_DEMO_MODE=true` returns a synthetic administrator without a Supabase session. This is useful for local UI review but would bypass normal admin identity checks if accidentally enabled in production, including the protected PDF-import endpoint.
+## Open findings
 
-Recommendation: enforce a production guard that throws during startup when `ADMIN_DEMO_MODE=true`, and keep the variable unset in every hosted environment.
+### Medium: rate limits missing on some write endpoints
 
-### Medium: no automated application tests or CI
+Every one of these requires a signed-in user and an ownership check, so the risk is load or cost, not data access:
+- **No limiter yet:** test attempt start and submit (`app/tests/actions.ts`), checkpoints and integrity events (`app/api/test-attempts/*`), class-exam submission, joining a class, and payment checkout creation.
+- **Question-bank answers:** free students are capped at 10 a day by the plan check, but paid students have no limiter.
+- **AI analysis and study plans:** generation is deduplicated per attempt and per week, but a failed generation can be retried on every poll with `retry`.
 
-The repository has no unit, integration, browser, or RLS regression suite and no continuous-integration workflow. Type checking and builds catch compilation failures but do not validate authorization behavior or user workflows.
+**Recommendation:** use `rateLimit()` per user on submit, checkpoint, joining a class and checkout, and cap AI retries per attempt per hour. Class codes have 6–10 characters, so a per-user limit on joining also makes code guessing impractical.
 
-Recommendation: add Vitest for pure scoring logic, Playwright for login/exam/dashboard flows, SQL/RLS tests for cross-user isolation, and a GitHub Actions workflow running typecheck, lint, tests, and build.
+### Low: KaTeX prototype-pollution advisory
 
-### Medium: mutation and import endpoints have no rate limiting
+KaTeX 0.16.x is affected by an advisory where existing prototype pollution can bypass trust restrictions. The fix is the 0.19 line, which is a semver-major change. The app does not enable KaTeX `trust`, and the advisory needs a separate prototype-pollution bug to be exploitable.
 
-The checkpoint endpoint, exam submission Server Action, authentication entry points, and AI-backed PDF import do not have application-level throttling. Authentication and admin checks reduce exposure, but abusive clients can still create avoidable database or provider load.
+**Recommendation:** upgrade to KaTeX 0.19, then check rendering with `imports/eyesh/check-latex.mjs` and the admin preview.
 
-Recommendation: add per-user and per-IP limits, request-size controls where appropriate, and provider timeouts for external AI calls.
+### Low: admin material RPC has no integration test
 
-### Medium: admin material RPC needs a clean-project integration test
+`save_admin_material` runs as `security invoker`, so admin writes depend on table grants as well as RLS. No automated test provisions a fresh project to check create, edit, reorder, publish and delete as an admin and as a student.
 
-The final migration changes `save_admin_material` to `security invoker`. This is safer than a broadly callable definer function, but successful writes now depend on the authenticated admin role having every required table privilege in addition to RLS permission.
+**Recommendation:** add a migration-level test against a Supabase branch or a local stack, run when migrations change.
 
-Recommendation: provision a fresh project from migrations and test create, edit, reorder, publish, and delete behavior as both an admin and a student. If privileges are missing, grant only the required DML privileges to `authenticated` and continue relying on admin-only RLS policies.
+### Low: browser tests run only in mock mode
 
-### Low: operational observability is minimal
+The Playwright suite covers UI flows against the mock dataset. It does not cover Supabase-backed behavior: RLS, subscriptions, the free-plan limit, leaderboards or the activity triggers.
 
-The health endpoint reports configuration state, but the app has no structured error reporting, audit events, or performance monitoring.
+**Recommendation:** once a staging Supabase project exists, add a nightly suite with seeded test accounts (student, school student, teacher, admin).
 
-Recommendation: add sanitized structured logs, error tracking, and alerts for failed submissions, checkpoint failures, and PDF imports. Never log access tokens, service keys, answer payloads, or provider API keys.
+### Low: repository policy files
 
-### Low: repository policy files are absent
+There is no license, security policy or ownership file. Add them if the repository becomes public or gains collaborators.
 
-The project does not currently include a license, contribution guide, security policy, or ownership metadata.
+## Security properties to preserve
 
-Recommendation: add these when the repository’s intended visibility and collaboration model are decided.
+- **Answer keys stay on the server.** Students read questions only through the `student_questions` and `student_answer_choices` views. Grading happens on the server with the service role. Never send correct answers, explanations or accepted answers before submission.
+- **The service role stays server-only.** `lib/supabase/admin.ts` is `server-only` and must never be imported into a client component.
+- **Every new table needs RLS** with ownership predicates. Security-definer functions must set `search_path = ''` and check the caller, like `weekly_leaderboard`, which gives students class rankings only and school rankings only to staff.
+- **Roles come from `profiles.role` in the database,** never from user-editable metadata.
+- **Exam monitoring applies only to school and class students.** A refused fullscreen request is logged, never blocking. Tab-leave and fullscreen events are recorded through `/api/test-attempts/integrity`.
+- **Dates use Ulaanbaatar time.** Calendar logic (daily limits, streaks, weeks) goes through `lib/ulaanbaatar-time.ts` in TypeScript and `private.mn_day()` in SQL, because functions run in Sydney.
+- **The CSP is strict** (`next.config.ts`). New external origins must be added explicitly. Rollbar's `api.rollbar.com` is allowed in `connect-src`.
 
-## Positive security observations
+## Release gate
 
-- Server components and actions use `auth.getUser()` for trusted identity checks.
-- Student attempts and answers are constrained to the authenticated owner.
-- Profile updates grant only `full_name` and `avatar_url` columns.
-- Public question views exclude correct-answer and explanation fields.
-- Views use `security_invoker = true`.
-- Admin mutations check the database-backed profile role rather than user-editable metadata.
-- The service-role key has no public prefix and is confined to server-side modules.
-- PDF imports validate admin identity, MIME type, file signature, and a 15 MB size limit.
-- Dependency versions are captured in `package-lock.json`.
-
-## Recommended release gate
-
-Do not treat the application as fully production-ready until the high-severity demo-mode risk is guarded in code and the critical student/admin flows have automated integration coverage. Continue requiring successful typecheck, lint, build, dependency audit, database lint, and migration parity before each release.
+Before each release: CI green (lint, typecheck, unit and browser tests, build), no new high or critical `npm audit` findings, and new migrations committed and applied, with `lib/supabase/database.types.ts` updated to match.
