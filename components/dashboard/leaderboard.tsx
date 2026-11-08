@@ -30,13 +30,13 @@ function Row({ row, showStreak }: { row: LeaderboardRow; showStreak: boolean }) 
   </li>;
 }
 
-/** Dashboard card: the first board the student belongs to, top 5 and their own place. */
+/** Dashboard card: the student's first class, top 5 and their own place. Full lists live on /dashboard/classes. */
 export function LeaderboardCard({ boards }: { boards: Leaderboard[] }) {
   const board = boards[0];
   if (!board) return null;
   const me = board.rows.find((row) => row.isMe);
   return <section className={`${card} p-5 sm:p-[22px]`}>
-    <div className="flex items-center justify-between gap-3"><h2 className="inline-flex items-center gap-2 font-sans text-base font-semibold tracking-normal"><Trophy size={18} className="text-[#F5B700]"/>Энэ 7 хоногийн шилдэг</h2><Link href="/dashboard/leaderboard" className="text-[13px] font-semibold text-[#2B4BE8]">Бүгд →</Link></div>
+    <div className="flex items-center justify-between gap-3"><h2 className="inline-flex items-center gap-2 font-sans text-base font-semibold tracking-normal"><Trophy size={18} className="text-[#F5B700]"/>Энэ 7 хоногийн шилдэг</h2><Link href="/dashboard/classes" className="text-[13px] font-semibold text-[#2B4BE8]">Бүгд →</Link></div>
     <p className="mt-1 truncate text-[13px] text-[#5B6275]">{board.title}{me ? ` · Та ${me.rank}-р байр` : ""}</p>
     <div className="mt-3"><LeaderboardTable rows={board.rows} limit={5} showStreak={false}/></div>
   </section>;

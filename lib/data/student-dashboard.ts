@@ -1,9 +1,11 @@
 import "server-only";
 
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getPortalData } from "@/lib/data/student-portal";
 import type { HistoryAttempt } from "@/lib/data/student-history";
 import { getStudentActivity, type StudentActivity } from "@/lib/data/student-activity";
-import { getStudentLeaderboards, type Leaderboard } from "@/lib/data/leaderboard";
+import { getStudentClassLeaderboards, type Leaderboard } from "@/lib/data/leaderboard";
+import { getStudentClasses } from "@/lib/data/classrooms";
 import type { StudentGoal } from "@/lib/goals";
 import type { PlanCode } from "@/lib/payments/plans";
 import type { Test } from "@/types/exam";
@@ -23,7 +25,7 @@ export type StudentDashboardData = {
 
 export async function getStudentDashboard(): Promise<StudentDashboardData> {
   const data = await getPortalData();
-  const [activity, leaderboards] = await Promise.all([getStudentActivity(data.attempts), getStudentLeaderboards()]);
+  const [activity, leaderboards] = await Promise.all([getStudentActivity(data.attempts), isSupabaseConfigured() ? getStudentClasses().then(getStudentClassLeaderboards) : []]);
   return {
     name: data.profile.full_name?.trim() || data.email.split("@")[0] || "Сурагч",
     email: data.email,

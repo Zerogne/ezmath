@@ -2,7 +2,6 @@ import "server-only";
 
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { getSessionUser } from "@/lib/supabase/session";
 
 export type LeaderboardRow = { studentId: string; name: string; avatarUrl: string | null; problems: number; correct: number; streak: number; rank: number; isMe: boolean };
 export type Leaderboard = { key: string; title: string; scope: "class" | "school"; rows: LeaderboardRow[] };
@@ -21,24 +20,9 @@ export async function loadLeaderboard(scope: "class" | "school", classroomId?: s
   return (data as Row[]).map((row) => ({ studentId: row.student_id, name: row.full_name, avatarUrl: row.avatar_url, problems: row.problems, correct: row.correct, streak: row.streak, rank: row.rank, isMe: row.is_me }));
 }
 
-/** Every board a student belongs to: their school first, then each joined class. */
-export async function getStudentLeaderboards(): Promise<Leaderboard[]> {
-  if (!isSupabaseConfigured()) return [];
-  const user = await getSessionUser();
-  if (!user) return [];
-  const supabase = await createClient();
-  const [{ data: profile }, { data: memberships }] = await Promise.all([
-    supabase.from("profiles").select("school_id").eq("id", user.id).maybeSingle(),
-    supabase.from("classroom_students").select("classroom_id, joined_at").eq("student_id", user.id).order("joined_at"),
-  ]);
-  const classIds = (memberships ?? []).map((row) => row.classroom_id);
-  const [{ data: classes }, { data: school }] = await Promise.all([
-    classIds.length ? supabase.from("classrooms").select("id, name").in("id", classIds) : Promise.resolve({ data: [] as { id: string; name: string }[] }),
-    profile?.school_id ? supabase.from("schools").select("name").eq("id", profile.school_id).maybeSingle() : Promise.resolve({ data: null }),
-  ]);
-  const classNames = new Map((classes ?? []).map((row) => [row.id, row.name]));
-  const boards: Promise<Leaderboard>[] = [];
-  if (profile?.school_id) boards.push(loadLeaderboard("school").then((rows) => ({ key: "school", title: school?.name || "Манай сургууль", scope: "school", rows })));
-  for (const id of classIds) boards.push(loadLeaderboard("class", id).then((rows) => ({ key: id, title: classNames.get(id) || "Миний анги", scope: "class", rows })));
-  return (await Promise.all(boards)).filter((board) => board.rows.length > 0);
+/** This week's ranking for each class the student has joined. Students never see a school-wide ranking. */
+export async function getStudentClassLeaderboards(classes: { id: string; name: string }[]): Promise<Leaderboard[]> {
+  if (!isSupabaseConfigured() || !classes.length) return [];
+  const boards = await Promise.all(classes.map(async (item) => ({ key: item.id, title: item.name, scope: "class" as const, rows: await loadLeaderboard("class", item.id) })));
+  return boards.filter((board) => board.rows.length > 0);
 }
