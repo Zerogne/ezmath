@@ -10,8 +10,9 @@ import { after } from "next/server";
 import { generateAttemptAnalysis } from "@/lib/ai/attempt-analysis";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { hasPaidAccess } from "@/lib/payments/entitlement";
+import { reportServerError } from "@/lib/monitoring/server";
 
-export type StartAttemptResult = { attemptId: string; error?: undefined } | { attemptId: null; error?: "auth_required" | "limit_reached" | "failed" };
+export type StartAttemptResult = { attemptId: string; error?: undefined } | { attemptId: null; error?: "auth_required" | "limit_reached" | "failed" | "unavailable" };
 
 export async function startTestAttempt(testId: string, startedAt: string): Promise<StartAttemptResult> {
   if (!isSupabaseConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return { attemptId: null };
@@ -23,7 +24,7 @@ export async function startTestAttempt(testId: string, startedAt: string): Promi
     admin.from("tests").select("id,test_type").eq("id", testId).eq("status", "published").maybeSingle(),
     admin.from("test_attempts").select("id").eq("user_id", user.id).eq("test_id", testId).eq("status", "in_progress").order("started_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
-  if (!test) return { attemptId: null };
+  if (!test) return { attemptId: null, error: "unavailable" };
   if (existing) return { attemptId: existing.id };
   if (test.test_type !== "practice") {
     const [{ data: profile }, { data: subscription }] = await Promise.all([
@@ -41,7 +42,7 @@ export async function startTestAttempt(testId: string, startedAt: string): Promi
     }
   }
   const { data, error } = await admin.from("test_attempts").insert({ user_id: user.id, test_id: testId, started_at: startedAt, status: "in_progress" }).select("id").single();
-  if (error || !data) return { attemptId: null, error: "failed" };
+  if (error || !data) { await reportServerError(error ?? new Error("No attempt row returned"), { where: "startTestAttempt", testId }); return { attemptId: null, error: "failed" }; }
   return { attemptId: data.id };
 }
 
@@ -133,11 +134,11 @@ async function submitDatabaseAttempt(payload: SubmissionPayload): Promise<Submis
   }
   const answerRows = questions.map((question) => { const choiceId = selected.get(question.id); const choice = choiceMap.get(choiceId ?? ""); const validChoice = choice && choice.question_id === question.id ? choice : null; const result = answerResults[question.id]; return { attempt_id: attemptId!, question_id: question.id, selected_choice_id: question.question_type === "multi-blank" ? null : validChoice?.id ?? null, written_response: question.question_type === "multi-blank" ? written.get(question.id) ?? {} : null, is_correct: result === "unanswered" ? null : result === "correct", time_spent_seconds: null, marked_for_review: payload.markedForReview.includes(question.id) }; });
   const { error: answersError } = await admin.from("attempt_answers").upsert(answerRows, { onConflict: "attempt_id,question_id" });
-  if (answersError) { console.error("Attempt answer save failed", { attemptId, testId: payload.testId, error: answersError }); throw new Error("Хариултуудыг хадгалж чадсангүй."); }
+  if (answersError) { await reportServerError(answersError, { where: "submitTestAttempt.answers", attemptId, testId: payload.testId }); throw new Error("Хариултуудыг хадгалж чадсангүй."); }
   // SAT Math is reported as a 200–800 section score, ЭЕШ as 0–800.
   const score = test.exam_type === "SAT" ? Math.round((400 + accuracy * 4) / 10) * 10 : Math.round(correct / questions.length * 800);
   const { error: completeError } = await admin.from("test_attempts").update({ status: "submitted", completed_at: new Date().toISOString(), score, duration_seconds: durationSeconds }).eq("id", attemptId).eq("user_id", user.id).eq("status", "in_progress");
-  if (completeError) { console.error("Attempt completion failed", { attemptId, testId: payload.testId, error: completeError }); throw new Error("Шалгалтыг дуусгаж чадсангүй."); }
+  if (completeError) { await reportServerError(completeError, { where: "submitTestAttempt.complete", attemptId, testId: payload.testId }); throw new Error("Шалгалтыг дуусгаж чадсангүй."); }
   // Start the AI analysis for mocks right away, so it is usually ready by the time the result page polls for it.
   if (test.test_type !== "practice" && isAiConfigured()) {
     const userId = user.id, finishedAttemptId = attemptId!;
