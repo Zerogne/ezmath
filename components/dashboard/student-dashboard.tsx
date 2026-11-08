@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Check, Clock3 } from "lucide-react";
+import { ArrowRight, Check, Clock3 } from "lucide-react";
 import type { StudentDashboardData } from "@/lib/data/student-dashboard";
 import { PlanBadge, PortalShell } from "@/components/dashboard/portal-shell";
 import { Art, Ezi, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
@@ -41,9 +41,11 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
 
   return <PortalShell active="/dashboard" plan={{ code: data.planCode, periodEnd: data.planExpiresAt }}>
         <header className="flex flex-wrap items-center gap-4">
-          <div><h1 className="text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">Сайн уу, {firstName(data.name)} 👋</h1><p className="mt-1 text-[15px] text-[#5B6275]">{goalDone ? "Өнөөдрийн зорилтоо биелүүллээ! 🎉" : activity.streak > 0 && !activity.activeToday ? `${activity.streak} хоногийн цувралаа таслахгүйн тулд өнөөдөр бодлого бодоорой.` : `Өнөөдрийн зорилт: ${goalToday} бодлого. Бэлтгэлээ үргэлжлүүлээрэй.`}</p>{countdown && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#FFF0E6] px-3 py-1 text-[13px] font-semibold text-[#C2410C]"><CalendarDays size={14}/>{countdown}</p>}</div>
+          <div><h1 className="text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">Сайн уу, {firstName(data.name)} 👋</h1><p className="mt-1 text-[15px] text-[#5B6275]">{goalDone ? "Өнөөдрийн зорилтоо биелүүллээ! 🎉" : activity.streak > 0 && !activity.activeToday ? `${activity.streak} хоногийн цувралаа таслахгүйн тулд өнөөдөр бодлого бодоорой.` : `Өнөөдрийн зорилт: ${goalToday} бодлого. Бэлтгэлээ үргэлжлүүлээрэй.`}</p></div>
+          {/* Phones: the countdown and daily goal as a row of pills under the greeting. */}
+          <div className="flex w-full gap-2 sm:hidden">{countdown && <CountdownPill {...countdown} compact/>}<GoalPill solved={solvedToday} goal={goalToday} done={goalDone} compact/></div>
           <div className="ml-auto hidden items-center gap-3 sm:flex">
-            <div className="flex items-center gap-3 rounded-full border-2 border-[#EEF0F6] bg-white px-4 py-2.5">{goalDone ? <span className="grid h-[34px] w-[34px] place-items-center rounded-full bg-[#16A34A] text-white"><Check size={18} strokeWidth={3}/></span> : <GoalRing value={Math.min(1, solvedToday / goalToday)}/>}<div><p className="text-sm font-semibold">{Math.min(solvedToday, 999)} / {goalToday} бодлого</p><p className="text-xs text-[#5B6275]">Өнөөдрийн зорилт</p></div></div>
+            {countdown && <CountdownPill {...countdown}/>}<GoalPill solved={solvedToday} goal={goalToday} done={goalDone}/>
             <Link href="/dashboard/settings" aria-label="Профайл болон тохиргоо" className="flex items-center gap-2.5 rounded-2xl border-2 border-[#EEF0F6] bg-white py-1.5 pl-1.5 pr-3.5 hover:border-[#C9CDDA]"><Avatar data={data}/><div><p className="max-w-32 truncate text-[13px] font-semibold">{firstName(data.name)}</p><PlanBadge code={data.planCode}/></div></Link>
           </div>
         </header>
@@ -65,9 +67,24 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
 
 function Avatar({ data }: { data: StudentDashboardData }) { return data.avatarUrl ? <span role="img" aria-label={`${data.name} профайл зураг`} className="h-10 w-10 rounded-[20px] bg-cover bg-center" style={{backgroundImage:`url(${JSON.stringify(data.avatarUrl)})`}}/> : <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-[20px] bg-[#FFE4EF]" aria-label={initials(data.name)}><Art name="friend-coral" size={40}/></span>; }
 
+/** Header pill in the same style as the daily goal: stopwatch art, days left, which exam. */
+function CountdownPill({ exam, days, compact = false }: { exam: string; days: number; compact?: boolean }) {
+  return <div className={`flex items-center gap-2.5 rounded-full border-2 border-[#EEF0F6] bg-white ${compact ? "min-w-0 flex-1 py-1.5 pl-1.5 pr-3" : "py-1.5 pl-1.5 pr-4"}`}>
+    <span className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full bg-[#FFF6CC]"><ObjectArt kind="stopwatch" size={32}/></span>
+    <div className="min-w-0"><p className="truncate text-sm font-semibold">{days} хоног</p><p className="truncate text-xs text-[#5B6275]">{exam} хүртэл</p></div>
+  </div>;
+}
+
+function GoalPill({ solved, goal, done, compact = false }: { solved: number; goal: number; done: boolean; compact?: boolean }) {
+  return <div className={`flex items-center gap-3 rounded-full border-2 border-[#EEF0F6] bg-white ${compact ? "min-w-0 flex-1 py-1.5 pl-1.5 pr-3" : "px-4 py-2.5"}`}>
+    {done ? <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-[#16A34A] text-white"><Check size={18} strokeWidth={3}/></span> : <GoalRing value={Math.min(1, solved / goal)}/>}
+    <div className="min-w-0"><p className="truncate text-sm font-semibold">{Math.min(solved, 999)} / {goal} бодлого</p><p className="truncate text-xs text-[#5B6275]">Өнөөдрийн зорилт</p></div>
+  </div>;
+}
+
 function GoalRing({ value }: { value: number }) {
   const length = 2 * Math.PI * 14;
-  return <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden><circle cx="17" cy="17" r="14" fill="none" stroke="#EEF0F6" strokeWidth="5"/><circle cx="17" cy="17" r="14" fill="none" stroke="#2B4BE8" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${value * length} ${length}`} transform="rotate(-90 17 17)"/></svg>;
+  return <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden className="shrink-0"><circle cx="17" cy="17" r="14" fill="none" stroke="#EEF0F6" strokeWidth="5"/><circle cx="17" cy="17" r="14" fill="none" stroke="#2B4BE8" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${value * length} ${length}`} transform="rotate(-90 17 17)"/></svg>;
 }
 
 /** Plan card with Эзи peeking over it, at the bottom of the sidebar. */
@@ -160,14 +177,14 @@ function QuestionBankCard() {
 }
 
 function formatShortDate(value: string) { const date = new Date(value); return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`; }
-/** "ЭЕШ хүртэл 208 хоног" for the nearest upcoming exam the student set a date for. */
+/** Days left until the nearest upcoming exam the student set a date for. */
 function examCountdown(goal: StudentDashboardData["goal"]) {
   if (!goal) return null;
   const next = (["EYESH", "SAT"] as const).filter((exam) => goalIncludes(goal, exam))
     .map((exam) => { const date = examDate(goal, exam); return { exam, days: date ? daysUntil(date) : null }; })
     .filter((item): item is { exam: "EYESH" | "SAT"; days: number } => item.days !== null && item.days > 0)
     .sort((a, b) => a.days - b.days)[0];
-  return next ? `${next.exam === "SAT" ? "SAT" : "ЭЕШ"} хүртэл ${next.days} хоног` : null;
+  return next ? { exam: next.exam === "SAT" ? "SAT" : "ЭЕШ", days: next.days } : null;
 }
 function firstName(name: string) { return name.trim().split(/\s+/)[0]; }
 function initials(name: string) { return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()).join("") || "С"; }
