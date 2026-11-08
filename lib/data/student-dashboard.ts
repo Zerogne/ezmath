@@ -2,6 +2,8 @@ import "server-only";
 
 import { getPortalData } from "@/lib/data/student-portal";
 import type { HistoryAttempt } from "@/lib/data/student-history";
+import { getStudentActivity, type StudentActivity } from "@/lib/data/student-activity";
+import { getStudentLeaderboards, type Leaderboard } from "@/lib/data/leaderboard";
 import type { StudentGoal } from "@/lib/goals";
 import type { PlanCode } from "@/lib/payments/plans";
 import type { Test } from "@/types/exam";
@@ -15,10 +17,13 @@ export type StudentDashboardData = {
   attempts: HistoryAttempt[];
   tests: Test[];
   goal: StudentGoal | null;
+  activity: StudentActivity;
+  leaderboards: Leaderboard[];
 };
 
 export async function getStudentDashboard(): Promise<StudentDashboardData> {
   const data = await getPortalData();
+  const [activity, leaderboards] = await Promise.all([getStudentActivity(data.attempts), getStudentLeaderboards()]);
   return {
     name: data.profile.full_name?.trim() || data.email.split("@")[0] || "Сурагч",
     email: data.email,
@@ -28,5 +33,7 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
     attempts: data.attempts,
     tests: data.tests,
     goal: data.goal,
+    activity,
+    leaderboards,
   };
 }

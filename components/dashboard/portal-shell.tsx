@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, BarChart3, BookOpen, ClipboardCheck, Home, Settings, Target, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, ClipboardCheck, Home, Settings, Target, Trophy, Users } from "lucide-react";
 import { AppPortalShell } from "@/components/dashboard/app-portal-shell";
 import { StudentMobileNav } from "@/components/dashboard/student-mobile-nav";
 import { Ezi } from "@/components/home/redesign/illustrations";
@@ -12,7 +12,7 @@ const items = [
   ["Хяналтын самбар", "/dashboard", Home], ["Миний хичээлүүд", "/dashboard/courses", BookOpen],
   ["Дасгал", "/dashboard/exercises", Target], ["Сорил & шалгалт", "/dashboard/exams", ClipboardCheck],
   ["Явцын тайлан", "/dashboard/progress", BarChart3],
-  ["Миний анги", "/dashboard/classes", Users],
+  ["Миний анги", "/dashboard/classes", Users], ["Шилдэгүүд", "/dashboard/leaderboard", Trophy],
   ["Тохиргоо", "/dashboard/settings", Settings],
 ] as const;
 

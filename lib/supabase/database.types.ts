@@ -11,6 +11,7 @@ export type StudentGrade = "9" | "10" | "11" | "12" | "graduated";
 export type StudentGoalFields = { target_exam: TargetExam | null; eyesh_goal: number | null; sat_goal: number | null; eyesh_exam_year: number | null; sat_exam_month: string | null; grade: StudentGrade | null; weekly_study_hours: number | null; target_university: string | null; onboarded_at: string | null };
 export type AiStatus = "pending" | "ready" | "failed";
 type AiAttemptAnalysisRow = { attempt_id: string; user_id: string; status: AiStatus; content: Json | null; model: string | null; error: string | null; created_at: string; updated_at: string };
+type StudentDailyActivityRow = { user_id: string; day: string; problems: number; correct: number; lessons: number; updated_at: string };
 type AiStudyPlanRow = { user_id: string; week_start: string; status: AiStatus; content: Json | null; model: string | null; error: string | null; created_at: string; updated_at: string };
 type PhoneVerificationRow = { id: string; provider_session_id: string; purpose: "link_phone" | "reset_password"; user_id: string; phone: string; code: string; expires_at: string; verified_at: string | null; consumed_at: string | null; created_at: string };
 type SchoolRow = { id: string; name: string; slug: string; is_active: boolean; registration_code_hash: string; teacher_registration_code: string | null; created_at: string };
@@ -68,6 +69,7 @@ export type Database = {
       student_lesson_progress: Table<StudentLessonProgressRow, Pick<StudentLessonProgressRow, "user_id" | "lesson_id"> & Partial<StudentLessonProgressRow>>;
       course_lessons: Table<CourseLessonRow, Pick<CourseLessonRow, "slug" | "course_slug" | "module_id" | "title" | "duration_minutes" | "summary" | "objectives" | "sections" | "status" | "sort_order"> & Partial<CourseLessonRow>>;
       course_modules: Table<CourseModuleRow, Pick<CourseModuleRow, "id" | "course_slug" | "title"> & Partial<CourseModuleRow>>;
+      student_daily_activity: Table<StudentDailyActivityRow, never, never>;
       question_bank_progress: Table<QuestionBankProgressRow, Pick<QuestionBankProgressRow, "user_id" | "question_id"> & Partial<QuestionBankProgressRow>>;
     };
     Views: {
@@ -78,6 +80,10 @@ export type Database = {
       student_attempt_history: {
         Args: { p_limit?: number };
         Returns: { attempt_id: string; test_id: string; title: string; exam_type: string; subject: string; score: number; duration_seconds: number | null; completed_at: string; correct: number; total: number; topics: Json }[];
+      };
+      weekly_leaderboard: {
+        Args: { p_scope: "class" | "school"; p_classroom_id?: string | null };
+        Returns: { student_id: string; full_name: string; avatar_url: string | null; problems: number; correct: number; streak: number; rank: number; is_me: boolean }[];
       };
       consume_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number };

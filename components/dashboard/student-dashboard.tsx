@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Clock3 } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, Clock3 } from "lucide-react";
 import type { StudentDashboardData } from "@/lib/data/student-dashboard";
 import { PlanBadge, PortalShell } from "@/components/dashboard/portal-shell";
 import { Art, Ezi, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { joinClass } from "@/app/dashboard/classes/actions";
 import { GoalProgress } from "@/components/dashboard/goal-progress";
-import { goalIncludes, primaryExam } from "@/lib/goals";
+import { daysUntil, examDate, goalIncludes, primaryExam } from "@/lib/goals";
+import { LeaderboardCard } from "@/components/dashboard/leaderboard";
 import { StudyPlanCard } from "@/components/ai/study-plan-card";
 import { todayIndex } from "@/lib/ai/study-plan";
 
@@ -30,23 +31,26 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
   const examAverage = examAttempts.length ? Math.round(examAttempts.reduce((sum, item) => sum + item.score, 0) / examAttempts.length) : 0;
   const scoreChange = examAttempts.length > 1 ? examAttempts.at(-1)!.score - examAttempts.at(-2)!.score : 0;
   const recent = [...attempts].reverse().slice(0, 3);
-  const weekly = weeklyActivity(attempts);
+  const { activity } = data;
+  const weekly = activity.week.map((item) => ({ day: item.label, count: item.problems }));
   const attemptedIds = new Set(attempts.map((attempt) => attempt.testId));
   const nextTest = data.tests.find((test) => !attemptedIds.has(test.id)) ?? data.tests[0];
-  const solvedToday = solvedTodayCount(attempts);
+  const solvedToday = activity.solvedToday;
+  const countdown = examCountdown(data.goal);
+  const goalDone = solvedToday >= goalToday;
 
   return <PortalShell active="/dashboard" plan={{ code: data.planCode, periodEnd: data.planExpiresAt }}>
         <header className="flex flex-wrap items-center gap-4">
-          <div><h1 className="text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">Сайн уу, {firstName(data.name)} 👋</h1><p className="mt-1 text-[15px] text-[#5B6275]">Өнөөдрийн зорилт: {goalToday} бодлого. Бэлтгэлээ үргэлжлүүлээрэй.</p></div>
+          <div><h1 className="text-[26px] font-medium tracking-[-0.03em] sm:text-[30px]">Сайн уу, {firstName(data.name)} 👋</h1><p className="mt-1 text-[15px] text-[#5B6275]">{goalDone ? "Өнөөдрийн зорилтоо биелүүллээ! 🎉" : activity.streak > 0 && !activity.activeToday ? `${activity.streak} хоногийн цувралаа таслахгүйн тулд өнөөдөр бодлого бодоорой.` : `Өнөөдрийн зорилт: ${goalToday} бодлого. Бэлтгэлээ үргэлжлүүлээрэй.`}</p>{countdown && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#FFF0E6] px-3 py-1 text-[13px] font-semibold text-[#C2410C]"><CalendarDays size={14}/>{countdown}</p>}</div>
           <div className="ml-auto hidden items-center gap-3 sm:flex">
-            <div className="flex items-center gap-3 rounded-full border-2 border-[#EEF0F6] bg-white px-4 py-2.5"><GoalRing value={Math.min(1, solvedToday / goalToday)}/><div><p className="text-sm font-semibold">{Math.min(solvedToday, 999)} / {goalToday} бодлого</p><p className="text-xs text-[#5B6275]">Өнөөдрийн зорилт</p></div></div>
+            <div className="flex items-center gap-3 rounded-full border-2 border-[#EEF0F6] bg-white px-4 py-2.5">{goalDone ? <span className="grid h-[34px] w-[34px] place-items-center rounded-full bg-[#16A34A] text-white"><Check size={18} strokeWidth={3}/></span> : <GoalRing value={Math.min(1, solvedToday / goalToday)}/>}<div><p className="text-sm font-semibold">{Math.min(solvedToday, 999)} / {goalToday} бодлого</p><p className="text-xs text-[#5B6275]">Өнөөдрийн зорилт</p></div></div>
             <Link href="/dashboard/settings" aria-label="Профайл болон тохиргоо" className="flex items-center gap-2.5 rounded-2xl border-2 border-[#EEF0F6] bg-white py-1.5 pl-1.5 pr-3.5 hover:border-[#C9CDDA]"><Avatar data={data}/><div><p className="max-w-32 truncate text-[13px] font-semibold">{firstName(data.name)}</p><PlanBadge code={data.planCode}/></div></Link>
           </div>
         </header>
 
         <section className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <Kpi art="target" tile="#EFE6FF" label="Ерөнхий эзэмшилт" value={`${averageAccuracy}%`} note={attempts.length ? `${attempts.length} сорилын нийлбэр үр дүн` : "Эхний сорилоо өгөөрэй"}/>
-          <Kpi art="flame" tile="#FFF0E6" label="Дадлагын цуврал" value={`${currentStreak(attempts)} хоног`} note="Дараалсан идэвхтэй өдрүүд"/>
+          <Kpi art="flame" tile="#FFF0E6" label="Дадлагын цуврал" value={`${activity.streak} хоног`} note={activity.streak > 0 && !activity.activeToday ? "Өнөөдөр бодоод цувралаа хадгал" : activity.bestStreak > activity.streak ? `Дээд амжилт: ${activity.bestStreak} хоног` : "Дараалсан идэвхтэй өдрүүд"} positive={activity.activeToday && activity.streak > 0}/>
           <Kpi art="notebook" tile="#E8EEFF" label="Бодсон бодлого" value={answered.toLocaleString("en-US")} note={`Нийт ${attempts.length} сорил`}/>
           <Kpi art="calculator" tile="#E9FBF2" label={`${scoreExam === "SAT" ? "SAT" : "ЭЕШ"} дундаж оноо`} value={examAverage ? `${examAverage} / 800` : "— / 800"} note={scoreChange ? `${scoreChange > 0 ? "↑ +" : "↓ "}${scoreChange} өмнөхөөс` : "Онооны түүх хүлээгдэж байна"} positive={scoreChange > 0}/>
         </section>
@@ -54,7 +58,7 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
         <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           {/* On phones the sidebar stacks below everything, so the goal card is also rendered first in the main column. */}
           <div className="min-w-0 space-y-4"><div className="empty:hidden xl:hidden"><GoalProgress goal={data.goal} attempts={attempts}/></div><NextExam test={nextTest}/><StudyPlanCard today={todayIndex()}/><RecentTests attempts={recent}/><ActivityCard values={weekly}/></div>
-          <div className="min-w-0 space-y-4"><div className="hidden empty:hidden xl:block"><GoalProgress goal={data.goal} attempts={attempts}/></div><WeakTopics attempts={attempts}/><JoinClassCard/>{(!data.goal || goalIncludes(data.goal, "SAT")) && <QuestionBankCard/>}</div>
+          <div className="min-w-0 space-y-4"><div className="hidden empty:hidden xl:block"><GoalProgress goal={data.goal} attempts={attempts}/></div><LeaderboardCard boards={data.leaderboards}/><WeakTopics attempts={attempts}/>{!data.leaderboards.length && <JoinClassCard/>}{(!data.goal || goalIncludes(data.goal, "SAT")) && <QuestionBankCard/>}</div>
         </div>
   </PortalShell>;
 }
@@ -155,10 +159,15 @@ function QuestionBankCard() {
   </section>;
 }
 
-function solvedTodayCount(attempts: StudentDashboardData["attempts"]) { const today = localDateKey(new Date()); return attempts.filter((attempt) => localDateKey(new Date(attempt.completedAt)) === today).reduce((sum, attempt) => sum + attempt.total, 0); }
 function formatShortDate(value: string) { const date = new Date(value); return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`; }
-function weeklyActivity(attempts: StudentDashboardData["attempts"]) { const days = ["Да","Мя","Лх","Пү","Ба","Бя","Ня"]; const counts = Array(7).fill(0) as number[]; const now = new Date(); const monday = new Date(now); monday.setHours(0,0,0,0); monday.setDate(now.getDate()-((now.getDay()+6)%7)); for (const attempt of attempts) { const completed = new Date(attempt.completedAt); if (completed < monday) continue; const index = (completed.getDay()+6)%7; counts[index] += attempt.total; } return days.map((day,index)=>({day,count:counts[index]})); }
-function currentStreak(attempts: StudentDashboardData["attempts"]) { const activeDays = new Set(attempts.map((attempt)=>localDateKey(new Date(attempt.completedAt)))); const cursor = new Date(); cursor.setHours(0,0,0,0); if (!activeDays.has(localDateKey(cursor))) cursor.setDate(cursor.getDate()-1); let streak = 0; while (activeDays.has(localDateKey(cursor))) { streak += 1; cursor.setDate(cursor.getDate()-1); } return streak; }
-function localDateKey(date: Date) { return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`; }
+/** "ЭЕШ хүртэл 208 хоног" for the nearest upcoming exam the student set a date for. */
+function examCountdown(goal: StudentDashboardData["goal"]) {
+  if (!goal) return null;
+  const next = (["EYESH", "SAT"] as const).filter((exam) => goalIncludes(goal, exam))
+    .map((exam) => { const date = examDate(goal, exam); return { exam, days: date ? daysUntil(date) : null }; })
+    .filter((item): item is { exam: "EYESH" | "SAT"; days: number } => item.days !== null && item.days > 0)
+    .sort((a, b) => a.days - b.days)[0];
+  return next ? `${next.exam === "SAT" ? "SAT" : "ЭЕШ"} хүртэл ${next.days} хоног` : null;
+}
 function firstName(name: string) { return name.trim().split(/\s+/)[0]; }
 function initials(name: string) { return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()).join("") || "С"; }

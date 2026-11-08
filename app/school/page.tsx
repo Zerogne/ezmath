@@ -3,6 +3,8 @@ import { AlertTriangle, BookOpenCheck, Building2, Check, ClipboardCheck, Clock3,
 import { SchoolShell } from "@/components/school/school-shell";
 import { TeacherCodeCard } from "@/components/school/teacher-code-card";
 import { getSchoolDashboard } from "@/lib/data/school-dashboard";
+import { LeaderboardTable } from "@/components/dashboard/leaderboard";
+import { loadLeaderboard } from "@/lib/data/leaderboard";
 import { reviewTeacher } from "./actions";
 
 const teacherStatus = {
@@ -13,6 +15,7 @@ const teacherStatus = {
 
 export default async function SchoolPage({ searchParams }: { searchParams: Promise<{ error?: string; teacherUpdated?: string }> }) {
   const [data, query] = await Promise.all([getSchoolDashboard(), searchParams]);
+  const leaderboard = await loadLeaderboard("school");
 
   return (
     <SchoolShell name={data.accountName} schoolName={data.schoolName}>
@@ -36,6 +39,8 @@ export default async function SchoolPage({ searchParams }: { searchParams: Promi
         <Metric icon={ClipboardCheck} label="Дууссан mock" value={data.completedAttempts}/>
         <Metric icon={BookOpenCheck} label="Дууссан хичээл" value={data.completedLessons}/>
       </section>
+
+      {leaderboard.length > 0 && <section className="mt-6 rounded-[22px] border-2 border-[#EEF0F6] bg-white p-5"><h2 className="font-semibold">Энэ 7 хоногийн шилдэг сурагчид</h2><p className="mt-1 text-xs text-muted-foreground">Даваа гарагаас хойш зөв бодсон бодлогын тоогоор.</p><div className="mt-3"><LeaderboardTable rows={leaderboard} limit={10}/></div></section>}
 
       <section className="mt-6 overflow-hidden rounded-[22px] border-2 border-[#EEF0F6] bg-white">
         <div className="flex items-center justify-between gap-4 border-b px-5 py-4">
