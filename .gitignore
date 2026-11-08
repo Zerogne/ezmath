@@ -10,3 +10,10 @@ __pycache__/
 
 # ЭЕШ source PDFs for import (not committed)
 /imports/
+
+# test output
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+.env*

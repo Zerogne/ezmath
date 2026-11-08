@@ -15,11 +15,13 @@ npm run dev        # dev server (http://localhost:3000)
 npm run build      # production build (uses --webpack, not Turbopack)
 npm run typecheck  # tsc --noEmit
 npm run lint       # eslint .
+npm test           # vitest unit tests (tests/unit)
+npm run test:e2e   # playwright: builds in mock mode (no Supabase) and runs tests/e2e
 npx supabase db push   # apply supabase/migrations
 npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID" > lib/supabase/database.types.ts
 ```
 
-There is no test suite or CI. Check changes with `typecheck`, `lint` and `build`.
+GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck, unit tests and the Playwright suite on every push and PR. The e2e suite runs against the mock dataset; in mock mode the `e2e-monitored=1` cookie forces the school/class exam-monitoring path. Errors go to Rollbar (`lib/monitoring/`, `instrumentation.ts`) through the Marketplace integration's `ROLLBAR_EZMATH_SERVER_TOKEN_1794145568` / `NEXT_PUBLIC_ROLLBAR_EZMATH_CLIENT_TOKEN_1794145568` (plain `ROLLBAR_SERVER_TOKEN` / `NEXT_PUBLIC_ROLLBAR_CLIENT_TOKEN` also work); use `reportServerError()` for handled server failures and never send answers or tokens.
 
 The repo lives in iCloud-synced `~/Documents`. Evicted ("dataless") files in `node_modules` can make `next dev`, `next build` or git hang. If that happens, build from a copy outside iCloud.
 
@@ -55,5 +57,5 @@ The schema is versioned in `supabase/migrations/` (timestamped). `supabase/schem
 ## Other references
 
 - `docs/BYL_INTEGRATION.md`: BYL.mn payment integration. Payments stay inactive until merchant env vars are set.
-- `CODEBASE_AUDIT.md`: known gaps (no tests/CI, no rate limits on mutation/import endpoints).
+- `CODEBASE_AUDIT.md`: original audit (tests/CI and error tracking have since been added).
 - `.env.example`: full env var list. `next.config.ts` sets a strict CSP. Add new external origins there (e.g. `connect-src`, `img-src`).

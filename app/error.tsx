@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Ezi } from "@/components/home/redesign/illustrations";
+import { reportClientError } from "@/lib/monitoring/client";
 
 export default function ErrorPage({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
-  useEffect(() => { console.error(error); }, [error]);
+  useEffect(() => { console.error(error); reportClientError(error, { boundary: "page", digest: error.digest }); }, [error]);
   return <main className="grid min-h-[70vh] place-items-center px-4 py-16 text-center"><div>
     <Ezi pose="oops" size={160} className="mx-auto block"/>
     <h1 className="mt-4 text-3xl font-medium">Алдаа гарлаа</h1>
