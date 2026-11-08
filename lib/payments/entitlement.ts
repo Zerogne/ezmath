@@ -16,9 +16,3 @@ export async function hasPaidAccess(userId: string): Promise<boolean> {
   return Boolean(subscription && (!subscription.current_period_end || new Date(subscription.current_period_end) > new Date()));
 }
 
-/** Start of the current day in Mongolia (UTC+8, no DST) as an ISO timestamp. */
-export function startOfUlaanbaatarDay(now = new Date()) {
-  const shifted = new Date(now.getTime() + 8 * 3_600_000);
-  shifted.setUTCHours(0, 0, 0, 0);
-  return new Date(shifted.getTime() - 8 * 3_600_000).toISOString();
-}

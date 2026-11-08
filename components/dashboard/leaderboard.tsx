@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Flame, Trophy } from "lucide-react";
 import type { Leaderboard, LeaderboardRow } from "@/lib/data/leaderboard";
+import { portalCard as card } from "@/components/dashboard/portal-ui";
 
-const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
 const MEDALS = ["#F5B700", "#A7AFC2", "#CD7F32"];
 
 /** Top rows plus the viewer's own row when they fall below the cut. */

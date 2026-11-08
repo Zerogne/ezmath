@@ -40,10 +40,6 @@ export async function listAllModules(): Promise<ModuleSummary[]> {
   return [...builtin, ...custom];
 }
 
-export async function getModule(moduleId: string): Promise<ModuleSummary | undefined> {
-  return (await listAllModules()).find((item) => item.id === moduleId);
-}
-
 export async function getCourseCatalog(): Promise<Course> {
   if (!isSupabaseConfigured()) return coreMathCourse;
   const supabase = await createClient();

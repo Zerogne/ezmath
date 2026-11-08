@@ -16,8 +16,4 @@ export const testStorage = {
   loadCompleted(testId: string) { return parse<CompletedAttempt>(localStorage.getItem(`${RESULT_PREFIX}${testId}`)); },
 };
 
-export const loadSession = testStorage.load;
-export const saveSession = testStorage.save;
-export const clearSession = testStorage.clear;
-export const saveCompletedAttempt = testStorage.saveCompleted;
 export const loadCompletedAttempt = testStorage.loadCompleted;

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowRight, Check, Clock3 } from "lucide-react";
 import type { StudentDashboardData } from "@/lib/data/student-dashboard";
 import { PlanBadge, PortalShell } from "@/components/dashboard/portal-shell";
-import { Art, Ezi, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
+import { portalCard as card, StatCard } from "@/components/dashboard/portal-ui";
+import { Art, Ezi, ObjectArt } from "@/components/home/redesign/illustrations";
 import { joinClass } from "@/app/dashboard/classes/actions";
 import { GoalProgress } from "@/components/dashboard/goal-progress";
 import { daysUntil, examDate, goalIncludes, primaryExam } from "@/lib/goals";
@@ -17,7 +18,6 @@ function dailyGoal(weeklyHours: number | null | undefined, free: boolean) {
   const goal = weeklyHours ? Math.min(60, Math.max(10, Math.round(weeklyHours * 3 / 5) * 5)) : 20;
   return free ? Math.min(goal, FREE_DAILY_LIMIT) : goal;
 }
-const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
 const TYPE_LABEL = { full: "Бүрэн mock", practice: "Дасгал", "previous-year": "Өмнөх оны" } as const;
 
 export function StudentDashboard({ data }: { data: StudentDashboardData }) {
@@ -51,10 +51,10 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
         </header>
 
         <section className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-          <Kpi art="target" tile="#EFE6FF" label="Ерөнхий эзэмшилт" value={`${averageAccuracy}%`} note={attempts.length ? `${attempts.length} сорилын нийлбэр үр дүн` : "Эхний сорилоо өгөөрэй"}/>
-          <Kpi art="flame" tile="#FFF0E6" label="Дадлагын цуврал" value={`${activity.streak} хоног`} note={activity.streak > 0 && !activity.activeToday ? "Өнөөдөр бодоод цувралаа хадгал" : activity.bestStreak > activity.streak ? `Дээд амжилт: ${activity.bestStreak} хоног` : "Дараалсан идэвхтэй өдрүүд"} positive={activity.activeToday && activity.streak > 0}/>
-          <Kpi art="notebook" tile="#E8EEFF" label="Бодсон бодлого" value={answered.toLocaleString("en-US")} note={`Нийт ${attempts.length} сорил`}/>
-          <Kpi art="calculator" tile="#E9FBF2" label={`${scoreExam === "SAT" ? "SAT" : "ЭЕШ"} дундаж оноо`} value={examAverage ? `${examAverage} / 800` : "— / 800"} note={scoreChange ? `${scoreChange > 0 ? "↑ +" : "↓ "}${scoreChange} өмнөхөөс` : "Онооны түүх хүлээгдэж байна"} positive={scoreChange > 0}/>
+          <StatCard art="target" tile="#EFE6FF" label="Ерөнхий эзэмшилт" value={`${averageAccuracy}%`} note={attempts.length ? `${attempts.length} сорилын нийлбэр үр дүн` : "Эхний сорилоо өгөөрэй"}/>
+          <StatCard art="flame" tile="#FFF0E6" label="Дадлагын цуврал" value={`${activity.streak} хоног`} note={activity.streak > 0 && !activity.activeToday ? "Өнөөдөр бодоод цувралаа хадгал" : activity.bestStreak > activity.streak ? `Дээд амжилт: ${activity.bestStreak} хоног` : "Дараалсан идэвхтэй өдрүүд"} positive={activity.activeToday && activity.streak > 0}/>
+          <StatCard art="notebook" tile="#E8EEFF" label="Бодсон бодлого" value={answered.toLocaleString("en-US")} note={`Нийт ${attempts.length} сорил`}/>
+          <StatCard art="calculator" tile="#E9FBF2" label={`${scoreExam === "SAT" ? "SAT" : "ЭЕШ"} дундаж оноо`} value={examAverage ? `${examAverage} / 800` : "— / 800"} note={scoreChange ? `${scoreChange > 0 ? "↑ +" : "↓ "}${scoreChange} өмнөхөөс` : "Онооны түүх хүлээгдэж байна"} positive={scoreChange > 0}/>
         </section>
 
         <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -89,12 +89,6 @@ function GoalRing({ value }: { value: number }) {
 
 /** Plan card with Эзи peeking over it, at the bottom of the sidebar. */
 
-function Kpi({ art, tile, label, value, note, positive = false }: { art: ObjectKind; tile: string; label: string; value: string; note: string; positive?: boolean }) {
-  return <article className={`${card} flex items-center gap-3.5 p-4 sm:p-[22px]`}>
-    <span className="hidden h-16 w-16 shrink-0 place-items-center rounded-[20px] sm:grid" style={{ background: tile }}><ObjectArt kind={art} size={56}/></span>
-    <div className="min-w-0"><p className="text-[13px] font-medium text-[#5B6275]">{label}</p><p className="mt-0.5 font-display text-[24px] font-medium leading-tight tracking-[-0.03em] sm:text-[30px]">{value}</p><p className={`mt-0.5 text-xs font-medium ${positive ? "text-[#16A34A]" : "text-[#5B6275]"}`}>{note}</p></div>
-  </article>;
-}
 
 function NextExam({ test }: { test: StudentDashboardData["tests"][number] | undefined }) {
   return <section className="relative overflow-hidden rounded-[22px] border-2 border-[#DCE5FF] bg-[#E8EEFF] p-6 sm:min-h-[230px] sm:p-[30px]">

@@ -1,4 +1,5 @@
 import { planName } from "@/lib/payments/plans";
+import { ulaanbaatarClock } from "@/lib/ulaanbaatar-time";
 import Link from "next/link";
 import { Check, Clock3, Plus, Search, X } from "lucide-react";
 import { Art, ObjectArt, type ObjectKind } from "@/components/home/redesign/illustrations";
@@ -152,6 +153,6 @@ function QuickAction({ href, art, tile, label, text }: { href: string; art: Obje
 
 function formatDateTime(value: string) {
   const date = new Date(value);
-  const local = new Date(date.getTime() + 8 * 3_600_000);
+  const local = ulaanbaatarClock(date);
   return `${String(local.getUTCMonth() + 1).padStart(2, "0")}.${String(local.getUTCDate()).padStart(2, "0")} ${String(local.getUTCHours()).padStart(2, "0")}:${String(local.getUTCMinutes()).padStart(2, "0")}`;
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { ulaanbaatarWeekday, ulaanbaatarWeekStart } from "@/lib/ulaanbaatar-time";
 import { z } from "zod";
 import { aiErrorMessage, AI_MODEL, generateStructured, isAiConfigured } from "@/lib/ai/claude";
 import { shouldClaim } from "@/lib/ai/claim";
@@ -40,23 +41,13 @@ const SYSTEM = `Та EzMath платформын математикийн баг
 - Бүтэн mock сорилыг 7 хоногт хамгийн ихдээ нэг удаа, ихэвчлэн амралтын өдөр төлөвлө.
 - Даалгавар бүр тодорхой, хийж болохуйц байна.`;
 
-/** Monday of the current week in Asia/Ulaanbaatar (UTC+8), as YYYY-MM-DD. */
-export function currentWeekStart(now = new Date()) {
-  const local = new Date(now.getTime() + 8 * 3_600_000);
-  const mondayOffset = (local.getUTCDay() + 6) % 7;
-  local.setUTCDate(local.getUTCDate() - mondayOffset);
-  return local.toISOString().slice(0, 10);
-}
-
-/** Index of today (0 = Monday) in Asia/Ulaanbaatar. */
-export function todayIndex(now = new Date()) {
-  return (new Date(now.getTime() + 8 * 3_600_000).getUTCDay() + 6) % 7;
-}
+/** Index of today (0 = Monday) in Ulaanbaatar. */
+export const todayIndex = ulaanbaatarWeekday;
 
 export async function readStudyPlan(userId: string): Promise<PlanState> {
   if (!isAiConfigured()) return { status: "unavailable" };
   if (!await hasPaidAccess(userId)) return { status: "locked" };
-  const weekStart = currentWeekStart();
+  const weekStart = ulaanbaatarWeekStart();
   const { data: row } = await createAdminClient().from("ai_study_plans").select("status, content").eq("user_id", userId).eq("week_start", weekStart).maybeSingle();
   if (!row || row.status === "pending") return { status: "pending" };
   if (row.status === "failed") return { status: "failed" };
@@ -67,7 +58,7 @@ export async function readStudyPlan(userId: string): Promise<PlanState> {
 /** Generates this week's plan unless it is ready or in progress. Callers check the plan first; run inside `after()`. */
 export async function generateStudyPlan(userId: string) {
   const admin = createAdminClient();
-  const weekStart = currentWeekStart();
+  const weekStart = ulaanbaatarWeekStart();
   const { data: existing } = await admin.from("ai_study_plans").select("status, updated_at").eq("user_id", userId).eq("week_start", weekStart).maybeSingle();
   if (!shouldClaim(existing)) return;
   const now = new Date().toISOString();

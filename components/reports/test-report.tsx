@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { loadCompletedAttempt } from "@/lib/exam/session-storage";
+import { loadCompletedAttempt } from "@/lib/exam/test-storage";
 import type { CompletedAttempt, StudentQuestion, Test } from "@/types/exam";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/dashboard/portal-ui";
+import { portalCard as card } from "@/components/dashboard/portal-ui";
 
-const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
 const STATE_STYLE = { correct: "border-[#BBF7D0] bg-[#E9FBF2] text-[#15803D]", incorrect: "border-[#FECDD3] bg-[#FFE4E6] text-[#BE123C]", unanswered: "border-[#EEF0F6] bg-[#F6F7FB] text-[#9AA0B4]" } as const;
 
 export function TestReport({ test, questions }: { test: Test; questions: StudentQuestion[] }) {

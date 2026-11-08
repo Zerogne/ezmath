@@ -2,8 +2,8 @@ import Link from "next/link";
 import { CalendarDays, Pencil } from "lucide-react";
 import type { HistoryAttempt } from "@/lib/data/student-history";
 import { daysUntil, examDate, GOAL_RANGE, goalIncludes, type StudentGoal } from "@/lib/goals";
+import { portalCard as card } from "@/components/dashboard/portal-ui";
 
-const card = "rounded-[22px] border-2 border-[#EEF0F6] bg-white";
 
 /** Goal vs. latest result for each exam the student is preparing for, with a countdown to exam day. */
 export function GoalProgress({ goal, attempts }: { goal: StudentGoal | null; attempts: HistoryAttempt[] }) {

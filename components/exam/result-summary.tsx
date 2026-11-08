@@ -3,7 +3,7 @@ import { AttemptAnalysisCard } from "@/components/ai/attempt-analysis-card";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, BarChart3, BookOpenCheck, RotateCcw } from "lucide-react";
-import { loadCompletedAttempt } from "@/lib/exam/session-storage";
+import { loadCompletedAttempt } from "@/lib/exam/test-storage";
 import type { SubmissionResult, Test } from "@/types/exam";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Ezi } from "@/components/home/redesign/illustrations";

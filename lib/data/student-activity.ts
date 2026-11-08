@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/supabase/session";
 import type { HistoryAttempt } from "@/lib/data/student-history";
+import { ulaanbaatarDay } from "@/lib/ulaanbaatar-time";
 
 export type DayActivity = { day: string; problems: number; correct: number; lessons: number };
 export type StudentActivity = {
@@ -20,13 +21,10 @@ export type StudentActivity = {
 const DAY_MS = 86_400_000;
 const WEEKDAY_LABELS = ["Да", "Мя", "Лх", "Пү", "Ба", "Бя", "Ня"];
 
-/** YYYY-MM-DD in Ulaanbaatar (UTC+8, no daylight saving), whatever region the server runs in. */
-export function mnDay(date: Date | string = new Date()) {
-  return new Date(new Date(date).getTime() + 8 * 3_600_000).toISOString().slice(0, 10);
-}
+
 const shiftDay = (day: string, by: number) => new Date(Date.parse(`${day}T00:00:00Z`) + by * DAY_MS).toISOString().slice(0, 10);
 
-export function summarizeActivity(rows: DayActivity[], today = mnDay()): StudentActivity {
+export function summarizeActivity(rows: DayActivity[], today = ulaanbaatarDay()): StudentActivity {
   const byDay = new Map(rows.map((row) => [row.day, row]));
   const active = (day: string) => { const row = byDay.get(day); return Boolean(row && (row.problems > 0 || row.lessons > 0)); };
 
@@ -54,7 +52,7 @@ export function summarizeActivity(rows: DayActivity[], today = mnDay()): Student
 function activityFromAttempts(attempts: HistoryAttempt[]): DayActivity[] {
   const days = new Map<string, DayActivity>();
   for (const attempt of attempts) {
-    const day = mnDay(attempt.completedAt);
+    const day = ulaanbaatarDay(attempt.completedAt);
     const row = days.get(day) ?? { day, problems: 0, correct: 0, lessons: 0 };
     row.problems += attempt.total;
     row.correct += attempt.correct;
@@ -73,7 +71,7 @@ export async function getStudentActivity(attempts: HistoryAttempt[]): Promise<St
     .from("student_daily_activity")
     .select("day, problems, correct, lessons")
     .eq("user_id", user.id)
-    .gte("day", shiftDay(mnDay(), -400))
+    .gte("day", shiftDay(ulaanbaatarDay(), -400))
     .order("day");
   if (error) return summarizeActivity(activityFromAttempts(attempts));
   return summarizeActivity(data);

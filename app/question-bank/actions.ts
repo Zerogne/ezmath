@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissingTable } from "@/lib/data/question-bank";
 import { gradeWritten } from "@/lib/exam/grade-question";
-import { FREE_DAILY_EXERCISES, hasPaidAccess, startOfUlaanbaatarDay } from "@/lib/payments/entitlement";
+import { FREE_DAILY_EXERCISES, hasPaidAccess } from "@/lib/payments/entitlement";
+import { startOfUlaanbaatarDay } from "@/lib/ulaanbaatar-time";
 
 export type BankCheckResult =
   | { error: string }

@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { mnDay, summarizeActivity, type DayActivity } from "@/lib/data/student-activity";
+import { summarizeActivity, type DayActivity } from "@/lib/data/student-activity";
+import { startOfUlaanbaatarDay, ulaanbaatarDay, ulaanbaatarWeekday, ulaanbaatarWeekStart } from "@/lib/ulaanbaatar-time";
 
 const day = (date: string, problems = 5, lessons = 0): DayActivity => ({ day: date, problems, correct: 0, lessons });
 
-describe("mnDay", () => {
-  it("uses Ulaanbaatar time (UTC+8), not the server's", () => {
-    expect(mnDay("2026-11-08T15:59:00Z")).toBe("2026-11-08");
-    expect(mnDay("2026-11-08T16:00:00Z")).toBe("2026-11-09");
+describe("Ulaanbaatar time", () => {
+  it("uses UTC+8 for the calendar day, not the server's zone", () => {
+    expect(ulaanbaatarDay("2026-11-08T15:59:00Z")).toBe("2026-11-08");
+    expect(ulaanbaatarDay("2026-11-08T16:00:00Z")).toBe("2026-11-09");
+  });
+  it("starts the day at 00:00 Ulaanbaatar (16:00 UTC the day before)", () => {
+    expect(startOfUlaanbaatarDay(new Date("2026-11-09T03:00:00Z"))).toBe("2026-11-08T16:00:00.000Z");
+  });
+  it("starts the week on Monday", () => {
+    // Sunday 23:30 in Ulaanbaatar is still the old week; 00:30 Monday is the new one.
+    expect(ulaanbaatarWeekday(new Date("2026-11-15T15:30:00Z"))).toBe(6);
+    expect(ulaanbaatarWeekStart(new Date("2026-11-15T15:30:00Z"))).toBe("2026-11-09");
+    expect(ulaanbaatarWeekStart(new Date("2026-11-15T16:30:00Z"))).toBe("2026-11-16");
   });
 });
 

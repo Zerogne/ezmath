@@ -37,7 +37,7 @@ The repo lives in iCloud-synced `~/Documents`. Evicted ("dataless") files in `no
 
 **Answer-key separation.** Students read questions through the `student_questions` / `student_answer_choices` views, which have no correctness data. Grading happens only on the server in `app/tests/actions.ts` (`submitTestAttempt`), using the admin client against `answer_choices.is_correct`. Written/multi-blank answers go through `lib/exam/grade-question.ts`. Never send correct answers to the client before submission.
 
-**Exam session flow.** `/tests/[testId]` (intro) → `/take` → `/result` and `/report`. In-progress state persists to localStorage (`lib/exam/session-storage.ts`, `test-storage.ts`) and syncs to the server via `/api/test-attempts/checkpoint` (`lib/exam/test-sync.ts`). Non-practice tests need a subscription; `startTestAttempt` enforces this.
+**Exam session flow.** `/tests/[testId]` (intro) → `/take` → `/result` and `/report`. In-progress state persists to localStorage (`lib/exam/test-storage.ts`) and syncs to the server via `/api/test-attempts/checkpoint` (`lib/exam/test-sync.ts`). Non-practice tests need a subscription; `startTestAttempt` enforces this.
 
 **Roles and portals.** `profiles.role` drives access: student (`/dashboard`), teacher (`/teacher`), school admin (`/school`), admin (`/admin`). Admin identity comes from `lib/admin/auth.ts` `getAdminIdentity()`. `ADMIN_DEMO_MODE=true` fakes an admin locally and throws in production. Data loaders per portal live in `lib/data/`.
 
@@ -57,5 +57,5 @@ The schema is versioned in `supabase/migrations/` (timestamped). `supabase/schem
 ## Other references
 
 - `docs/BYL_INTEGRATION.md`: BYL.mn payment integration. Payments stay inactive until merchant env vars are set.
-- `CODEBASE_AUDIT.md`: original audit (tests/CI and error tracking have since been added).
+- `CODEBASE_AUDIT.md`: current audit (2026-11-09), open findings and the security properties to preserve.
 - `.env.example`: full env var list. `next.config.ts` sets a strict CSP. Add new external origins there (e.g. `connect-src`, `img-src`).
