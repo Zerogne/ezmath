@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { ArrowRight, Check, Clock3, Plus, TrendingUp } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { HeroCarousel } from "@/components/home/redesign/hero-carousel";
+import { HeroClimb } from "@/components/home/redesign/hero-climb";
 import { Cloud, Ezi, ObjectArt, ProductScene, Squiggle, type EziPose, type ObjectKind } from "@/components/home/redesign/illustrations";
 import { CountUp, ScrollMotion } from "@/components/home/redesign/scroll-motion";
 import "@/components/home/redesign/redesign.css";
@@ -66,15 +66,24 @@ export function RedesignLanding() {
 }
 
 function Hero() {
-  return <section className={`${container} grid items-center gap-6 pb-16 pt-10 lg:grid-cols-[1fr_560px] lg:gap-10 lg:pb-24 lg:pt-14`}>
-    <div>
-      <h1 className="rd-display text-[40px] leading-[1.08] sm:text-5xl lg:text-[64px]" data-rv>ЭЕШ ба SAT математикийн <Squiggle>цогц</Squiggle> бэлтгэл нэг дор</h1>
-      <p className={`mt-6 max-w-[600px] text-lg leading-relaxed lg:text-[21px] ${muted}`} data-rv style={delay(0.08)}>Сүүлийн 20 жилийн ЭЕШ-ийн бодлого, бодит форматтай SAT сорил, онолын хичээл. Алдаа бүрээ ойлгож, сул сэдвээ анализаар олоорой.</p>
-      <div className="mt-8 flex flex-wrap gap-2.5" data-rv style={delay(0.16)}><Link href="/register" className={btnDark}>Бүртгүүлэх</Link><Link href="/pricing" className={btnOutline}>Би эцэг эх</Link><Link href="/register" className={btnOutline}>Би багш</Link></div>
-      <div className={`mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm ${muted}`} data-rv style={delay(0.24)}>{["Картын мэдээлэл шаардахгүй", "Монгол хэл дээр"].map((x) => <span key={x} className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={3} className="text-[#2B4BE8]"/>{x}</span>)}</div>
-      <Link href="/pricing" className="mt-5 inline-block border-b-[1.5px] border-[#0B1030] pb-0.5 text-base font-medium" data-rv style={delay(0.32)}>Сургуулиудад зориулсан EzMath →</Link>
+  return <section className="rd-hero relative overflow-hidden">
+    <div className={`${container} relative pb-8 pt-8 lg:pb-12 lg:pt-12 xl:pt-6`}>
+      {/* From xl the copy floats over the empty sky in the scene's upper-left; below that it stacks above the scene. */}
+      <div className="relative z-10 max-w-[600px] xl:absolute xl:left-[112px] xl:top-8">
+        <p className="inline-flex items-center gap-2 rounded-full border-2 border-[#DDE3FF] bg-white py-1 pl-1 pr-3.5 text-[13px] font-semibold text-[#2B4BE8]" data-rv>
+          <span className="rounded-full bg-[#2B4BE8] px-2.5 py-0.5 text-white">ЭЕШ</span><span className="rounded-full bg-[#F2B740] px-2.5 py-0.5 text-[#0B1030]">SAT</span>Математикийн бэлтгэл
+        </p>
+        <h1 className="rd-display mt-4 text-[32px] leading-[1.1] sm:text-[40px] xl:text-[42px] min-[1440px]:text-[46px]" data-rv style={delay(0.06)}>Өнөөдрөөс ЭЕШ өдөр хүртэл оноогоо <Squiggle>алхам алхмаар</Squiggle> өсгө</h1>
+        <p className={`mt-4 max-w-[520px] text-base leading-relaxed ${muted}`} data-rv style={delay(0.12)}>Сүүлийн 20 жилийн ЭЕШ-ийн бодлого, бодит форматтай SAT сорил, онолын хичээл. Алдаа бүрээ ойлгож, сул сэдвээ анализаар олоорой.</p>
+        <div className="mt-6 flex flex-wrap gap-2.5" data-rv style={delay(0.18)}>
+          <Link href="/register" className="btn-dark !bg-[#2B4BE8] hover:!bg-[#1E36B8] max-sm:!h-11 max-sm:!px-5 max-sm:!text-[15px]">Үнэгүй эхлэх<ArrowRight size={18}/></Link>
+          <Link href="/pricing" className={`${btnOutline} max-sm:!h-11 max-sm:!px-5 max-sm:!text-[15px]`}>Би эцэг эх</Link>
+          <Link href="/register" className={`${btnOutline} max-sm:!h-11 max-sm:!px-5 max-sm:!text-[15px]`}>Би багш</Link>
+        </div>
+        <div className={`mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] ${muted}`} data-rv style={delay(0.24)}>{["Картын мэдээлэл шаардахгүй", "Бүх тайлбар монгол хэл дээр"].map((x) => <span key={x} className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={3} className="text-[#1FA97A]"/>{x}</span>)}<Link href="/pricing" className="font-medium text-[#0B1030] underline decoration-[1.5px] underline-offset-4">Сургуулиудад зориулсан EzMath →</Link></div>
+      </div>
+      <HeroClimb/>
     </div>
-    <div className="order-first lg:order-none"><HeroCarousel/></div>
   </section>;
 }
 
