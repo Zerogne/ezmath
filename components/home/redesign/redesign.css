@@ -27,15 +27,6 @@
 .rd [data-in] .rd-grow-w { width: var(--v); }
 .rd [data-in] .rd-grow-h { height: var(--v); }
 
-/* hero carousel: slides pop their pieces in one after another */
-.rd .rd-hv > * { opacity: 0; translate: 0 14px; scale: .9; transition: opacity .35s ease, translate .35s ease, scale .35s ease; }
-.rd .rd-hv .rd-hv-shape { scale: .7; }
-.rd .rd-hv[data-active] > * { opacity: 1; translate: 0 0; scale: 1; transition: opacity .5s ease var(--d, 0s), translate .8s cubic-bezier(.34, 1.56, .64, 1) var(--d, 0s), scale .8s cubic-bezier(.34, 1.56, .64, 1) var(--d, 0s); }
-.rd .rd-hv[data-settled] .rd-tile, .rd .rd-hv[data-settled] .rd-score { animation: rd-float 4.8s ease-in-out infinite; }
-.rd .rd-hv[data-settled] .rd-tile:nth-child(6) { animation-duration: 5.4s; animation-delay: -1.4s; }
-.rd .rd-hv[data-settled] .rd-tile:nth-child(7) { animation-duration: 5s; animation-delay: -2.6s; }
-.rd .rd-hv[data-settled] .rd-score { animation-duration: 6s; animation-delay: -1s; }
-
 /* closing-scene parallax: --p goes 0 → 1 while the scene scrolls through the viewport */
 .rd [data-parallax] { --p: .5; }
 .rd .rd-land { position: absolute; inset: auto 0 0 0; width: 100%; height: 360px; }
@@ -54,8 +45,24 @@
 
 @media (prefers-reduced-motion: reduce) {
   .rd *, .rd *::before, .rd *::after { animation: none !important; transition: none !important; }
-  .rd [data-rv], .rd [data-pop], .rd .rd-hv[data-active] > *, .rd .rd-land .rd-p-mascot { opacity: 1 !important; translate: none !important; scale: none !important; }
-  .rd .rd-sq-line path { stroke-dashoffset: 0; }
+  .rd [data-rv], .rd [data-pop], .rd .rd-land .rd-p-mascot { opacity: 1 !important; translate: none !important; scale: none !important; }
+  .rd .rd-sq-line path, .rd svg .rd-climb { stroke-dashoffset: 0; }
   .rd .rd-grow-w { width: var(--v); }
   .rd .rd-grow-h { height: var(--v); }
 }
+
+/* hero: periwinkle ground with a faint graph-paper grid behind the headline */
+.rd .rd-hero { background: linear-gradient(180deg, #F4F6FF 0%, #FFFFFF 70%); }
+.rd .rd-hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(#DDE3FF 1px, transparent 1px), linear-gradient(90deg, #DDE3FF 1px, transparent 1px); background-size: 40px 40px; opacity: .5; -webkit-mask-image: radial-gradient(ellipse 55% 60% at 25% 25%, #000 25%, transparent 75%); mask-image: radial-gradient(ellipse 55% 60% at 25% 25%, #000 25%, transparent 75%); pointer-events: none; }
+
+/* score-climb stage: 1200×760, scaled to the container from 640px (phones get the vertical version) */
+.rd .rd-climb-wrap { --hc-s: .49; }
+@media (min-width: 768px) { .rd .rd-climb-wrap { --hc-s: .58; } }
+@media (min-width: 1024px) { .rd .rd-climb-wrap { --hc-s: .62; } }
+@media (min-width: 1280px) { .rd .rd-climb-wrap { --hc-s: .88; } }
+@media (min-width: 1440px) { .rd .rd-climb-wrap { --hc-s: 1; } }
+.rd .rd-climb { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 2.2s cubic-bezier(.65, 0, .35, 1) .3s; }
+.rd .rd-climb[data-in] { stroke-dashoffset: 0; }
+.rd .rd-steppe { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+/* when stacked under the copy, trim the stage's empty sky */
+@media (max-width: 1279px) { .rd .rd-climb-wrap > div { margin-top: calc(-130px * var(--hc-s)); } }
